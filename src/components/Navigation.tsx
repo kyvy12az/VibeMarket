@@ -1,26 +1,33 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Search, ShoppingCart, MessageCircle, User, Bell, Menu, Settings, LogOut, Heart, Package, CreditCard, HelpCircle, Star, Home, Zap, StoreIcon } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
+import { useLocation, Link } from "react-router-dom";
+import { useAuth } from '@/contexts/AuthContext';
+import Login from '@/pages/Login';
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
+import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
+
+
+const navItems = [
+    { name: "Trang chủ", href: "/" },
+    { name: "Mua sắm", href: "/shop" },
+    { name: "Cộng đồng", href: "/community" },
+    { name: "Khám phá", href: "/discover" },
+    { name: "Flash Sale", href: "/flash-sale" },
+    { name: "Local Brand", href: "/local-brand" }
+];
 
 const Navigation = () => {
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    const [isLoginOpen, setIsLoginOpen] = useState(false);
     const userMenuRef = useRef<HTMLDivElement>(null);
+    const { user, logout } = useAuth();
+    const location = useLocation();
+    const pathname = location.pathname;
 
-    // Mock user data
-    const mockUser = {
-        name: "Nguyễn Văn An",
-        email: "nguyen.van.an@gmail.com",
-        avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face&auto=format",
-        role: "Premium Member",
-        points: 2450
-    };
-
-    // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
@@ -30,6 +37,7 @@ const Navigation = () => {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
     return (
         <motion.nav
             initial={{ y: -100 }}
@@ -39,37 +47,41 @@ const Navigation = () => {
             <div className="container mx-auto px-4 py-4">
                 <div className="flex items-center justify-between">
                     {/* Logo */}
-                    <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        className="flex items-center space-x-3"
-                    >
-                        <div className="w-10 h-10 bg-gradient-hero rounded-xl flex items-center justify-center">
-                            <span className="text-white font-bold text-xl">V</span>
-                        </div>
-                        <span className="text-xl font-bold bg-gradient-hero bg-clip-text text-transparent">
-                            VibeMarket
-                        </span>
-                    </motion.div>
+                    <Link to="/">
+                        <motion.div
+                            whileHover={{ scale: 1.05 }}
+                            className="flex items-center space-x-3"
+                        >
+                            <div className="w-10 h-10 bg-gradient-hero rounded-xl flex items-center justify-center">
+                                <span className="text-white font-bold text-xl">V</span>
+                            </div>
+                            <span className="text-xl font-bold bg-gradient-hero bg-clip-text text-transparent">
+                                VibeMarket
+                            </span>
+                        </motion.div>
+                    </Link>
 
                     {/* Navigation Menu */}
                     <div className="hidden lg:flex items-center space-x-8 mx-8">
-                        {[
-                            { name: "Trang chủ", href: "/" },
-                            { name: "Mua sắm", href: "/shop" },
-                            { name: "Cộng đồng", href: "/community" },
-                            { name: "Khám phá", href: "/discover" },
-                            { name: "Flash Sale", href: "/flash-sale" },
-                            { name: "Local Brand", href: "/local-brand" }
-                        ].map((item, index) => (
-                            <a
-                                key={item.name}
-                                href={item.href}
-                                className="relative text-foreground hover:text-primary font-medium transition-all duration-300 group py-2"
-                            >
-                                <span className="relative z-10">{item.name}</span>
-                                <span className="absolute left-0 right-0 -bottom-1 h-0.5 bg-primary scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-left rounded-full" />
-                            </a>
-                        ))}
+                        {navItems.map((item, index) => {
+                            const isActive =
+                                item.href === "/"
+                                    ? pathname === "/"
+                                    : pathname.startsWith(item.href);
+                            return (
+                                <Link
+                                    key={item.name}
+                                    to={item.href}
+                                    className={`relative text-foreground font-medium transition-all duration-300 group py-2 ${isActive ? "text-primary" : "hover:text-primary"}`}
+                                >
+                                    <span className="relative z-10">{item.name}</span>
+                                    <span
+                                        className={`absolute left-0 right-0 -bottom-1 h-0.5 bg-primary rounded-full transition-transform duration-300 origin-left
+                                            ${isActive ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"}`}
+                                    />
+                                </Link>
+                            );
+                        })}
                     </div>
 
                     {/* Search Bar (Desktop) */}
@@ -95,95 +107,111 @@ const Navigation = () => {
                         <Button variant="ghost" size="icon" className="relative">
                             <ShoppingCart className="w-5 h-5" />
                         </Button>
-                        <div className="relative" ref={userMenuRef}>
-                            <motion.button
-                                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                                className="flex items-center space-x-2 p-1 rounded-xl hover:bg-card/50 transition-all duration-300"
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                            >
-                                <img
-                                    src={mockUser.avatar}
-                                    alt={mockUser.name}
-                                    className="w-10 h-10 rounded-xl object-cover ring-2 ring-primary/20 hover:ring-primary/50 transition-all duration-300"
-                                />
-                                <div className="hidden md:block text-left">
-                                    <p className="text-sm font-medium text-foreground">{mockUser.name}</p>
-                                    <p className="text-xs text-muted-foreground">{mockUser.points} điểm</p>
-                                </div>
-                            </motion.button>
-
-                            {/* User Dropdown Menu */}
-                            {isUserMenuOpen && (
-                                <motion.div
-                                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                    className="absolute right-0 top-full mt-2 w-72 bg-card/95 backdrop-blur-xl border border-border rounded-2xl shadow-xl z-[100] overflow-hidden"
+                        {/* Nếu chưa đăng nhập thì hiển thị icon user, nhấp vào mở modal đăng nhập */}
+                        {!user ? (
+                            <Link to="/login">
+                                <Button variant="ghost" size="icon" className="relative" aria-label="Đăng nhập">
+                                    <User className="w-7 h-7" />
+                                </Button>
+                            </Link>
+                        ) : (
+                            <div className="relative" ref={userMenuRef}>
+                                <motion.button
+                                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                                    className="flex items-center space-x-2 p-1 rounded-xl hover:bg-card/50 transition-all duration-300"
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
                                 >
-                                    {/* User Info Header */}
-                                    <div className="p-4 bg-gradient-primary/10 border-b border-border">
-                                        <div className="flex items-center space-x-3">
-                                            <img
-                                                src={mockUser.avatar}
-                                                alt={mockUser.name}
-                                                className="w-12 h-12 rounded-xl object-cover"
-                                            />
-                                            <div>
-                                                <h3 className="font-semibold text-foreground">{mockUser.name}</h3>
-                                                <p className="text-sm text-muted-foreground">{mockUser.email}</p>
-                                                <Badge className="mt-1 bg-gradient-primary text-xs">
-                                                    {mockUser.role}
-                                                </Badge>
+                                    {user.avatar ? (
+                                        <img
+                                            src={user.avatar}
+                                            alt={user.name}
+                                            className="w-10 h-10 rounded-xl object-cover ring-2 ring-primary/20 hover:ring-primary/50 transition-all duration-300"
+                                        />
+                                    ) : (
+                                        <User className="w-10 h-10 text-muted-foreground" />
+                                    )}
+                                    <div className="hidden md:block text-left">
+                                        <p className="text-sm font-medium text-foreground">{user.name}</p>
+                                        {user.points !== undefined && (
+                                            <p className="text-xs text-muted-foreground">{user.points} điểm</p>
+                                        )}
+                                    </div>
+                                </motion.button>
+
+                                {/* User Dropdown Menu */}
+                                {isUserMenuOpen && (
+                                    <motion.div
+                                        initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                        exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                        className="absolute right-0 top-full mt-2 w-72 bg-card/95 backdrop-blur-xl border border-border rounded-2xl shadow-xl z-[100] overflow-hidden"
+                                    >
+                                        {/* User Info Header */}
+                                        <div className="hidden md:block p-4 bg-gradient-primary/10 border-b border-border">
+                                            <div className="flex items-center space-x-3">
+                                                {user.avatar ? (
+                                                    <img
+                                                        src={user.avatar}
+                                                        alt={user.name}
+                                                        className="w-10 h-10 rounded-xl object-cover ring-2 ring-primary/20 hover:ring-primary/50 transition-all duration-300"
+                                                    />
+                                                ) : (
+                                                    <User className="w-12 h-12 text-muted-foreground" />
+                                                )}
+                                                <div>
+                                                    <h3 className="font-semibold text-foreground">{user.name}</h3>
+                                                    <p className="text-sm text-muted-foreground">{user.email}</p>
+                                                    <Badge className="mt-1 bg-gradient-primary text-xs">
+                                                        {user.role}
+                                                    </Badge>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
 
-                                    {/* Menu Items */}
-                                    <div className="py-2">
-                                        {[
-                                            { icon: User, label: "Hồ sơ cá nhân", href: "/profile" },
-                                            { icon: Package, label: "Đơn hàng của tôi", href: "/orders" },
-                                            { icon: Heart, label: "Sản phẩm yêu thích", href: "/wishlist" },
-                                            { icon: CreditCard, label: "Ví & Thanh toán", href: "/wallet" },
-                                            { icon: Settings, label: "Cài đặt", href: "/settings" },
-                                            { icon: HelpCircle, label: "Trợ giúp", href: "/help" }
-                                        ].map((item, index) => (
+                                        {/* Menu Items */}
+                                        <div className="py-2">
+                                            {[
+                                                { icon: User, label: "Hồ sơ cá nhân", href: "/profile" },
+                                                { icon: Package, label: "Đơn hàng của tôi", href: "/orders" },
+                                                { icon: Heart, label: "Sản phẩm yêu thích", href: "/wishlist" },
+                                                { icon: CreditCard, label: "Ví & Thanh toán", href: "/wallet" },
+                                                { icon: Settings, label: "Cài đặt", href: "/settings" },
+                                                { icon: HelpCircle, label: "Trợ giúp", href: "/help" }
+                                            ].map((item, index) => (
+                                                <motion.a
+                                                    key={item.label}
+                                                    href={item.href}
+                                                    initial={{ opacity: 0, x: -10 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    transition={{ duration: 0.2, delay: index * 0.05 }}
+                                                    className="flex items-center space-x-3 px-4 py-3 hover:bg-primary/5 transition-all duration-200 group"
+                                                    onClick={() => setIsUserMenuOpen(false)}
+                                                >
+                                                    <item.icon className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                                    <span className="text-sm text-foreground group-hover:text-primary transition-colors">
+                                                        {item.label}
+                                                    </span>
+                                                </motion.a>
+                                            ))}
+                                            {/* Logout */}
                                             <motion.a
-                                                key={item.label}
-                                                href={item.href}
+                                                key="logout"
+                                                // href="/"
                                                 initial={{ opacity: 0, x: -10 }}
                                                 animate={{ opacity: 1, x: 0 }}
-                                                transition={{ duration: 0.2, delay: index * 0.05 }}
-                                                className="flex items-center space-x-3 px-4 py-3 hover:bg-primary/5 transition-all duration-200 group"
-                                                onClick={() => setIsUserMenuOpen(false)}
+                                                transition={{ duration: 0.2, delay: 0.4 }}
+                                                className="flex items-center space-x-3 px-4 py-3 hover:bg-destructive/10 text-destructive transition-all duration-200 group"
+                                                onClick={logout}
                                             >
-                                                <item.icon className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
-                                                <span className="text-sm text-foreground group-hover:text-primary transition-colors">
-                                                    {item.label}
-                                                </span>
+                                                <LogOut className="w-5 h-5" />
+                                                <span className="text-sm">Đăng xuất</span>
                                             </motion.a>
-                                        ))}
-
-                                        {/* Logout */}
-                                        <div className="border-t border-border mt-2 pt-2">
-                                            <motion.button
-                                                initial={{ opacity: 0, x: -10 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                transition={{ duration: 0.2, delay: 0.3 }}
-                                                className="flex items-center space-x-3 px-4 py-3 w-full hover:bg-destructive/5 transition-all duration-200 group"
-                                                onClick={() => setIsUserMenuOpen(false)}
-                                            >
-                                                <LogOut className="w-5 h-5 text-muted-foreground group-hover:text-destructive transition-colors" />
-                                                <span className="text-sm text-foreground group-hover:text-destructive transition-colors">
-                                                    Đăng xuất
-                                                </span>
-                                            </motion.button>
                                         </div>
-                                    </div>
-                                </motion.div>
-                            )}
-                        </div>
+                                    </motion.div>
+                                )}
+                            </div>
+                        )}
                         {/* Mobile Menu Trigger */}
                         <Sheet>
                             <SheetTrigger asChild>
@@ -220,25 +248,27 @@ const Navigation = () => {
                                             </a>
                                         ))}
                                     </nav>
-                                    <div className="px-6 pb-6 mt-auto">
-                                        <div className="flex items-center gap-3 mb-3">
-                                            <Avatar className="w-8 h-8">
-                                                <AvatarImage src={mockUser.avatar} alt={mockUser.name} />
-                                                <AvatarFallback>{mockUser.name[0]}</AvatarFallback>
-                                            </Avatar>
-                                            <div>
-                                                <div className="font-semibold">{mockUser.name}</div>
-                                                <div className="text-xs text-white/70">{mockUser.email}</div>
-                                                <div className="text-xs text-yellow-400 font-semibold flex items-center gap-1 mt-1">
-                                                    <Star className="w-4 h-4 inline-block" /> {mockUser.role}
+                                    {user ? (
+                                        <div className="px-6 pb-6 mt-auto">
+                                            <div className="flex items-center gap-3 mb-3">
+                                                <Avatar className="w-8 h-8">
+                                                    <AvatarImage src={user.avatar} alt={user.name} />
+                                                    <AvatarFallback>{user.name[0]}</AvatarFallback>
+                                                </Avatar>
+                                                <div>
+                                                    <div className="font-semibold">{user.name}</div>
+                                                    <div className="text-xs text-white/70">{user.email}</div>
+                                                    <div className="text-xs text-yellow-400 font-semibold flex items-center gap-1 mt-1">
+                                                        <Star className="w-4 h-4 inline-block" /> {user.role}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        <Button variant="outline" className="w-full border-white/20 text-white hover:bg-white/10">
-                                            Đăng xuất
-                                        </Button>
-                                    </div>
+                                            <Button variant="outline" className="w-full border-white/20 text-white hover:bg-white/10">
+                                                Đăng xuất
+                                            </Button>
+                                        </div>
+                                    ) : null}
                                 </div>
                             </SheetContent>
                         </Sheet>

@@ -3,8 +3,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Heart, Star, ShoppingCart, Eye } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { useCart } from "@/contexts/CartContext";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import ShoppingCartModal from "./ShoppingCartModal";
 
 const ProductGrid = () => {
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
+  const { toast } = useToast();
+  const [cartModalOpen, setCartModalOpen] = useState(false);
   const products = [
     {
       id: 1,
@@ -124,9 +133,9 @@ const ProductGrid = () => {
                   <img
                     src={product.image}
                     alt={product.name}
-                    className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-500"
+                    className="w-full object-contain bg-white group-hover:scale-105 transition-transform duration-500"
                   />
-                  
+
                   {/* Badges */}
                   <div className="absolute top-3 left-3 flex flex-col gap-2">
                     {product.discount > 0 && (
@@ -140,7 +149,7 @@ const ProductGrid = () => {
                       </Badge>
                     )}
                   </div>
-                  
+
                   {/* Heart Icon */}
                   <Button
                     size="icon"
@@ -149,13 +158,34 @@ const ProductGrid = () => {
                   >
                     <Heart className="w-4 h-4" />
                   </Button>
-                  
+
                   {/* Quick Actions Overlay */}
                   <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                    <Button size="icon" variant="secondary" className="w-10 h-10">
+                    <Button
+                      size="icon"
+                      variant="secondary"
+                      className="w-10 h-10"
+                      onClick={() => navigate(`/product/${product.id}`)}
+                    >
                       <Eye className="w-4 h-4" />
                     </Button>
-                    <Button size="icon" className="w-10 h-10 bg-gradient-primary">
+                    <Button
+                      size="icon"
+                      className="w-10 h-10 bg-gradient-primary"
+                      onClick={() => {
+                        addToCart({
+                          id: product.id,
+                          name: product.name,
+                          price: product.price,
+                          originalPrice: product.originalPrice,
+                          image: product.image
+                        });
+                        toast({
+                          title: "Đã thêm vào giỏ hàng",
+                          description: `${product.name} đã được thêm vào giỏ hàng.`,
+                        });
+                      }}
+                    >
                       <ShoppingCart className="w-4 h-4" />
                     </Button>
                   </div>
@@ -165,30 +195,38 @@ const ProductGrid = () => {
                   <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
                     {product.name}
                   </h3>
-                  
+
                   <div className="flex items-center gap-1 mt-2 mb-3">
                     <Star className="w-4 h-4 fill-warning text-warning" />
                     <span className="text-sm font-medium">{product.rating}</span>
                     <span className="text-sm text-muted-foreground">
                       ({product.reviews} đánh giá)
-                    </span>
+                    </span> 
                   </div>
-                  
+
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col">
                       <span className="text-lg font-bold text-primary">
                         {product.price}đ
                       </span>
-                      {product.originalPrice && (
-                        <span className="text-sm text-muted-foreground line-through">
-                          {product.originalPrice}đ
-                        </span>
-                      )}
+                      <span className="text-sm text-muted-foreground line-through min-h-[20px] flex items-center">
+                        {product.originalPrice ? `${product.originalPrice}đ` : ''}
+                      </span>
                     </div>
-                    
-                    <Button 
-                      size="sm" 
+
+                    <Button
+                      size="sm"
                       className="bg-gradient-primary hover:opacity-90 transition-smooth"
+                      onClick={() => {
+                        addToCart({
+                          id: product.id,
+                          name: product.name,
+                          price: product.price,
+                          originalPrice: product.originalPrice,
+                          image: product.image
+                        });
+                        setCartModalOpen(true);
+                      }}
                     >
                       Thêm vào giỏ
                     </Button>
@@ -199,20 +237,26 @@ const ProductGrid = () => {
           ))}
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          className="text-center mt-12"
-        >
-          <Button 
-            variant="outline" 
-            size="lg"
-            className="border-primary text-primary hover:bg-primary/10 transition-smooth"
+        <Link to="/shop">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="text-center mt-12"
           >
-            Xem tất cả sản phẩm
-          </Button>
-        </motion.div>
+            <Button
+              variant="outline"
+              size="lg"
+              className="border-primary text-primary hover:bg-primary/10 transition-smooth"
+            >
+              Xem tất cả sản phẩm
+            </Button>
+          </motion.div>
+        </Link>
+        <ShoppingCartModal
+          open={cartModalOpen}
+          onOpenChange={setCartModalOpen}
+        />
       </div>
     </section>
   );

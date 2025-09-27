@@ -170,7 +170,7 @@ const CommunityFeed = () => {
                         <img
                           src={post.image}
                           alt="Post content"
-                          className="w-full h-64 object-cover"
+                          className="w-full object-contain"
                         />
                         {post.isLive && (
                           <div className="absolute top-4 left-4 flex items-center gap-2">
