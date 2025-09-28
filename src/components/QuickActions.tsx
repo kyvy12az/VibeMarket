@@ -70,9 +70,14 @@ const QuickActions = () => {
           viewport={{ once: true }}
           className="text-center mb-12"
         >
-          <h2 className="text-3xl lg:text-4xl font-bold mb-4">
-            Trải nghiệm <span className="bg-gradient-accent bg-clip-text text-transparent">Đặc biệt</span>
-          </h2>
+          <div className="flex flex-col items-center justify-center mb-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center shadow-lg mb-2">
+              <Zap className="w-7 h-7 text-white" />
+            </div>
+            <h2 className="text-3xl lg:text-4xl font-bold">
+              Trải nghiệm <span className="bg-gradient-accent bg-clip-text text-transparent">Đặc biệt</span>
+            </h2>
+          </div>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             Khám phá những tính năng độc đáo và cơ hội hấp dẫn chỉ có tại VibeMarket
           </p>
@@ -169,9 +174,14 @@ const QuickActions = () => {
           className="text-center mt-12"
         >
           <Card className="bg-gradient-hero p-8 text-white border-none shadow-2xl">
-            <h3 className="text-2xl font-bold mb-4">
-              Sẵn sàng tham gia cộng đồng VibeMarket?
-            </h3>
+            <div className="flex flex-col items-center justify-center mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg mb-2">
+                <Users className="w-6 h-6 text-white" />
+              </div>
+              <h3 className="text-2xl font-bold">
+                Sẵn sàng tham gia cộng đồng VibeMarket?
+              </h3>
+            </div>
             <p className="text-white/80 mb-6 max-w-2xl mx-auto">
               Kết nối với hàng nghìn thành viên, khám phá sản phẩm độc đáo và trải nghiệm mua sắm hoàn toàn mới!
             </p>

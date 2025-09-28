@@ -103,9 +103,14 @@ const CategorySection = () => {
           viewport={{ once: true }}
           className="text-center mb-12"
         >
-          <h2 className="text-3xl lg:text-4xl font-bold mb-4">
-            Danh mục <span className="bg-gradient-accent bg-clip-text text-transparent">Nổi bật</span>
-          </h2>
+          <div className="flex flex-col items-center justify-center mb-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center shadow-lg mb-2">
+              <Shirt className="w-7 h-7 text-white" />
+            </div>
+            <h2 className="text-3xl lg:text-4xl font-bold">
+              Danh mục <span className="bg-gradient-accent bg-clip-text text-transparent">Nổi bật</span>
+            </h2>
+          </div>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             Khám phá hàng ngàn sản phẩm chất lượng trong mọi lĩnh vực
           </p>

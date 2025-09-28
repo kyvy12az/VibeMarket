@@ -25,6 +25,10 @@ const ProductGrid = () => {
       reviews: 124,
       discount: 25,
       isLive: true,
+      seller: {
+        name: "LocalBrandVN",
+        avatar: "https://images.unsplash.com/photo-1511367461989-f85a21fda167?w=60&h=60&fit=crop"
+      },
     },
     {
       id: 2,
@@ -36,6 +40,10 @@ const ProductGrid = () => {
       reviews: 89,
       discount: 0,
       isLive: false,
+      seller: {
+        name: "VintageShop",
+        avatar: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?w=60&h=60&fit=crop"
+      },
     },
     {
       id: 3,
@@ -47,6 +55,10 @@ const ProductGrid = () => {
       reviews: 256,
       discount: 19,
       isLive: true,
+      seller: {
+        name: "SneakerZone",
+        avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=60&h=60&fit=crop"
+      },
     },
     {
       id: 4,
@@ -58,6 +70,10 @@ const ProductGrid = () => {
       reviews: 167,
       discount: 0,
       isLive: false,
+      seller: {
+        name: "GameAudio",
+        avatar: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=60&h=60&fit=crop"
+      },
     },
     {
       id: 5,
@@ -69,6 +85,10 @@ const ProductGrid = () => {
       reviews: 203,
       discount: 18,
       isLive: true,
+      seller: {
+        name: "SmartWatchVN",
+        avatar: "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=60&h=60&fit=crop"
+      },
     },
     {
       id: 6,
@@ -80,6 +100,10 @@ const ProductGrid = () => {
       reviews: 92,
       discount: 0,
       isLive: false,
+      seller: {
+        name: "LaptopBagPro",
+        avatar: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=60&h=60&fit=crop"
+      },
     },
   ];
 
@@ -106,9 +130,14 @@ const ProductGrid = () => {
           viewport={{ once: true }}
           className="text-center mb-12"
         >
-          <h2 className="text-3xl lg:text-4xl font-bold mb-4">
-            Sản phẩm <span className="bg-gradient-hero bg-clip-text text-transparent">Hot Trend</span>
-          </h2>
+          <div className="flex flex-col items-center justify-center mb-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center shadow-lg mb-2">
+              <Star className="w-7 h-7 text-white" />
+            </div>
+            <h2 className="text-3xl lg:text-4xl font-bold">
+              Sản phẩm <span className="bg-gradient-hero bg-clip-text text-transparent">Hot Trend</span>
+            </h2>
+          </div>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             Khám phá những sản phẩm được yêu thích nhất từ cộng đồng
           </p>
@@ -192,6 +221,10 @@ const ProductGrid = () => {
                 </div>
 
                 <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <img src={product.seller.avatar} alt={product.seller.name} className="w-7 h-7 rounded-full object-cover border border-muted" />
+                    <span className="text-sm font-semibold text-primary">{product.seller.name}</span>
+                  </div>
                   <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
                     {product.name}
                   </h3>
@@ -201,7 +234,7 @@ const ProductGrid = () => {
                     <span className="text-sm font-medium">{product.rating}</span>
                     <span className="text-sm text-muted-foreground">
                       ({product.reviews} đánh giá)
-                    </span> 
+                    </span>
                   </div>
 
                   <div className="flex items-center justify-between">
@@ -228,6 +261,7 @@ const ProductGrid = () => {
                         setCartModalOpen(true);
                       }}
                     >
+                      <ShoppingCart className="h-4 w-4 mr-1" />
                       Thêm vào giỏ
                     </Button>
                   </div>

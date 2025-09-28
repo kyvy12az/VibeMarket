@@ -3,15 +3,18 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { 
-  Heart, 
-  MessageCircle, 
-  Share2, 
-  Bookmark, 
+import {
+  Heart,
+  MessageCircle,
+  Share2,
+  Bookmark,
   MoreHorizontal,
   Play,
   Users,
-  TrendingUp
+  TrendingUp,
+  Tag,
+  ShoppingBag,
+  ShoppingCart
 } from "lucide-react";
 
 const CommunityFeed = () => {
@@ -32,6 +35,11 @@ const CommunityFeed = () => {
       shares: 12,
       timeAgo: "2 giờ trước",
       tags: ["#localbrend", "#hoodie", "#review"],
+      featuredProduct: {
+        name: "Áo Hoodie Local Brand",
+        price: "299.000đ",
+        image: "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=80&h=80&fit=crop",
+      }
     },
     {
       id: 2,
@@ -51,6 +59,11 @@ const CommunityFeed = () => {
       tags: ["#iPhone15", "#unboxing", "#livestream"],
       isLive: true,
       viewers: 1234,
+      featuredProduct: {
+        name: "iPhone 15 Pro Max",
+        price: "29.990.000đ",
+        image: "https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=80&h=80&fit=crop",
+      }
     },
     {
       id: 3,
@@ -111,9 +124,14 @@ const CommunityFeed = () => {
           viewport={{ once: true }}
           className="text-center mb-12"
         >
-          <h2 className="text-3xl lg:text-4xl font-bold mb-4">
-            Cộng đồng <span className="bg-gradient-hero bg-clip-text text-transparent">Sôi động</span>
-          </h2>
+          <div className="flex flex-col items-center justify-center mb-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg mb-2">
+              <Users className="w-7 h-7 text-white" />
+            </div>
+            <h2 className="text-3xl lg:text-4xl font-bold">
+              Cộng đồng <span className="bg-gradient-hero bg-clip-text text-transparent">Sôi động</span>
+            </h2>
+          </div>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             Kết nối, chia sẻ và khám phá từ cộng đồng người dùng đam mê mua sắm
           </p>
@@ -185,8 +203,8 @@ const CommunityFeed = () => {
                         )}
                         {post.type === "livestream" && (
                           <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-                            <Button 
-                              size="lg" 
+                            <Button
+                              size="lg"
                               className="bg-white/20 backdrop-blur-sm hover:bg-white/30 text-white border-white/20"
                             >
                               <Play className="w-5 h-5 mr-2" />
@@ -199,15 +217,53 @@ const CommunityFeed = () => {
 
                     <div className="flex flex-wrap gap-2">
                       {post.tags.map((tag) => (
-                        <Badge 
+                        <Badge
                           key={tag}
-                          variant="outline" 
+                          variant="outline"
                           className="border-accent text-accent hover:bg-accent/10 cursor-pointer transition-smooth"
                         >
                           {tag}
                         </Badge>
                       ))}
                     </div>
+
+                    {/* Sản phẩm nổi bật */}
+                    {post.featuredProduct && (
+                      <div className="bg-neutral-900 rounded-lg p-4 mb-4">
+                        <div className="flex items-center mb-3">
+                          <Tag className="h-4 w-4 text-primary mr-2" />
+                          <span className="text-sm font-medium text-white">Sản phẩm nổi bật</span>
+                        </div>
+                        <div className="flex flex-col sm:flex-row items-center sm:items-stretch sm:justify-between bg-neutral-900 rounded-lg p-4 gap-4">
+                          {/* Sản phẩm */}
+                          <div className="flex items-center w-full sm:w-auto justify-center sm:justify-start">
+                            <img
+                              src={post.featuredProduct.image}
+                              alt={post.featuredProduct.name}
+                              className="w-16 h-16 sm:w-14 sm:h-14 rounded-lg object-cover border border-white/10"
+                            />
+                            <div className="ml-3 text-center sm:text-left flex-1 sm:flex-initial">
+                              <p className="text-sm font-medium text-white line-clamp-1">
+                                {post.featuredProduct.name}
+                              </p>
+                              <p className="text-lg font-bold text-primary">
+                                {post.featuredProduct.price}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Nút thêm giỏ */}
+                          <Button
+                            size="sm"
+                            className="bg-primary text-white hover:bg-primary/80 w-full sm:w-auto flex items-center justify-center"
+                          >
+                            <ShoppingCart className="h-4 w-4 mr-1" />
+                            Thêm vào giỏ
+                          </Button>
+                        </div>
+
+                      </div>
+                    )}
 
                     <div className="flex items-center justify-between pt-2 border-t border-border">
                       <div className="flex items-center gap-6">

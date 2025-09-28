@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Heart, MessageCircle, Share2, Plus, TrendingUp, Users, HelpCircle, BookOpen, Sparkles, Eye, Bookmark } from "lucide-react";
+import { Heart, MessageCircle, Share2, Plus, TrendingUp, Users, HelpCircle, BookOpen, Sparkles, Eye, Bookmark, ShoppingCart, Tag } from "lucide-react";
 import { useState } from "react";
 import CreatePostModal from "@/components/CreatePostModal";
 import CreateQuestionModal from "@/components/CreateQuestionModal";
@@ -33,7 +33,12 @@ const Community = () => {
       shares: 12,
       views: 1203,
       time: "2 giờ trước",
-      tags: ["#ReviewSảnPhẩm", "#LocalBrand"]
+      tags: ["#ReviewSảnPhẩm", "#LocalBrand"],
+      featuredProduct: {
+        name: "Áo sơ mi Local Brand ABC",
+        price: "349000",
+        image: "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=80&h=80&fit=crop",
+      }
     },
     {
       id: 2,
@@ -71,7 +76,12 @@ const Community = () => {
       shares: 34,
       views: 3421,
       time: "6 giờ trước",
-      tags: ["#FlashSale", "#TipsMuaSắm"]
+      tags: ["#FlashSale", "#TipsMuaSắm"],
+      featuredProduct: {
+        name: "Điện thoại Flash Sale",
+        price: "5990000",
+        image: "https://images.unsplash.com/photo-1519125323398-675f0ddb6308?w=80&h=80&fit=crop",
+      }
     },
     {
       id: 4,
@@ -152,6 +162,13 @@ const Community = () => {
     return null;
   };
 
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(price);
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <main className="container mx-auto px-4 py-8">
@@ -163,7 +180,7 @@ const Community = () => {
           {/* Header */}
           <div className="text-left space-y-3 max-w-3xl">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg">
                 <Users className="w-6 h-6 text-white" />
               </div>
               <h1 className="text-4xl font-bold bg-gradient-hero bg-clip-text text-transparent">
@@ -319,6 +336,45 @@ const Community = () => {
                           </Badge>
                         ))}
                       </div>
+
+                      {/* Sản phẩm nổi bật */}
+                      {post.featuredProduct && (
+                        <div className="bg-neutral-900 rounded-lg p-4 mb-4">
+                          <div className="flex items-center mb-3">
+                            <Tag className="h-4 w-4 text-primary mr-2" />
+                            <span className="text-sm font-medium text-white">Sản phẩm nổi bật</span>
+                          </div>
+                          <div className="flex flex-col sm:flex-row items-center sm:items-stretch sm:justify-between bg-neutral-900 rounded-lg p-4 gap-4">
+                            {/* Sản phẩm */}
+                            <div className="flex items-center w-full sm:w-auto justify-center sm:justify-start">
+                              <img
+                                src={post.featuredProduct.image}
+                                alt={post.featuredProduct.name}
+                                className="w-16 h-16 sm:w-14 sm:h-14 rounded-lg object-cover border border-white/10"
+                              />
+                              <div className="ml-3 text-center sm:text-left flex-1 sm:flex-initial">
+                                <p className="text-sm font-medium text-white line-clamp-1">
+                                  {post.featuredProduct.name}
+                                </p>
+                                <p className="text-lg font-bold text-primary">
+                                  {/* {post.featuredProduct.price} */}
+                                  {formatPrice(post.featuredProduct.price)}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Nút thêm giỏ */}
+                            <Button
+                              size="sm"
+                              className="bg-primary text-white hover:bg-primary/80 w-full sm:w-auto flex items-center justify-center"
+                            >
+                              <ShoppingCart className="h-4 w-4 mr-1" />
+                              Thêm vào giỏ
+                            </Button>
+                          </div>
+
+                        </div>
+                      )}
 
                       {/* Enhanced Actions with Views and Answers */}
                       <div className="flex items-center justify-between pt-4 border-t border-border">

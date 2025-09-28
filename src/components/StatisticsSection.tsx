@@ -42,9 +42,14 @@ const StatisticsSection = () => {
           viewport={{ once: true }}
           className="text-center mb-12"
         >
-          <h2 className="text-3xl md:text-4xl font-bold bg-gradient-hero bg-clip-text text-transparent mb-4">
-            Thống kê VibeMarket
-          </h2>
+          <div className="flex flex-col items-center justify-center mb-4">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary to-blue-500 flex items-center justify-center shadow-lg mb-2">
+              <TrendingUp className="w-7 h-7 text-white" />
+            </div>
+            <h2 className="text-3xl md:text-4xl font-bold bg-gradient-hero bg-clip-text text-transparent">
+              Thống kê VibeMarket
+            </h2>
+          </div>
           <p className="text-muted-foreground max-w-2xl mx-auto">
             Chứng kiến sự phát triển vượt bậc của nền tảng và cộng đồng qua từng năm
           </p>

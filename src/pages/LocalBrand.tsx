@@ -12,8 +12,8 @@ const LocalBrand = () => {
       name: "Canifa",
       category: "Thời trang",
       description: "Thương hiệu thời trang Việt Nam với 20 năm kinh nghiệm, mang đến những sản phẩm chất lượng cao với giá cả phải chăng.",
-      image: "/placeholder.svg",
-      logo: "/placeholder.svg",
+      image: "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=600&h=400&fit=crop",
+      logo: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop",
       location: "Hà Nội",
       followers: 125000,
       products: 1500,
@@ -26,8 +26,8 @@ const LocalBrand = () => {
       name: "Biti's",
       category: "Giày dép",
       description: "Thương hiệu giày Việt Nam hàng đầu, tiên phong trong việc ứng dụng công nghệ vào sản xuất giày thể thao.",
-      image: "/placeholder.svg",
-      logo: "/placeholder.svg",
+      image: "https://laforce.vn/wp-content/uploads/2024/03/local-brand-giay-viet-nam.jpg",
+      logo: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?w=100&h=100&fit=crop",
       location: "TP.HCM",
       followers: 98000,
       products: 850,
@@ -40,8 +40,8 @@ const LocalBrand = () => {
       name: "Saigon Skirt",
       category: "Thời trang nữ",
       description: "Thương hiệu váy áo nữ hiện đại, kết hợp giữa phong cách truyền thống và xu hướng thế giới.",
-      image: "/placeholder.svg",
-      logo: "/placeholder.svg",
+      image: "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?w=600&h=400&fit=crop",
+      logo: "https://images.unsplash.com/photo-1511367461989-f85a21fda167?w=100&h=100&fit=crop",
       location: "TP.HCM",
       followers: 45000,
       products: 320,
@@ -54,8 +54,8 @@ const LocalBrand = () => {
       name: "Cầu Tre Việt",
       category: "Thủ công mỹ nghệ",
       description: "Chuyên sản xuất các sản phẩm thủ công từ tre nứa, thân thiện với môi trường và mang đậm bản sắc Việt.",
-      image: "/placeholder.svg",
-      logo: "/placeholder.svg",
+      image: "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=600&h=400&fit=crop",
+      logo: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=100&h=100&fit=crop",
       location: "Hưng Yên",
       followers: 23000,
       products: 180,
@@ -80,7 +80,7 @@ const LocalBrand = () => {
       name: "Áo sơ mi Canifa Premium",
       brand: "Canifa",
       price: "299.000đ",
-      image: "/placeholder.svg",
+      image: "https://2885371169.e.cdneverest.net/pub/media/Simiconnector/Somi_desk2x.webp",
       rating: 4.8,
       sold: 1250,
     },
@@ -89,7 +89,7 @@ const LocalBrand = () => {
       name: "Giày thể thao Biti's Hunter",
       brand: "Biti's",
       price: "850.000đ",
-      image: "/placeholder.svg",
+      image: "https://file.hstatic.net/1000230642/collection/1920x750_bannerweb_hunter_effortless_ee530ac3a6c8448ba199233f03068946_master.png",
       rating: 4.9,
       sold: 890,
     },
@@ -98,7 +98,7 @@ const LocalBrand = () => {
       name: "Váy midi Saigon Skirt",
       brand: "Saigon Skirt",
       price: "450.000đ",
-      image: "/placeholder.svg",
+      image: "https://dallavn.com/cdn/shop/files/SHIRTS_4.png?v=1747989902&width=713",
       rating: 4.7,
       sold: 567,
     },
@@ -113,11 +113,16 @@ const LocalBrand = () => {
           className="space-y-8"
         >
           {/* Header */}
-          <div className="text-center space-y-4">
-            <h1 className="text-4xl font-bold bg-gradient-hero bg-clip-text text-transparent">
-              🇻🇳 Local Brand Việt Nam
-            </h1>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+          <div className="text-left space-y-3 max-w-3xl">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-blue-500 flex items-center justify-center shadow-lg">
+                <Award className="w-6 h-6 text-white" />
+              </div>
+              <h1 className="text-4xl font-bold bg-gradient-hero bg-clip-text text-transparent">
+                🇻🇳 Local Brand Việt Nam
+              </h1>
+            </div>
+            <p className="text-muted-foreground text-lg">
               Tự hào với những thương hiệu Việt chất lượng cao, mang đậm bản sắc dân tộc
             </p>
           </div>

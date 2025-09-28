@@ -22,7 +22,7 @@ const CreateQuestionModal = ({ isOpen, onClose, onQuestionCreated }: CreateQuest
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [isPreview, setIsPreview] = useState(false);
   const { toast } = useToast();
 
@@ -37,21 +37,21 @@ const CreateQuestionModal = ({ isOpen, onClose, onQuestionCreated }: CreateQuest
   ];
 
   const availableTags = [
-    "#CầnTuVấn", "#KinhNghiệm", "#Review", "#SoSánh", 
+    "#CầnTuVấn", "#KinhNghiệm", "#Review", "#SoSánh",
     "#GiáCả", "#ChấtLượng", "#ThuongHieu", "#TipHay"
   ];
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setSelectedImage(imageUrl);
+    const files = Array.from(e.target.files || []);
+    if (files.length > 0) {
+      const newImages = files.slice(0, 3 - selectedImages.length).map(file => URL.createObjectURL(file));
+      setSelectedImages(prev => [...prev, ...newImages].slice(0, 3));
     }
   };
 
   const toggleTag = (tag: string) => {
-    setSelectedTags(prev => 
-      prev.includes(tag) 
+    setSelectedTags(prev =>
+      prev.includes(tag)
         ? prev.filter(t => t !== tag)
         : [...prev, tag]
     );
@@ -71,13 +71,13 @@ const CreateQuestionModal = ({ isOpen, onClose, onQuestionCreated }: CreateQuest
       id: Date.now(),
       type: "question",
       user: {
-        name: "Bạn",
-        avatar: "/placeholder.svg",
+        name: "Kỳ Vỹ",
+        avatar: "/images/avatars/Avt-Vy.jpg",
         verified: false,
       },
       title: title.trim(),
       content: description.trim(),
-      image: selectedImage,
+      images: selectedImages,
       category: categories.find(c => c.value === category)?.label || "Khác",
       likes: 0,
       comments: 0,
@@ -88,21 +88,22 @@ const CreateQuestionModal = ({ isOpen, onClose, onQuestionCreated }: CreateQuest
     };
 
     onQuestionCreated(newQuestion);
-    
     // Reset form
-    setTitle("");
-    setDescription("");
-    setCategory("");
-    setSelectedTags([]);
-    setSelectedImage(null);
-    setIsPreview(false);
-    
+    resetForm();
     toast({
       title: "Thành công!",
       description: "Câu hỏi đã được đăng thành công",
     });
-    
     onClose();
+  };
+  
+  const resetForm = () => {
+    setTitle("");
+    setDescription("");
+    setCategory("");
+    setSelectedTags([]);
+    setSelectedImages([]);
+    setIsPreview(false);
   };
 
   const PreviewQuestion = () => (
@@ -127,13 +128,18 @@ const CreateQuestionModal = ({ isOpen, onClose, onQuestionCreated }: CreateQuest
       <div className="space-y-4">
         <h3 className="text-lg font-semibold text-card-foreground">{title}</h3>
         <p className="text-card-foreground leading-relaxed">{description}</p>
-        
-        {selectedImage && (
-          <img
-            src={selectedImage}
-            alt="Preview"
-            className="w-full h-64 object-cover rounded-lg"
-          />
+
+        {selectedImages.length > 0 && (
+          <div className={`grid gap-2 ${selectedImages.length === 1 ? '' : 'grid-cols-2'} ${selectedImages.length === 3 ? 'md:grid-cols-3' : ''}`}>
+            {selectedImages.map((img, idx) => (
+              <img
+                key={idx}
+                src={img}
+                alt={`Preview ${idx + 1}`}
+                className="w-full h-64 object-cover rounded-lg"
+              />
+            ))}
+          </div>
         )}
 
         {selectedTags.length > 0 && (
@@ -154,7 +160,7 @@ const CreateQuestionModal = ({ isOpen, onClose, onQuestionCreated }: CreateQuest
   );
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={()=> {onClose() ; resetForm()}}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-card border-border">
         <DialogHeader>
           <DialogTitle className="text-card-foreground flex items-center justify-between">
@@ -174,9 +180,9 @@ const CreateQuestionModal = ({ isOpen, onClose, onQuestionCreated }: CreateQuest
             <>
               <PreviewQuestion />
               <div className="flex gap-3">
-                <Button 
-                  onClick={() => setIsPreview(false)} 
-                  variant="outline" 
+                <Button
+                  onClick={() => setIsPreview(false)}
+                  variant="outline"
                   className="flex-1"
                 >
                   Chỉnh sửa
@@ -244,44 +250,50 @@ const CreateQuestionModal = ({ isOpen, onClose, onQuestionCreated }: CreateQuest
               {/* Image Upload */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-card-foreground">
-                  Hình ảnh minh họa (tùy chọn)
+                  Hình ảnh minh họa (tối đa 3, tùy chọn)
                 </label>
                 <div className="flex gap-3">
                   <input
                     type="file"
                     accept="image/*"
+                    multiple
                     onChange={handleImageUpload}
                     className="hidden"
                     id="question-image-upload"
+                    disabled={selectedImages.length >= 3}
                   />
                   <label
                     htmlFor="question-image-upload"
-                    className="flex-1 cursor-pointer"
+                    className={`flex-1 cursor-pointer ${selectedImages.length >= 3 ? 'opacity-50 pointer-events-none' : ''}`}
                   >
                     <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-accent transition-smooth">
                       <ImageIcon className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                       <p className="text-sm text-muted-foreground">
-                        Nhấn để tải ảnh minh họa
+                        {selectedImages.length < 3 ? 'Nhấn để tải ảnh minh họa' : 'Đã đủ 3 ảnh'}
                       </p>
                     </div>
                   </label>
                 </div>
-                
-                {selectedImage && (
-                  <div className="relative">
-                    <img
-                      src={selectedImage}
-                      alt="Selected"
-                      className="w-full h-48 object-cover rounded-lg"
-                    />
-                    <Button
-                      onClick={() => setSelectedImage(null)}
-                      variant="destructive"
-                      size="sm"
-                      className="absolute top-2 right-2"
-                    >
-                      <X className="w-4 h-4" />
-                    </Button>
+
+                {selectedImages.length > 0 && (
+                  <div className={`grid gap-2 ${selectedImages.length === 1 ? '' : 'grid-cols-2'} ${selectedImages.length === 3 ? 'md:grid-cols-3' : ''}`}>
+                    {selectedImages.map((img, idx) => (
+                      <div key={idx} className="relative">
+                        <img
+                          src={img}
+                          alt={`Selected ${idx + 1}`}
+                          className="w-full h-48 object-cover rounded-lg"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setSelectedImages(selectedImages.filter((_, i) => i !== idx))}
+                          className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-full bg-black/60 border-2 border-white/70 shadow-lg transition-all hover:bg-red-600 hover:border-red-400 hover:scale-110"
+                          aria-label="Xoá ảnh"
+                        >
+                          <X className="w-5 h-5 text-white" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -297,11 +309,10 @@ const CreateQuestionModal = ({ isOpen, onClose, onQuestionCreated }: CreateQuest
                     <Badge
                       key={tag}
                       variant={selectedTags.includes(tag) ? "default" : "outline"}
-                      className={`cursor-pointer transition-smooth ${
-                        selectedTags.includes(tag) 
-                          ? "bg-gradient-accent" 
+                      className={`cursor-pointer transition-smooth ${selectedTags.includes(tag)
+                          ? "bg-gradient-accent"
                           : "hover:bg-accent/20"
-                      }`}
+                        }`}
                       onClick={() => selectedTags.length < 4 || selectedTags.includes(tag) ? toggleTag(tag) : null}
                     >
                       {tag}
@@ -317,23 +328,26 @@ const CreateQuestionModal = ({ isOpen, onClose, onQuestionCreated }: CreateQuest
 
               {/* Action Buttons */}
               <div className="flex gap-3">
-                <Button 
-                  onClick={onClose} 
-                  variant="outline" 
+                <Button
+                  onClick={() => {
+                    onClose
+                    resetForm();
+                  }}
+                  variant="outline"
                   className="flex-1"
                 >
                   Hủy
                 </Button>
-                <Button 
-                  onClick={() => setIsPreview(true)} 
-                  variant="outline" 
+                <Button
+                  onClick={() => setIsPreview(true)}
+                  variant="outline"
                   className="flex-1"
                   disabled={!title.trim() || !description.trim() || !category}
                 >
                   Xem trước
                 </Button>
-                <Button 
-                  onClick={handleSubmit} 
+                <Button
+                  onClick={handleSubmit}
                   className="flex-1 bg-gradient-accent"
                   disabled={!title.trim() || !description.trim() || !category}
                 >

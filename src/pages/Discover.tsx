@@ -66,6 +66,10 @@ const Discover = () => {
       discount: 17,
       timeLeft: "2h 30m",
       image: "https://i.ibb.co/4ZK1RRgY/shopping.webp",
+      seller: {
+        name: "AppleStoreVN",
+        avatar: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?w=60&h=60&fit=crop"
+      },
     },
     {
       id: 2,
@@ -75,6 +79,10 @@ const Discover = () => {
       discount: 15,
       timeLeft: "4h 15m",
       image: "https://i.ibb.co/xqLp6YHx/download.jpg",
+      seller: {
+        name: "MacShop",
+        avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=60&h=60&fit=crop"
+      },
     },
     {
       id: 3,
@@ -84,6 +92,10 @@ const Discover = () => {
       discount: 17,
       timeLeft: "1h 45m",
       image: "https://i.ibb.co/svyfTbr9/shopping.webp",
+      seller: {
+        name: "SamsungStore",
+        avatar: "https://images.unsplash.com/photo-1511367461989-f85a21fda167?w=60&h=60&fit=crop"
+      },
     },
   ];
 
@@ -219,6 +231,10 @@ const Discover = () => {
                       </Badge>
                     </div>
                     <div className="p-4 space-y-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <img src={deal.seller.avatar} alt={deal.seller.name} className="w-7 h-7 rounded-full object-cover border border-muted" />
+                        <span className="text-sm font-semibold text-primary">{deal.seller.name}</span>
+                      </div>
                       <h3 className="font-medium text-card-foreground">{deal.title}</h3>
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">

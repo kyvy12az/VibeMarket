@@ -2,7 +2,9 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
-import { Search, ShoppingCart, MessageCircle, User, Bell, Menu, Settings, LogOut, Heart, Package, CreditCard, HelpCircle, Star, Home, Zap, StoreIcon } from "lucide-react";
+import { Search, ShoppingCart, MessageCircle, User, Bell, Menu, Settings, LogOut, Heart, Package, CreditCard, HelpCircle, Star, Home, Zap, StoreIcon, Store } from "lucide-react";
+import ShoppingCartModal from "./ShoppingCartModal";
+import { useCart } from "@/contexts/CartContext";
 import { useState, useEffect, useRef } from "react";
 import { useLocation, Link } from "react-router-dom";
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,8 +25,11 @@ const navItems = [
 const Navigation = () => {
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [isLoginOpen, setIsLoginOpen] = useState(false);
+    const [cartModalOpen, setCartModalOpen] = useState(false);
     const userMenuRef = useRef<HTMLDivElement>(null);
     const { user, logout } = useAuth();
+    const [vendorStatus, setVendorStatus] = useState<"none" | "pending" | "approved">("none");
+    const { items } = useCart();
     const location = useLocation();
     const pathname = location.pathname;
 
@@ -104,8 +109,13 @@ const Navigation = () => {
                         <Button variant="ghost" size="icon" className="relative">
                             <Bell className="w-5 h-5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="relative">
+                        <Button variant="ghost" size="icon" className="relative" onClick={() => setCartModalOpen(true)}>
                             <ShoppingCart className="w-5 h-5" />
+                            {items.length > 0 && (
+                                <span className="absolute -top-1 -right-1 bg-destructive text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 border-card shadow">
+                                    {items.length}
+                                </span>
+                            )}
                         </Button>
                         {/* Nếu chưa đăng nhập thì hiển thị icon user, nhấp vào mở modal đăng nhập */}
                         {!user ? (
@@ -176,8 +186,6 @@ const Navigation = () => {
                                                 { icon: Package, label: "Đơn hàng của tôi", href: "/orders" },
                                                 { icon: Heart, label: "Sản phẩm yêu thích", href: "/wishlist" },
                                                 { icon: CreditCard, label: "Ví & Thanh toán", href: "/wallet" },
-                                                { icon: Settings, label: "Cài đặt", href: "/settings" },
-                                                { icon: HelpCircle, label: "Trợ giúp", href: "/help" }
                                             ].map((item, index) => (
                                                 <motion.a
                                                     key={item.label}
@@ -194,10 +202,52 @@ const Navigation = () => {
                                                     </span>
                                                 </motion.a>
                                             ))}
+
+                                            {/* Vendor menu item */}
+                                            {vendorStatus === "none" && (
+                                                <motion.a
+                                                    key="vendor-register"
+                                                    href="/vendor-registration"
+                                                    initial={{ opacity: 0, x: -10 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    transition={{ duration: 0.2, delay: 0.3 }}
+                                                    className="flex items-center space-x-3 px-4 py-3 hover:bg-primary/5 transition-all duration-200 group"
+                                                    onClick={() => setIsUserMenuOpen(false)}
+                                                >
+                                                    <Store className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                                    <span className="text-sm text-foreground group-hover:text-primary transition-colors">
+                                                        Đăng ký Vendor
+                                                    </span>
+                                                </motion.a>
+                                            )}
+
+                                            {vendorStatus === "pending" && (
+                                                <div className="flex items-center space-x-3 px-4 py-3 text-muted-foreground cursor-not-allowed">
+                                                    <Store className="w-5 h-5" />
+                                                    <span className="text-sm">Đang chờ duyệt</span>
+                                                </div>
+                                            )}
+
+                                            {vendorStatus === "approved" && (
+                                                <motion.a
+                                                    key="vendor-dashboard"
+                                                    href="/vendor-management"
+                                                    initial={{ opacity: 0, x: -10 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    transition={{ duration: 0.2, delay: 0.3 }}
+                                                    className="flex items-center space-x-3 px-4 py-3 hover:bg-primary/5 transition-all duration-200 group"
+                                                    onClick={() => setIsUserMenuOpen(false)}
+                                                >
+                                                    <Store className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                                                    <span className="text-sm text-foreground group-hover:text-primary transition-colors">
+                                                        Quản lý cửa hàng
+                                                    </span>
+                                                </motion.a>
+                                            )}
+
                                             {/* Logout */}
                                             <motion.a
                                                 key="logout"
-                                                // href="/"
                                                 initial={{ opacity: 0, x: -10 }}
                                                 animate={{ opacity: 1, x: 0 }}
                                                 transition={{ duration: 0.2, delay: 0.4 }}
@@ -208,6 +258,7 @@ const Navigation = () => {
                                                 <span className="text-sm">Đăng xuất</span>
                                             </motion.a>
                                         </div>
+
                                     </motion.div>
                                 )}
                             </div>
@@ -287,6 +338,11 @@ const Navigation = () => {
                     </div>
                 </div>
             </div>
+            {/* ShoppingCart Modal */}
+            <ShoppingCartModal
+                open={cartModalOpen}
+                onOpenChange={setCartModalOpen}
+            />
         </motion.nav>
     );
 };

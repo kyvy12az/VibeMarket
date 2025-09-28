@@ -4,10 +4,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Filter, Grid, List, Search, SlidersHorizontal, Shirt, Monitor, Home as HomeIcon, Sparkles, Heart, Eye, ShoppingCart, Star, ShoppingBag } from "lucide-react";
 import Navigation from "@/components/Navigation";
+import { useCart } from "@/contexts/CartContext";
+import ShoppingCartModal from "@/components/ShoppingCartModal";
 import { useState, useRef } from "react";
 import { toast } from "@/components/ui/use-toast";
 
 const Shopping = () => {
+  const { addToCart } = useCart();
+  const [cartModalOpen, setCartModalOpen] = useState(false);
   const categories = [
     { name: "Thời trang", count: 2450, color: "bg-primary", icon: <Shirt className="w-7 h-7 mx-auto" /> },
     { name: "Điện tử", count: 1890, color: "bg-accent", icon: <Monitor className="w-7 h-7 mx-auto" /> },
@@ -26,6 +30,10 @@ const Shopping = () => {
       sold: 1250,
       discount: 25,
       isLive: true,
+      seller: {
+        name: "Canifa",
+        avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=60&h=60&fit=crop"
+      },
     },
     {
       id: 2,
@@ -37,6 +45,10 @@ const Shopping = () => {
       sold: 450,
       discount: 13,
       isLive: false,
+      seller: {
+        name: "SamsungStore",
+        avatar: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?w=60&h=60&fit=crop"
+      },
     },
     {
       id: 3,
@@ -48,6 +60,10 @@ const Shopping = () => {
       sold: 890,
       discount: 18,
       isLive: true,
+      seller: {
+        name: "GiaDungPro",
+        avatar: "https://images.unsplash.com/photo-1511367461989-f85a21fda167?w=60&h=60&fit=crop"
+      },
     },
     {
       id: 4,
@@ -59,6 +75,10 @@ const Shopping = () => {
       sold: 2340,
       discount: 19,
       isLive: true,
+      seller: {
+        name: "BeautyShop",
+        avatar: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=60&h=60&fit=crop"
+      },
     },
   ];
 
@@ -136,11 +156,19 @@ const Shopping = () => {
     }
   };
 
-  // Add to cart feedback
-  const handleAddToCart = (productName: string) => {
+  // Add to cart feedback + open modal
+  const handleAddToCart = (product: typeof allProducts[0]) => {
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      image: product.image
+    });
+    setCartModalOpen(true);
     toast({
       title: "Đã thêm vào giỏ hàng!",
-      description: productName,
+      description: product.name,
       duration: 2000,
     });
   };
@@ -216,7 +244,7 @@ const Shopping = () => {
           <div className="text-left space-y-3 max-w-3xl">
             <div className="flex items-center gap-3">
               {/* Icon từ lucide-react, ví dụ ShoppingBag */}
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center shadow-lg">
                 <ShoppingBag className="w-6 h-6 text-white" />
               </div>
               <h1 className="text-4xl font-bold bg-gradient-hero bg-clip-text text-transparent">
@@ -226,7 +254,7 @@ const Shopping = () => {
             <p className="text-muted-foreground text-lg">
               Khám phá hàng nghìn sản phẩm chất lượng với giá tốt nhất
             </p>
-          </div>  
+          </div>
 
           {/* Categories */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -368,7 +396,12 @@ const Shopping = () => {
                           <Button size="icon" variant="secondary" className="w-10 h-10" tabIndex={-1}>
                             <Eye className="w-4 h-4" />
                           </Button>
-                          <Button size="icon" className="w-10 h-10 bg-gradient-primary" tabIndex={-1}>
+                          <Button 
+                            size="icon" 
+                            onClick={() => handleAddToCart(product)}
+                            className="w-10 h-10 bg-gradient-primary" 
+                            tabIndex={-1}
+                          >
                             <ShoppingCart className="w-4 h-4" />
                           </Button>
                         </div>
@@ -376,6 +409,10 @@ const Shopping = () => {
                     </div>
 
                     <CardContent className="p-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <img src={product.seller.avatar} alt={product.seller.name} className="w-7 h-7 rounded-full object-cover border border-muted" />
+                        <span className="text-sm font-semibold text-primary">{product.seller.name}</span>
+                      </div>
                       <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
                         {product.name}
                       </h3>
@@ -385,9 +422,6 @@ const Shopping = () => {
                           <Star className="w-4 h-4 fill-warning text-warning" />
                           <span className="text-sm font-medium">{product.rating}</span>
                         </div>
-                        {/* <span className="text-sm text-muted-foreground">
-                          ({product.reviews} đánh giá)
-                        </span> */}
                         <span>Đã bán {product.sold}</span>
                       </div>
 
@@ -406,7 +440,9 @@ const Shopping = () => {
                         <Button
                           size="sm"
                           className="bg-gradient-primary hover:opacity-90 transition-smooth"
+                          onClick={() => handleAddToCart(product)}
                         >
+                          <ShoppingCart className="h-4 w-4 mr-1" />
                           Thêm vào giỏ
                         </Button>
                       </div>
@@ -457,13 +493,22 @@ const Shopping = () => {
                           <Button size="icon" variant="secondary" className="w-10 h-10" tabIndex={-1}>
                             <Eye className="w-4 h-4" />
                           </Button>
-                          <Button size="icon" className="w-10 h-10 bg-gradient-primary" tabIndex={-1}>
+                          <Button 
+                            size="icon" 
+                            onClick={() => handleAddToCart(product)}
+                            className="w-10 h-10 bg-gradient-primary" 
+                            tabIndex={-1}
+                          >
                             <ShoppingCart className="w-4 h-4" />
                           </Button>
                         </div>
                       </div>
                     </div>
                     <div className="p-3 md:p-4 flex-1 flex flex-col justify-between">
+                      <div className="flex items-center gap-2 mb-2">
+                        <img src={product.seller.avatar} alt={product.seller.name} className="w-7 h-7 rounded-full object-cover border border-muted" />
+                        <span className="text-sm font-semibold text-primary">{product.seller.name}</span>
+                      </div>
                       <div>
                         <h3 className="font-medium text-card-foreground text-base md:text-lg mb-1 md:mb-2">
                           {product.name}
@@ -479,13 +524,24 @@ const Shopping = () => {
                           <span>Đã bán {product.sold}</span>
                         </div>
                       </div>
-                      <Button className="w-full md:w-auto mt-2 md:mt-0 text-xs md:text-base py-2 md:py-3" onClick={() => handleAddToCart(product.name)}>Thêm vào giỏ</Button>
+                      <Button
+                        className="w-full md:w-auto mt-2 md:mt-0 text-xs md:text-base py-2 md:py-3"
+                        onClick={() => handleAddToCart(product)}
+                      >
+                        <ShoppingCart className="h-4 w-4 mr-1" />
+                        Thêm vào giỏ
+                      </Button>
                     </div>
                   </Card>
                 </motion.div>
               ))}
             </div>
           )}
+          {/* ShoppingCart Modal */}
+          {/* <ShoppingCartModal
+            open={cartModalOpen}
+            onOpenChange={setCartModalOpen}
+          /> */}
         </motion.div>
       </main>
     </div>
