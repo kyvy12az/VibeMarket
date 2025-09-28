@@ -94,7 +94,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       password,
       name,
       role: 'user',
-      createdAt: new Date()
+      createdAt: new Date(),
+      isVendor: false
     };
 
     // Add to mock users (in real app, this would be API call)

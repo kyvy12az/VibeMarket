@@ -203,8 +203,8 @@ const Navigation = () => {
                                                 </motion.a>
                                             ))}
 
-                                            {/* Vendor menu item */}
-                                            {vendorStatus === "none" && (
+                                            {/* Kiểm tra trạng thái vendor của user */}
+                                            {user && user.isVendor === false && (
                                                 <motion.a
                                                     key="vendor-register"
                                                     href="/vendor-registration"
@@ -221,14 +221,7 @@ const Navigation = () => {
                                                 </motion.a>
                                             )}
 
-                                            {vendorStatus === "pending" && (
-                                                <div className="flex items-center space-x-3 px-4 py-3 text-muted-foreground cursor-not-allowed">
-                                                    <Store className="w-5 h-5" />
-                                                    <span className="text-sm">Đang chờ duyệt</span>
-                                                </div>
-                                            )}
-
-                                            {vendorStatus === "approved" && (
+                                            {user && user.isVendor === true && (
                                                 <motion.a
                                                     key="vendor-dashboard"
                                                     href="/vendor-management"

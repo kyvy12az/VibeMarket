@@ -7,6 +7,7 @@ export interface User {
   role: 'admin' | 'user' | 'seller';
   createdAt: Date;
   points?: number;
+  isVendor: boolean;
 }
 
 export const mockUsers: User[] = [
@@ -17,8 +18,9 @@ export const mockUsers: User[] = [
     name: 'Kỳ Vỹ DEV',
     avatar: '/images/avatars/Avt-Vy.jpg',
     role: 'admin',
-  createdAt: new Date('2024-01-01'),
-  points: 9999
+    createdAt: new Date('2024-01-01'),
+    points: 9999,
+    isVendor: false
   },
   {
     id: '2',
@@ -27,8 +29,9 @@ export const mockUsers: User[] = [
     name: 'Kỳ Vỹ DEV',
     avatar: '/images/avatars/Avt-Vy.jpg',
     role: 'user',
-  createdAt: new Date('2024-01-15'),
-  points: 1200
+    createdAt: new Date('2024-01-15'),
+    points: 1200,
+    isVendor: false
   },
   {
     id: '3',
@@ -37,7 +40,8 @@ export const mockUsers: User[] = [
     name: 'Kỳ Vỹ DEV',
     avatar: '/images/avatars/Avt-Vy.jpg',
     role: 'seller',
-  createdAt: new Date('2024-02-01'),
-  points: 3500
+    createdAt: new Date('2024-02-01'),
+    points: 3500,
+    isVendor: true
   }
 ];
