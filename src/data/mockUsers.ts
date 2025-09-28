@@ -15,7 +15,7 @@ export const mockUsers: User[] = [
     email: 'admin@vibeventure.com',
     password: '123456',
     name: 'Kỳ Vỹ DEV',
-    avatar: '../../public/images/avatars/Avt-Vy.jpg',
+    avatar: '/images/avatars/Avt-Vy.jpg',
     role: 'admin',
   createdAt: new Date('2024-01-01'),
   points: 9999
@@ -25,7 +25,7 @@ export const mockUsers: User[] = [
     email: 'user@gmail.com',
     password: '123456',
     name: 'Kỳ Vỹ DEV',
-    avatar: '../../public/images/avatars/Avt-Vy.jpg',
+    avatar: '/images/avatars/Avt-Vy.jpg',
     role: 'user',
   createdAt: new Date('2024-01-15'),
   points: 1200
@@ -35,7 +35,7 @@ export const mockUsers: User[] = [
     email: 'seller@gmail.com',
     password: '123456',
     name: 'Kỳ Vỹ DEV',
-    avatar: '../../public/images/avatars/Avt-Vy.jpg',
+    avatar: '/images/avatars/Avt-Vy.jpg',
     role: 'seller',
   createdAt: new Date('2024-02-01'),
   points: 3500
