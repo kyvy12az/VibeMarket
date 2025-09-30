@@ -2,8 +2,8 @@ import { motion } from "framer-motion";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Flame, Star, Clock, TrendingUp, Zap, Gift, Compass, Search } from "lucide-react";
-import Navigation from "@/components/Navigation";
+import { Flame, Star, Clock, TrendingUp, Zap, Gift, Compass, Search, BookOpen, SearchCheck } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Discover = () => {
   const featuredContent = [
@@ -99,6 +99,8 @@ const Discover = () => {
     },
   ];
 
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-background">
       <main className="container mx-auto px-4 py-8">
@@ -113,11 +115,11 @@ const Discover = () => {
               <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-purple-500 to-pink-500 flex items-center justify-center shadow-lg">
                 <Compass className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-4xl font-bold bg-gradient-hero bg-clip-text text-transparent">
+              <h1 className="md:text-4xl text-2xl font-bold bg-gradient-hero bg-clip-text text-transparent">
                 Khám phá điều mới
               </h1>
             </div>
-            <p className="text-muted-foreground text-lg">
+            <p className="text-muted-foreground md:text-lg text-base">
               Cập nhật xu hướng, sự kiện hot và những deal không thể bỏ lỡ
             </p>
           </div>
@@ -196,7 +198,13 @@ const Discover = () => {
                         <p className="text-sm text-muted-foreground">
                           {event.participants.toLocaleString()} người tham gia
                         </p>
-                        <Button className="w-full">Tham gia ngay</Button>
+                        <Button 
+                          className="w-full"
+                          onClick={() => navigate(`/events/${event.id}`)}
+                        >
+                          <SearchCheck className="w-4 h-4" />
+                          Xem chi tiết
+                        </Button>
                       </div>
                     </div>
                   </Card>

@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Wallet2, CreditCard, Gift, History, Plus, TrendingUp, Star, Coins } from "lucide-react";
+import { Wallet2, CreditCard, Gift, History, Plus, TrendingUp, Star, Coins, Wallet } from "lucide-react";
 import Navigation from "@/components/Navigation";
 import { motion } from "framer-motion";
 
@@ -10,7 +10,7 @@ const WalletPage = () => {
   const balance = 2450000;
   const loyaltyPoints = 850;
   const nextRewardAt = 1000;
-  
+
   const transactions = [
     { id: 1, type: "purchase", amount: -150000, description: "Mua áo thun Basic Tee", date: "2024-01-15", points: 15 },
     { id: 2, type: "topup", amount: 500000, description: "Nạp tiền từ ngân hàng", date: "2024-01-14", points: 0 },
@@ -26,16 +26,30 @@ const WalletPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-background"> 
-      <main className="container mx-auto px-4 py-8 pt-24">
+    <div className="min-h-screen bg-background">
+      <main className="container mx-auto px-4 py-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <div className="mb-8">
+          {/* <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">Ví điện tử & Điểm thưởng</h1>
             <p className="text-muted-foreground">Quản lý số dư và tích lũy điểm thưởng</p>
+          </div> */}
+
+          <div className="space-y-3 mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg">
+                <Wallet className="w-6 h-6 text-white" />
+              </div>
+              <h1 className="md:text-4xl text-2xl font-bold bg-gradient-hero bg-clip-text text-transparent">
+                Ví điện tử & Điểm thưởng
+              </h1>
+            </div>
+            <p className="text-muted-foreground md:text-lg text-base">
+              Quản lý số dư và tích lũy điểm thưởng
+            </p>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -146,14 +160,13 @@ const WalletPage = () => {
                     {transactions.map((transaction) => (
                       <div key={transaction.id} className="flex items-center justify-between p-3 rounded-lg border">
                         <div className="flex items-center gap-3">
-                          <div className={`p-2 rounded-full ${
-                            transaction.type === 'purchase' ? 'bg-red-100 text-red-600' :
+                          <div className={`p-2 rounded-full ${transaction.type === 'purchase' ? 'bg-red-100 text-red-600' :
                             transaction.type === 'topup' ? 'bg-green-100 text-green-600' :
-                            'bg-blue-100 text-blue-600'
-                          }`}>
+                              'bg-blue-100 text-blue-600'
+                            }`}>
                             {transaction.type === 'purchase' ? <CreditCard className="w-4 h-4" /> :
-                             transaction.type === 'topup' ? <Plus className="w-4 h-4" /> :
-                             <Gift className="w-4 h-4" />}
+                              transaction.type === 'topup' ? <Plus className="w-4 h-4" /> :
+                                <Gift className="w-4 h-4" />}
                           </div>
                           <div>
                             <p className="font-medium text-sm">{transaction.description}</p>
@@ -161,9 +174,8 @@ const WalletPage = () => {
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className={`font-bold text-sm ${
-                            transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
-                          }`}>
+                          <p className={`font-bold text-sm ${transaction.amount > 0 ? 'text-green-600' : 'text-red-600'
+                            }`}>
                             {transaction.amount > 0 ? '+' : ''}{transaction.amount.toLocaleString('vi-VN')} đ
                           </p>
                           {transaction.points > 0 && (
@@ -207,8 +219,8 @@ const WalletPage = () => {
                           <Badge variant="secondary" className="mb-1">
                             {reward.points} điểm
                           </Badge>
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             variant="outline"
                             className="block"
                             disabled={loyaltyPoints < reward.points}

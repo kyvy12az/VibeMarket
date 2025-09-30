@@ -8,34 +8,34 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
-import { 
-  LineChart, 
-  Line, 
-  AreaChart, 
-  Area, 
-  PieChart, 
-  Pie, 
-  Cell, 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   Legend
 } from "recharts";
-import { 
-  User, 
-  MapPin, 
-  Phone, 
-  Mail, 
-  Calendar, 
-  Award, 
-  Heart, 
-  ShoppingBag, 
-  Edit3, 
-  Camera, 
+import {
+  User,
+  MapPin,
+  Phone,
+  Mail,
+  Calendar,
+  Award,
+  Heart,
+  ShoppingBag,
+  Edit3,
+  Camera,
   TrendingUp,
   Trophy,
   Users,
@@ -44,7 +44,10 @@ import {
   Target,
   Star,
   Gift,
-  Zap
+  Zap,
+  Save,
+  Package,
+  UserPlus
 } from "lucide-react";
 
 const UserProfile = () => {
@@ -101,38 +104,38 @@ const UserProfile = () => {
   ];
 
   const achievements = [
-    { 
-      title: "Khách hàng trung thành", 
-      description: "Mua sắm 12 tháng liên tiếp", 
-      progress: 100, 
-      icon: Trophy, 
+    {
+      title: "Khách hàng trung thành",
+      description: "Mua sắm 12 tháng liên tiếp",
+      progress: 100,
+      icon: Trophy,
       earned: true,
       color: "hsl(var(--warning))"
     },
-    { 
-      title: "Người ảnh hưởng", 
-      description: "Có 100+ người theo dõi", 
-      progress: 156, 
-      target: 100, 
-      icon: Users, 
+    {
+      title: "Người ảnh hưởng",
+      description: "Có 100+ người theo dõi",
+      progress: 156,
+      target: 100,
+      icon: Users,
       earned: true,
       color: "hsl(var(--primary))"
     },
-    { 
-      title: "Chuyên gia đánh giá", 
-      description: "Viết 50 đánh giá sản phẩm", 
-      progress: 23, 
-      target: 50, 
-      icon: Star, 
+    {
+      title: "Chuyên gia đánh giá",
+      description: "Viết 50 đánh giá sản phẩm",
+      progress: 23,
+      target: 50,
+      icon: Star,
       earned: false,
       color: "hsl(var(--accent))"
     },
-    { 
-      title: "Tín đồ mua sắm", 
-      description: "Chi tiêu 50 triệu trong năm", 
-      progress: 25, 
-      target: 50, 
-      icon: Target, 
+    {
+      title: "Tín đồ mua sắm",
+      description: "Chi tiêu 50 triệu trong năm",
+      progress: 25,
+      target: 50,
+      icon: Target,
       earned: false,
       color: "hsl(var(--success))"
     }
@@ -166,57 +169,64 @@ const UserProfile = () => {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-hero rounded-2xl p-8 text-white mb-8"
+          className="bg-gradient-to-r from-[#7C3AED] via-[#9333EA] to-[#3B82F6] 
+                     rounded-2xl p-8 text-white mb-8 shadow-xl"
         >
           <div className="flex flex-col md:flex-row items-center gap-6">
             <div className="relative">
-              <Avatar className="w-24 h-24 border-4 border-white/20">
+              <Avatar className="w-24 h-24 border-4 border-primary shadow-lg">
                 <AvatarImage src={mockUser.avatar} alt={mockUser.name} />
-                <AvatarFallback className="text-2xl">{mockUser.name[0]}</AvatarFallback>
+                <AvatarFallback className="text-2xl text-primary bg-white">{mockUser.name[0]}</AvatarFallback>
               </Avatar>
-              <Button size="icon" className="absolute -bottom-2 -right-2 w-8 h-8 bg-white text-primary hover:bg-white/90">
+              <Button size="icon" className="absolute -bottom-2 -right-2 w-8 h-8 bg-primary text-white hover:bg-primary/80 shadow-md">
                 <Camera className="w-4 h-4" />
               </Button>
             </div>
-            
+
             <div className="flex-1 text-center md:text-left">
-              <h1 className="text-3xl font-bold mb-2">{mockUser.name}</h1>
+              <h1 className="text-3xl font-bold mb-2 text-shadow-lg drop-shadow-md">{mockUser.name}</h1>
               <p className="text-white/80 mb-3">{mockUser.bio}</p>
               <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                <Badge variant="secondary" className="bg-primary/80 text-white border-primary/40 shadow">
                   {mockUser.level}
                 </Badge>
-                <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                <Badge variant="secondary" className="bg-accent/80 text-white border-accent/40 shadow">
                   {mockUser.points} điểm
                 </Badge>
               </div>
             </div>
 
             <Button variant="outline" className="bg-white/10 border-white/30 text-white hover:bg-white/20">
-              <Edit3 className="w-4 h-4 mr-2" />
-              Chỉnh sửa
+              <Edit3 className="w-4 h-4 mr-2 text-white" />
+              <span className="text-white">Chỉnh sửa</span>
             </Button>
           </div>
 
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-white/20">
-            <div className="text-center">
-              <div className="text-2xl font-bold">{mockUser.stats.totalOrders}</div>
-              <div className="text-sm text-white/80">Đơn hàng</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold">{mockUser.stats.reviews}</div>
-              <div className="text-sm text-white/80">Đánh giá</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold">{mockUser.stats.followers}</div>
-              <div className="text-sm text-white/80">Người theo dõi</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold">{mockUser.stats.following}</div>
-              <div className="text-sm text-white/80">Đang theo dõi</div>
-            </div>
+            {[
+              { value: mockUser.stats.totalOrders, label: "Đơn hàng", gradient: "from-purple-400 to-indigo-400", icon: Package },
+              { value: mockUser.stats.reviews, label: "Đánh giá", gradient: "from-pink-400 to-fuchsia-400", icon: Star },
+              { value: mockUser.stats.followers, label: "Người theo dõi", gradient: "from-yellow-400 to-orange-400", icon: Users },
+              { value: mockUser.stats.following, label: "Đang theo dõi", gradient: "from-green-400 to-emerald-400", icon: UserPlus },
+            ].map((item, i) => (
+              <div
+                key={i}
+                className="text-center p-4 rounded-xl bg-white/5 backdrop-blur-md border border-white/10 shadow"
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <item.icon className="w-6 h-6 text-white/80" />
+                  <div
+                    className={`text-2xl font-bold bg-gradient-to-r ${item.gradient} bg-clip-text text-transparent drop-shadow`}
+                  >
+                    {item.value}
+                  </div>
+                  <div className="text-sm text-white/80">{item.label}</div>
+                </div>
+              </div>
+            ))}
           </div>
+
         </motion.div>
 
         {/* Main Content */}
@@ -246,7 +256,7 @@ const UserProfile = () => {
                   </div>
                 </CardContent>
               </Card>
-              
+
               <Card className="bg-gradient-card border-0">
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
@@ -308,21 +318,21 @@ const UserProfile = () => {
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
                       <YAxis stroke="hsl(var(--muted-foreground))" />
-                      <Tooltip 
-                        contentStyle={{ 
+                      <Tooltip
+                        contentStyle={{
                           backgroundColor: "hsl(var(--card))",
                           border: "1px solid hsl(var(--border))",
                           borderRadius: "8px"
                         }}
                         formatter={(value: number, name: string) => [
-                          name === 'amount' ? `${(value/1000000).toFixed(1)}M đ` : value,
+                          name === 'amount' ? `${(value / 1000000).toFixed(1)}M đ` : value,
                           name === 'amount' ? 'Chi tiêu' : 'Số đơn'
                         ]}
                       />
-                      <Line 
-                        type="monotone" 
-                        dataKey="amount" 
-                        stroke="hsl(var(--primary))" 
+                      <Line
+                        type="monotone"
+                        dataKey="amount"
+                        stroke="hsl(var(--primary))"
                         strokeWidth={3}
                         dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
                       />
@@ -354,10 +364,10 @@ const UserProfile = () => {
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip 
+                      <Tooltip
                         formatter={(value: number, name: string, props: any) => [
                           `${value}%`,
-                          `${(props.payload.amount/1000000).toFixed(1)}M đ`
+                          `${(props.payload.amount / 1000000).toFixed(1)}M đ`
                         ]}
                       />
                       <Legend />
@@ -379,8 +389,8 @@ const UserProfile = () => {
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
                       <YAxis stroke="hsl(var(--muted-foreground))" />
-                      <Tooltip 
-                        contentStyle={{ 
+                      <Tooltip
+                        contentStyle={{
                           backgroundColor: "hsl(var(--card))",
                           border: "1px solid hsl(var(--border))",
                           borderRadius: "8px"
@@ -405,12 +415,12 @@ const UserProfile = () => {
                   <div className="space-y-4">
                     {achievements.map((achievement, index) => (
                       <div key={index} className="flex items-center gap-4 p-4 border border-border rounded-lg">
-                        <div 
+                        <div
                           className="w-12 h-12 rounded-full flex items-center justify-center"
                           style={{ backgroundColor: `${achievement.color}20` }}
                         >
-                          <achievement.icon 
-                            className="w-6 h-6" 
+                          <achievement.icon
+                            className="w-6 h-6"
                             style={{ color: achievement.color }}
                           />
                         </div>
@@ -430,8 +440,8 @@ const UserProfile = () => {
                                 <span>{achievement.progress}</span>
                                 <span>{achievement.target}</span>
                               </div>
-                              <Progress 
-                                value={(achievement.progress / achievement.target) * 100} 
+                              <Progress
+                                value={(achievement.progress / achievement.target) * 100}
                                 className="h-2"
                               />
                             </div>
@@ -480,7 +490,12 @@ const UserProfile = () => {
                   <Label htmlFor="address">Địa chỉ</Label>
                   <Input id="address" value={mockUser.address} />
                 </div>
-                <Button className="w-full md:w-auto">Lưu thay đổi</Button>
+                <Button
+                  className="w-full md:w-auto"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Lưu thay đổi
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>

@@ -1,37 +1,86 @@
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
-import { Search, ShoppingCart, MessageCircle, User, Bell, Menu, Settings, LogOut, Heart, Package, CreditCard, HelpCircle, Star, Home, Zap, StoreIcon, Store } from "lucide-react";
+import { Search, ShoppingCart, MessageCircle, User, Users, Bell, Menu, Settings, LogOut, Heart, Package, CreditCard, HelpCircle, Star, Home, Zap, StoreIcon, Store, SearchCheck, LucideIcon, ChevronDown, ShoppingBag, Sparkles, Percent, Gift, UserCircle, Wallet } from "lucide-react";
 import ShoppingCartModal from "./ShoppingCartModal";
 import { useCart } from "@/contexts/CartContext";
 import { useState, useEffect, useRef } from "react";
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, NavLink } from "react-router-dom";
 import { useAuth } from '@/contexts/AuthContext';
 import Login from '@/pages/Login';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
+interface SubMenuItem {
+    to: string;
+    label: string;
+    icon: LucideIcon;
+}
 
+interface MenuItem {
+    label: string;
+    icon: LucideIcon;
+    hasSubmenu: boolean;
+    to?: string;
+    submenu?: SubMenuItem[];
+}
 
-const navItems = [
-    { name: "Trang chủ", href: "/" },
-    { name: "Mua sắm", href: "/shop" },
-    { name: "Cộng đồng", href: "/community" },
-    { name: "Khám phá", href: "/discover" },
-    { name: "Flash Sale", href: "/flash-sale" },
-    { name: "Local Brand", href: "/local-brand" }
+const menuItems: MenuItem[] = [
+    {
+        to: "/",
+        label: "Trang chủ",
+        icon: Home,
+        hasSubmenu: false
+    },
+    {
+        label: "Mua sắm & Khám phá",
+        icon: Store,
+        hasSubmenu: true,
+        submenu: [
+            { to: "/shop", label: "Mua sắm", icon: ShoppingBag },
+            { to: "/discover", label: "Khám phá", icon: Sparkles },
+            { to: "/flash-sale", label: "Flash Sale", icon: Percent },
+            { to: "/local-brand", label: "Local Brand", icon: Store },
+        ]
+    },
+    {
+        to: "/community",
+        label: "Cộng đồng",
+        icon: Users,
+        hasSubmenu: false
+    },
+    {
+        label: "AI & Cá nhân hóa",
+        icon: Sparkles,
+        hasSubmenu: true,
+        submenu: [
+            { to: "/ai-stylist", label: "AI Stylist", icon: Gift },
+            { to: "/ai-recomment", label: "AI gợi ý & Bạn bè", icon: UserCircle },
+        ]
+    },
+    {
+        to: "/wallet",
+        label: "Ví & Điểm thưởng",
+        icon: Wallet,
+        hasSubmenu: false
+    }
 ];
 
 const Navigation = () => {
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [isLoginOpen, setIsLoginOpen] = useState(false);
     const [cartModalOpen, setCartModalOpen] = useState(false);
-    const userMenuRef = useRef<HTMLDivElement>(null);
     const { user, logout } = useAuth();
     const [vendorStatus, setVendorStatus] = useState<"none" | "pending" | "approved">("none");
     const { items } = useCart();
     const location = useLocation();
     const pathname = location.pathname;
+    const [showUserMenu, setShowUserMenu] = useState(false);
+    const [showSubmenu, setShowSubmenu] = useState<string | null>(null);
+    const [showSubmenuMobile, setShowSubmenuMobile] = useState<string | null>(null);
+    const [showMobileUserMenu, setShowMobileUserMenu] = useState(false);
+    const userMenuRef = useRef<HTMLDivElement>(null);
+    const submenuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -67,30 +116,106 @@ const Navigation = () => {
                     </Link>
 
                     {/* Navigation Menu */}
-                    <div className="hidden lg:flex items-center space-x-8 mx-8">
-                        {navItems.map((item, index) => {
-                            const isActive =
-                                item.href === "/"
-                                    ? pathname === "/"
-                                    : pathname.startsWith(item.href);
-                            return (
-                                <Link
-                                    key={item.name}
-                                    to={item.href}
-                                    className={`relative text-foreground font-medium transition-all duration-300 group py-2 ${isActive ? "text-primary" : "hover:text-primary"}`}
-                                >
-                                    <span className="relative z-10">{item.name}</span>
-                                    <span
-                                        className={`absolute left-0 right-0 -bottom-1 h-0.5 bg-primary rounded-full transition-transform duration-300 origin-left
-                                            ${isActive ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"}`}
-                                    />
-                                </Link>
-                            );
-                        })}
-                    </div>
+                    <nav className="hidden lg:flex space-x-1 xl:space-x-2 mx-8" ref={submenuRef}>
+                        {menuItems.map((item) => (
+                            <div key={item.label} className="relative">
+                                {item.hasSubmenu ? (
+                                    <div
+                                        className="relative"
+                                        onMouseEnter={() => setShowSubmenu(item.label)}
+                                        onMouseLeave={() => setShowSubmenu(null)}
+                                    >
+                                        <button
+                                            className={`flex items-center px-2 xl:px-3 py-2 rounded-lg font-medium transition-all text-sm xl:text-base ${item.submenu?.some(subItem => location.pathname === subItem.to)
+                                                ? "text-primary"
+                                                : "hover:text-primary"
+                                                }`}
+                                        >
+                                            {item.label}
+                                            <ChevronDown
+                                                size={16}
+                                                className={`ml-1 transition-transform duration-200 ${showSubmenu === item.label ? "rotate-180" : ""
+                                                    }`}
+                                            />
+                                            {/* Hover underline */}
+                                            <span
+                                                className="absolute left-0 right-0 -bottom-1 h-0.5 bg-primary rounded-full transition-transform duration-300 origin-left scale-x-0 group-hover:scale-x-100"
+                                            />
+                                        </button>
+
+                                        {/* Submenu */}
+                                        <AnimatePresence>
+                                            {showSubmenu === item.label && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                                    transition={{ duration: 0.2 }}
+                                                    className="absolute top-full left-0 mt-2 w-44 lg:w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 z-50"
+                                                >
+                                                    {item.submenu?.map((subItem) => (
+                                                        <NavLink
+                                                            key={subItem.to}
+                                                            to={subItem.to}
+                                                            className={({ isActive }) =>
+                                                                `relative flex items-center px-3 lg:px-4 py-2.5 text-xs lg:text-sm font-medium transition-all ${isActive
+                                                                    ? "text-primary"
+                                                                    : "text-black hover:text-primary"
+                                                                }`
+                                                            }
+                                                            onClick={() => setShowSubmenu(null)}
+                                                        >
+                                                            <subItem.icon size={16} className="mr-3" />
+                                                            {subItem.label}
+                                                            {/* Hover underline */}
+                                                            <span
+                                                                className="absolute left-0 right-0 -bottom-1 h-0.5 bg-primary rounded-full transition-transform duration-300 origin-left scale-x-0 group-hover:scale-x-100"
+                                                            />
+                                                        </NavLink>
+                                                    ))}
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                ) : (
+                                    <NavLink
+                                        to={item.to!}
+                                        className={({ isActive }) =>
+                                            `relative flex items-center px-2 xl:px-3 py-2 group rounded-lg font-medium transition-all text-sm xl:text-base ${isActive
+                                                ? "text-primary"
+                                                : "hover:text-primary"
+                                            }`
+                                        }
+                                    >
+                                        {({ isActive }) => (
+                                            <>
+                                                {item.label}
+                                                {isActive && (
+                                                    <motion.span
+                                                        className="absolute -bottom-1 left-0 h-0.5 bg-primary w-full rounded-full"
+                                                        layoutId="navbar-indicator"
+                                                        transition={{
+                                                            type: "spring",
+                                                            damping: 20,
+                                                            stiffness: 300,
+                                                        }}
+                                                    />
+                                                )}
+                                                {/* Hover underline */}
+                                                <span
+                                                    className="absolute left-0 right-0 -bottom-1 h-0.5 bg-primary rounded-full transition-transform duration-300 origin-left scale-x-0 group-hover:scale-x-100"
+                                                />
+                                            </>
+                                        )}
+                                    </NavLink>
+                                )}
+                            </div>
+                        ))}
+                    </nav>
+
 
                     {/* Search Bar (Desktop) */}
-                    <div className="hidden md:flex flex-1 max-w-md mx-4 lg:mx-8">
+                    {/* <div className="hidden md:flex flex-1 max-w-md mx-4 lg:mx-8">
                         <div className="relative w-full">
                             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                             <input
@@ -99,13 +224,15 @@ const Navigation = () => {
                                 className="w-full pl-10 pr-4 py-2 bg-input border border-border rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-smooth"
                             />
                         </div>
-                    </div>
+                    </div> */}
 
                     {/* Action Buttons & User */}
                     <div className="flex items-center space-x-2">
-                        <Button variant="ghost" size="icon" className="relative">
-                            <MessageCircle className="w-5 h-5" />
-                        </Button>
+                        <Link to="/messages">
+                            <Button variant="ghost" size="icon" className="relative">
+                                <MessageCircle className="w-5 h-5" />
+                            </Button>
+                        </Link>
                         <Button variant="ghost" size="icon" className="relative">
                             <Bell className="w-5 h-5" />
                         </Button>

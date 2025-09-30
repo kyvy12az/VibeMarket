@@ -128,12 +128,12 @@ const FlashSale = () => {
               <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-yellow-400 to-red-500 flex items-center justify-center shadow-lg">
                 <Zap className="w-8 h-8 text-white" />
               </div>
-              <h1 className="text-4xl font-bold bg-gradient-hero bg-clip-text text-transparent">
+              <h1 className="md:text-4xl text-2xl font-bold bg-gradient-hero bg-clip-text text-transparent">
                 Flash Sale ⚡
               </h1>
               <Flame className="w-8 h-8 text-destructive" />
             </div>
-            <p className="text-muted-foreground text-lg">
+            <p className="text-muted-foreground md:text-lg text-base">
               Săn deal siêu hot - Giá sốc chỉ trong thời gian có hạn!
             </p>
           </div>

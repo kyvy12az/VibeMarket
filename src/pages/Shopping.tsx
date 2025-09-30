@@ -243,15 +243,14 @@ const Shopping = () => {
           {/* Header */}
           <div className="text-left space-y-3 max-w-3xl">
             <div className="flex items-center gap-3">
-              {/* Icon từ lucide-react, ví dụ ShoppingBag */}
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-orange-500 to-pink-500 flex items-center justify-center shadow-lg">
                 <ShoppingBag className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-4xl font-bold bg-gradient-hero bg-clip-text text-transparent">
+              <h1 className="md:text-4xl text-2xl font-bold bg-gradient-hero bg-clip-text text-transparent">
                 Mua sắm thông minh
               </h1>
             </div>
-            <p className="text-muted-foreground text-lg">
+            <p className="text-muted-foreground md:text-lg text-base">
               Khám phá hàng nghìn sản phẩm chất lượng với giá tốt nhất
             </p>
           </div>

@@ -118,11 +118,11 @@ const LocalBrand = () => {
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-blue-500 flex items-center justify-center shadow-lg">
                 <Award className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-4xl font-bold bg-gradient-hero bg-clip-text text-transparent">
-                🇻🇳 Local Brand Việt Nam
+              <h1 className="md:text-4xl text-2xl font-bold bg-gradient-hero bg-clip-text text-transparent">
+                Local Brand Việt Nam
               </h1>
             </div>
-            <p className="text-muted-foreground text-lg">
+            <p className="text-muted-foreground md:text-lg text-base">
               Tự hào với những thương hiệu Việt chất lượng cao, mang đậm bản sắc dân tộc
             </p>
           </div>

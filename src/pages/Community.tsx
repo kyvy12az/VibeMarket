@@ -183,11 +183,11 @@ const Community = () => {
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg">
                 <Users className="w-6 h-6 text-white" />
               </div>
-              <h1 className="text-4xl font-bold bg-gradient-hero bg-clip-text text-transparent">
+              <h1 className="md:text-4xl text-2xl font-bold bg-gradient-hero bg-clip-text text-transparent">
                 Cộng đồng VibeMarket
               </h1>
             </div>
-            <p className="text-muted-foreground text-lg">
+            <p className="text-muted-foreground md:text-lg text-base">
               Chia sẻ, thảo luận và kết nối với hàng triệu người dùng
             </p>
             {/* Community Stats */}
@@ -195,30 +195,33 @@ const Community = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="flex gap-8"
+              className="flex flex-wrap gap-6 justify-center md:justify-start"
             >
-              {communityStats.map((stat, index) => (
-                <div key={stat.label} className="text-center">
+              {communityStats.map((stat) => (
+                <div key={stat.label} className="text-center min-w-[100px]">
                   <div className="flex items-center justify-center gap-1 mb-1">
                     <stat.icon className="w-5 h-5 text-accent" />
-                    <span className="text-2xl font-bold text-accent">{stat.value}</span>
+                    <span className="text-xl md:text-2xl font-bold text-accent">
+                      {stat.value}
+                    </span>
                   </div>
                   <span className="text-sm text-muted-foreground">{stat.label}</span>
                 </div>
               ))}
             </motion.div>
+
           </div>
 
-          <div className="grid lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
             {/* Sidebar */}
-            <div className="lg:col-span-1 space-y-6">
+            <div className="w-full lg:col-span-1 space-y-6 mt-6 lg:mt-0">
               {/* Trending Topics */}
-              <Card className="p-6 bg-gradient-card border-border">
+              <Card className="p-4 sm:p-6 bg-gradient-card border-border">
                 <div className="flex items-center gap-2 mb-4">
                   <TrendingUp className="w-5 h-5 text-accent" />
                   <h3 className="font-semibold text-card-foreground">Xu hướng</h3>
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-2 sm:space-y-3">
                   {trendingTopics.map((topic, index) => (
                     <motion.div
                       key={topic.name}
@@ -237,14 +240,14 @@ const Community = () => {
               </Card>
 
               {/* Quick Actions */}
-              <Card className="p-6 bg-gradient-card border-border">
+              <Card className="p-4 sm:p-6 bg-gradient-card border-border">
                 <h3 className="font-semibold text-card-foreground mb-4 flex items-center gap-2">
                   <Sparkles className="w-4 h-4 text-accent" />
                   Hành động nhanh
                 </h3>
                 <div className="space-y-2">
                   <Button
-                    className="w-full gap-3"
+                    className="w-full gap-3 text-sm sm:text-base"
                     variant="outline"
                     onClick={() => setIsCreatePostOpen(true)}
                   >
@@ -252,7 +255,7 @@ const Community = () => {
                     Tạo bài viết
                   </Button>
                   <Button
-                    className="w-full gap-2"
+                    className="w-full gap-3 text-sm sm:text-base"
                     variant="outline"
                     onClick={() => setIsCreateQuestionOpen(true)}
                   >
@@ -262,6 +265,7 @@ const Community = () => {
                 </div>
               </Card>
             </div>
+
 
             {/* Enhanced Main Feed */}
             <div className="lg:col-span-3 space-y-6">
@@ -377,23 +381,37 @@ const Community = () => {
                       )}
 
                       {/* Enhanced Actions with Views and Answers */}
-                      <div className="flex items-center justify-between pt-4 border-t border-border">
-                        <div className="flex items-center gap-6">
-                          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-smooth">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between pt-4 border-t border-border gap-3 sm:gap-0">
+                        {/* Action Buttons */}
+                        <div className="flex justify-between sm:justify-start sm:gap-6 w-full sm:w-auto">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="gap-2 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-smooth flex-1 sm:flex-none justify-center"
+                          >
                             <Heart className="w-4 h-4" />
                             {post.likes}
                           </Button>
-                          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-accent hover:bg-accent/10 transition-smooth">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="gap-2 text-muted-foreground hover:text-accent hover:bg-accent/10 transition-smooth flex-1 sm:flex-none justify-center"
+                          >
                             <MessageCircle className="w-4 h-4" />
                             {post.type === "question" ? `${post.answers} trả lời` : `${post.comments} bình luận`}
                           </Button>
-                          <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-smooth">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="gap-2 text-muted-foreground hover:text-primary hover:bg-primary/10 transition-smooth flex-1 sm:flex-none justify-center"
+                          >
                             <Share2 className="w-4 h-4" />
                             {post.shares}
                           </Button>
                         </div>
 
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        {/* Views & Bookmark */}
+                        <div className="flex items-center justify-between sm:justify-end gap-4 text-xs text-muted-foreground w-full sm:w-auto">
                           <div className="flex items-center gap-1">
                             <Eye className="w-3 h-3" />
                             {post.views}
@@ -403,6 +421,7 @@ const Community = () => {
                           </Button>
                         </div>
                       </div>
+
                     </div>
                   </Card>
                 </motion.div>

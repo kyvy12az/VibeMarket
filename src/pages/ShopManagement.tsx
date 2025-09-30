@@ -1,5 +1,4 @@
 import { motion } from "framer-motion";
-import { Bar, Line } from '@ant-design/charts';
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,8 +15,27 @@ import {
     MessageSquare,
     Settings,
     Eye,
-    Edit
+    Edit,
+    Activity,
+    PieChart
 } from "lucide-react";
+import {
+    LineChart,
+    Line,
+    AreaChart,
+    Area,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+    BarChart,
+    Bar,
+    PieChart as RechartsPieChart,
+    Pie,
+    Cell,
+    Legend
+} from "recharts";
 
 const ShopManagement = () => {
     const navigate = useNavigate();
@@ -79,6 +97,48 @@ const ShopManagement = () => {
             image: "/placeholder.svg",
             rating: 4.7
         }
+    ];
+
+    // Chart data
+    const revenueData = [
+        { month: "T1", revenue: 32, orders: 234, customers: 89 },
+        { month: "T2", revenue: 28, orders: 198, customers: 76 },
+        { month: "T3", revenue: 45, orders: 312, customers: 125 },
+        { month: "T4", revenue: 38, orders: 267, customers: 98 },
+        { month: "T5", revenue: 52, orders: 378, customers: 142 },
+        { month: "T6", revenue: 48, orders: 356, customers: 138 },
+        { month: "T7", revenue: 61, orders: 423, customers: 167 },
+        { month: "T8", revenue: 55, orders: 389, customers: 154 },
+        { month: "T9", revenue: 67, orders: 467, customers: 189 },
+        { month: "T10", revenue: 58, orders: 412, customers: 176 },
+        { month: "T11", revenue: 72, orders: 498, customers: 203 },
+        { month: "T12", revenue: 78, orders: 534, customers: 221 }
+    ];
+
+    const categoryData = [
+        { name: "Chăm sóc da", value: 35, color: "#FF6384" },
+        { name: "Trang điểm", value: 28, color: "#36A2EB" },
+        { name: "Nước hoa", value: 18, color: "#FFCE56" },
+        { name: "Chăm sóc tóc", value: 12, color: "#4BC0C0" },
+        { name: "Khác", value: 7, color: "#9966FF" }
+    ];
+
+
+    const orderStatusData = [
+        { status: "Đã giao", count: 234, color: "#10B981" },
+        { status: "Đang giao", count: 45, color: "#3B82F6" },
+        { status: "Đang xử lý", count: 32, color: "#F59E0B" },
+        { status: "Đã hủy", count: 12, color: "#EF4444" }
+    ];
+
+    const weeklyTrends = [
+        { day: "T2", orders: 23, revenue: 5.2 },
+        { day: "T3", orders: 31, revenue: 7.1 },
+        { day: "T4", orders: 28, revenue: 6.3 },
+        { day: "T5", orders: 35, revenue: 8.4 },
+        { day: "T6", orders: 42, revenue: 9.8 },
+        { day: "T7", orders: 38, revenue: 8.9 },
+        { day: "CN", orders: 25, revenue: 5.7 }
     ];
 
     const getStatusBadge = (status: string) => {
@@ -289,55 +349,282 @@ const ShopManagement = () => {
                         </Card>
                     </TabsContent>
 
-                    <TabsContent value="analytics" className="space-y-4">
+                    <TabsContent value="analytics" className="space-y-6">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Revenue Chart */}
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
-                                        <BarChart3 className="w-5 h-5" />
+                                        <TrendingUp className="w-5 h-5" />
                                         Doanh thu theo tháng
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="h-64 bg-muted/50 rounded-lg flex items-center justify-center">
-                                        <Bar
-                                            data={[{month: 'Tháng 1', value: 12},{month: 'Tháng 2', value: 19},{month: 'Tháng 3', value: 15},{month: 'Tháng 4', value: 22},{month: 'Tháng 5', value: 18},{month: 'Tháng 6', value: 25}]}
-                                            xField="month"
-                                            yField="value"
-                                            color="#3b82f6"
-                                            height={220}
-                                            autoFit
-                                            barWidthRatio={0.6}
-                                            style={{ borderRadius: 8 }}
-                                            axis={{ x: { label: { style: { fontSize: 12 } } }, y: { label: { style: { fontSize: 12 } } } }}
-                                        />
-                                    </div>
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        <AreaChart data={revenueData}>
+                                            <defs>
+                                                <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                                                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                            <XAxis
+                                                dataKey="month"
+                                                stroke="hsl(var(--muted-foreground))"
+                                                fontSize={12}
+                                            />
+                                            <YAxis
+                                                stroke="hsl(var(--muted-foreground))"
+                                                fontSize={12}
+                                            />
+                                            <Tooltip
+                                                contentStyle={{
+                                                    backgroundColor: "hsl(var(--popover))",
+                                                    border: "1px solid hsl(var(--border))",
+                                                    borderRadius: "8px",
+                                                    color: "hsl(var(--popover-foreground))"
+                                                }}
+                                                formatter={(value) => [`${value}M đ`, "Doanh thu"]}
+                                            />
+                                            <Area
+                                                type="monotone"
+                                                dataKey="revenue"
+                                                stroke="hsl(var(--primary))"
+                                                strokeWidth={2}
+                                                fill="url(#revenueGradient)"
+                                            />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
                                 </CardContent>
                             </Card>
 
+                            {/* Orders & Customers Chart */}
                             <Card>
                                 <CardHeader>
                                     <CardTitle className="flex items-center gap-2">
-                                        <Users className="w-5 h-5" />
-                                        Khách hàng mới
+                                        <BarChart3 className="w-5 h-5" />
+                                        Đơn hàng & Khách hàng mới
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="h-64 bg-muted/50 rounded-lg flex items-center justify-center">
-                                        <Line
-                                            data={[{month: 'Tháng 1', value: 30},{month: 'Tháng 2', value: 45},{month: 'Tháng 3', value: 38},{month: 'Tháng 4', value: 50},{month: 'Tháng 5', value: 42},{month: 'Tháng 6', value: 60}]}
-                                            xField="month"
-                                            yField="value"
-                                            color="#10b981"
-                                            height={220}
-                                            autoFit
-                                            point={{ size: 4, shape: 'circle', style: { fill: '#10b981' } }}
-                                            axis={{ x: { label: { style: { fontSize: 12 } } }, y: { label: { style: { fontSize: 12 } } } }}
-                                        />
-                                    </div>
+                                    <ResponsiveContainer width="100%" height={300}>
+                                        <BarChart data={revenueData}>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                            <XAxis
+                                                dataKey="month"
+                                                stroke="hsl(var(--muted-foreground))"
+                                                fontSize={12}
+                                            />
+                                            <YAxis
+                                                stroke="hsl(var(--muted-foreground))"
+                                                fontSize={12}
+                                            />
+                                            <Tooltip
+                                                contentStyle={{
+                                                    backgroundColor: "hsl(var(--popover))",
+                                                    border: "1px solid hsl(var(--border))",
+                                                    borderRadius: "8px",
+                                                    color: "hsl(var(--popover-foreground))"
+                                                }}
+                                            />
+                                            <Bar dataKey="orders" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                                            <Bar dataKey="customers" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
                                 </CardContent>
                             </Card>
+
+                            {/* Category Sales Pie Chart */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <PieChart className="w-5 h-5" />
+                                        Doanh số theo danh mục
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <ResponsiveContainer width="100%" height={320}>
+                                        <RechartsPieChart>
+                                            {/* Tooltip đẹp hơn */}
+                                            <Tooltip
+                                                contentStyle={{
+                                                    backgroundColor: "#FFFFFF",          // nền trắng
+                                                    border: "1px solid #E5E7EB",         // viền xám nhạt
+                                                    borderRadius: "8px",
+                                                    color: "#111827",                    // chữ đen xám đậm
+                                                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
+                                                }}
+                                                formatter={(value, name) => [`${value}%`, name]}
+                                            />
+
+
+                                            {/* Pie Chart */}
+                                            <Pie
+                                                data={categoryData}
+                                                cx="50%"
+                                                cy="50%"
+                                                outerRadius={110}
+                                                innerRadius={50} // để tạo "donut chart"
+                                                paddingAngle={4}
+                                                dataKey="value"
+                                                label={({ value }) => `${value}%`}
+                                                labelLine={false}
+                                                isAnimationActive
+                                            >
+                                                {categoryData.map((entry, index) => (
+                                                    <Cell
+                                                        key={`cell-${index}`}
+                                                        fill={entry.color}
+                                                        stroke="#fff"
+                                                        strokeWidth={2}
+                                                    />
+                                                ))}
+                                            </Pie>
+
+                                            {/* Legend */}
+                                            <Legend
+                                                layout="horizontal"
+                                                verticalAlign="bottom"
+                                                align="center"
+                                                iconType="circle"
+                                            />
+                                        </RechartsPieChart>
+                                    </ResponsiveContainer>
+                                </CardContent>
+                            </Card>
+
+
+                            {/* Weekly Trends */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Activity className="w-5 h-5" />
+                                        Xu hướng tuần này
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <ResponsiveContainer width="100%" height={320}>
+                                        <LineChart data={weeklyTrends}>
+                                            {/* Lưới nền */}
+                                            <CartesianGrid
+                                                strokeDasharray="4 4"
+                                                stroke="#E5E7EB" // màu xám nhạt
+                                                opacity={0.6}
+                                            />
+
+                                            {/* Trục X */}
+                                            <XAxis
+                                                dataKey="day"
+                                                stroke="#6B7280" // xám trung tính
+                                                fontSize={12}
+                                                tickLine={false}
+                                                axisLine={{ stroke: "#D1D5DB" }}
+                                            />
+
+                                            {/* Trục Y */}
+                                            <YAxis
+                                                stroke="#6B7280"
+                                                fontSize={12}
+                                                tickLine={false}
+                                                axisLine={{ stroke: "#D1D5DB" }}
+                                            />
+
+                                            {/* Tooltip */}
+                                            <Tooltip
+                                                contentStyle={{
+                                                    backgroundColor: "#fff",
+                                                    border: "1px solid #E5E7EB",
+                                                    borderRadius: "8px",
+                                                    color: "#111827",
+                                                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)"
+                                                }}
+                                                formatter={(value, name) => [
+                                                    name === "orders"
+                                                        ? `${value} đơn`
+                                                        : `${value.toLocaleString()}₫`,
+                                                    name === "orders" ? "Đơn hàng" : "Doanh thu"
+                                                ]}
+                                            />
+
+                                            {/* Line: Orders */}
+                                            <Line
+                                                type="monotone"
+                                                dataKey="orders"
+                                                name="Đơn hàng"
+                                                stroke="#3B82F6" // xanh dương
+                                                strokeWidth={3}
+                                                dot={{ fill: "#3B82F6", r: 4 }}
+                                                activeDot={{ r: 6, stroke: "#fff", strokeWidth: 2 }}
+                                            />
+
+                                            {/* Line: Revenue */}
+                                            <Line
+                                                type="monotone"
+                                                dataKey="revenue"
+                                                name="Doanh thu"
+                                                stroke="#F97316" // cam
+                                                strokeWidth={3}
+                                                dot={{ fill: "#F97316", r: 4 }}
+                                                activeDot={{ r: 6, stroke: "#fff", strokeWidth: 2 }}
+                                            />
+
+                                            {/* Legend */}
+                                            <Legend
+                                                verticalAlign="top"
+                                                align="right"
+                                                iconType="circle"
+                                                wrapperStyle={{ fontSize: "13px", paddingBottom: "8px" }}
+                                            />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </CardContent>
+                            </Card>
+
                         </div>
+
+                        {/* Order Status Distribution */}
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <BarChart3 className="w-5 h-5" />
+                                    Phân bố trạng thái đơn hàng
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <ResponsiveContainer width="100%" height={200}>
+                                    <BarChart data={orderStatusData} layout="horizontal">
+                                        <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                                        <XAxis
+                                            type="number"
+                                            stroke="#6B7280"
+                                            fontSize={12}
+                                        />
+                                        <YAxis
+                                            type="category"
+                                            dataKey="status"
+                                            stroke="#6B7280"
+                                            fontSize={12}
+                                        />
+                                        <Tooltip
+                                            contentStyle={{
+                                                backgroundColor: "#fff",
+                                                border: "1px solid #E5E7EB",
+                                                borderRadius: "8px",
+                                                color: "#111827",
+                                                boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
+                                            }}
+                                            formatter={(value) => [`${value} đơn`, "Số lượng"]}
+                                        />
+                                        <Bar dataKey="count" radius={[0, 4, 4, 0]}>
+                                            {orderStatusData.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.color || '#3B82F6'} />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
+                            </CardContent>
+                        </Card>
                     </TabsContent>
 
                     <TabsContent value="settings" className="space-y-4">

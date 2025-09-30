@@ -23,6 +23,11 @@ import VendorRegistration from "./pages/VendorRegistration";
 import ShopManagement from "./pages/ShopManagement";
 import AddProduct from "./pages/AddProduct";
 import OrderDetail from "./pages/OrderDetail";
+import Messages from "./pages/Messages";
+import AIStylist from "./pages/AIStylist";
+import AIRecommendationsPage from "./pages/AIRecommendations";
+import WalletPage from "./pages/Wallet";
+import EventDetail from "./pages/EventDetail";
 
 const queryClient = new QueryClient();
 
@@ -46,7 +51,10 @@ function App() {
                 <Route path="/discover" element={<Discover />} />
                 <Route path="/flash-sale" element={<FlashSale />} />
                 <Route path="/local-brand" element={<LocalBrand />} />
+                <Route path="/ai-stylist" element={<AIStylist />} />
+                <Route path="/ai-recomment" element={<AIRecommendationsPage />} />
                 <Route path="/product/:id" element={<ProductDetail />} />
+                <Route path="/wallet" element={<WalletPage />} />
                 <Route path="/checkout" element={<Checkout />} />
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/orders" element={<OrderManagement />} />
@@ -54,8 +62,10 @@ function App() {
                 <Route path="/vendor-registration" element={<VendorRegistration />} />
                 <Route path="/vendor-management" element={<ShopManagement />} />
                 <Route path="/add-product" element={<AddProduct />} />
+                <Route path="/events/:id" element={<EventDetail />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
+              <Route path="/messages" element={<Messages />} />
             </Routes>
           </TooltipProvider>
         </CartProvider>
