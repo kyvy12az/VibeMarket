@@ -92,6 +92,21 @@ const Navigation = () => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    useEffect(() => {
+        if (!user) {
+            setVendorStatus("none");
+            return;
+        }
+        // Gọi API lấy trạng thái vendor
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/api/vendor/status.php?user_id=${user.id}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === "approved") setVendorStatus("approved");
+                else if (data.status === "pending") setVendorStatus("pending");
+                else setVendorStatus("none");
+            });
+    }, [user]);
+
     return (
         <motion.nav
             initial={{ y: -100 }}
@@ -261,12 +276,16 @@ const Navigation = () => {
                                 >
                                     {user.avatar ? (
                                         <img
-                                            src={user.avatar}
+                                            src={user.avatar || "/images/avatars/Avt-Default.png"}
                                             alt={user.name}
-                                            className="w-10 h-10 rounded-xl object-cover ring-2 ring-primary/20 hover:ring-primary/50 transition-all duration-300"
+                                            className="w-10 h-10 rounded-full object-cover ring-2 ring-primary/20 hover:ring-primary/50 transition-all duration-300"
                                         />
                                     ) : (
-                                        <User className="w-10 h-10 text-muted-foreground" />
+                                        <img
+                                            src="/images/avatars/Avt-Default.png"
+                                            alt={user.name}
+                                            className="w-10 h-10 rounded-full object-cover ring-2 ring-primary/20 hover:ring-primary/50 transition-all duration-300"
+                                        />
                                     )}
                                     <div className="hidden md:block text-left">
                                         <p className="text-sm font-medium text-foreground">{user.name}</p>
@@ -294,7 +313,11 @@ const Navigation = () => {
                                                         className="w-10 h-10 rounded-xl object-cover ring-2 ring-primary/20 hover:ring-primary/50 transition-all duration-300"
                                                     />
                                                 ) : (
-                                                    <User className="w-12 h-12 text-muted-foreground" />
+                                                    <img
+                                                        src="/images/avatars/Avt-Default.png"
+                                                        alt={user.name}
+                                                        className="w-10 h-10 rounded-full object-cover ring-2 ring-primary/20 hover:ring-primary/50 transition-all duration-300"
+                                                    />
                                                 )}
                                                 <div>
                                                     <h3 className="font-semibold text-foreground">{user.name}</h3>
@@ -331,7 +354,7 @@ const Navigation = () => {
                                             ))}
 
                                             {/* Kiểm tra trạng thái vendor của user */}
-                                            {user && user.isVendor === false && (
+                                            {user && user.role === "user" && vendorStatus !== "approved" && (
                                                 <motion.a
                                                     key="vendor-register"
                                                     href="/vendor-registration"
@@ -348,7 +371,7 @@ const Navigation = () => {
                                                 </motion.a>
                                             )}
 
-                                            {user && user.isVendor === true && (
+                                            {user && (user.role === "seller" || vendorStatus === "approved") && (
                                                 <motion.a
                                                     key="vendor-dashboard"
                                                     href="/vendor-management"

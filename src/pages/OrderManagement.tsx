@@ -16,100 +16,74 @@ import {
     RefreshCw,
     MessageSquare
 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 const OrderManagement = () => {
+    const { user } = useAuth();
     const navigate = useNavigate();
+    const [orders, setOrders] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
 
-    const mockOrders = [
-        {
-            id: "DH001234",
-            date: "2024-01-15",
-            status: "delivered",
-            total: 899000,
-            items: 3,
-            products: [
-                { name: "Kem dưỡng da Olay", price: 299000, quantity: 1, image: "/images/olay-cream.jpg" },
-                { name: "Son môi MAC Ruby Woo", price: 450000, quantity: 1, image: "/images/mac-rubywoo.jpg" },
-                { name: "Nước hoa Chanel", price: 150000, quantity: 1, image: "/images/chanel-perfume.jpg" }
-            ],
-            tracking: "VN123456789",
-            vendor: "Beauty World"
-        },
-        {
-            id: "DH001235",
-            date: "2024-01-20",
-            status: "shipping",
-            total: 1299000,
-            items: 2,
-            products: [
-                { name: "Áo khoác denim", price: 799000, quantity: 1, image: "/images/denim-jacket.jpg" },
-                { name: "Giày sneaker Nike", price: 500000, quantity: 1, image: "/images/nike-sneaker.jpg" }
-            ],
-            tracking: "VN123456790",
-            vendor: "Fashion Store"
-        },
-        {
-            id: "DH001236",
-            date: "2024-01-22",
-            status: "processing",
-            total: 550000,
-            items: 1,
-            products: [
-                { name: "Tai nghe Bluetooth", price: 550000, quantity: 1, image: "/images/bluetooth-headphones.jpg" }
-            ],
-            tracking: null,
-            vendor: "Tech Hub"
-        },
-        {
-            id: "DH001237",
-            date: "2024-01-10",
-            status: "cancelled",
-            total: 750000,
-            items: 2,
-            products: [
-                { name: "Váy maxi hoa", price: 450000, quantity: 1, image: "/images/maxi-dress.jpg" },
-                { name: "Túi xách mini", price: 300000, quantity: 1, image: "/images/mini-bag.jpg" }
-            ],
-            tracking: null,
-            vendor: "Fashion Boutique"
-        }
-    ];
+    useEffect(() => {
+        if (!user?.id) return; // Chưa đăng nhập thì không gọi API
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/api/order/user_orders.php?user_id=${user.id}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) setOrders(data.orders);
+                setLoading(false);
+            });
+    }, [user?.id]);
 
     const getStatusBadge = (status: string) => {
         const statusConfig = {
-            processing: { label: "Đang xử lý", variant: "default" as const, icon: Clock },
-            shipping: { label: "Đang giao", variant: "secondary" as const, icon: Truck },
-            delivered: { label: "Đã giao", variant: "default" as const, icon: CheckCircle },
-            cancelled: { label: "Đã hủy", variant: "destructive" as const, icon: XCircle }
+            pending: { label: "Chờ xác nhận", variant: "warning" as const, color: "#F59E42", icon: Clock },
+            processing: { label: "Đang xử lý", variant: "info" as const, color: "#3B82F6", icon: Clock },
+            shipped: { label: "Đang giao", variant: "primary" as const, color: "#6366F1", icon: Truck },
+            delivered: { label: "Đã giao", variant: "success" as const, color: "#10B981", icon: CheckCircle },
+            cancelled: { label: "Đã hủy", variant: "destructive" as const, color: "#EF4444", icon: XCircle }
         };
 
         const config = statusConfig[status as keyof typeof statusConfig];
         const Icon = config.icon;
-
+        if (!config) {
+            return <Badge variant="outline">{status}</Badge>;
+        }
         return (
-            <Badge variant={config.variant} className="gap-1">
-                <Icon className="w-3 h-3" />
+            <Badge
+                variant={config.variant}
+                style={{
+                    backgroundColor: config.color,
+                    color: "#fff",
+                    border: "none",
+                }}
+                className="whitespace-nowrap flex items-center justify-center px-3 py-1 text-sm"
+            >   
+                <Icon className="w-4 h-4 mr-1" />
                 {config.label}
             </Badge>
         );
     };
 
     const filterOrders = (status?: string) => {
-        if (!status) return mockOrders;
-        return mockOrders.filter(order => order.status === status);
+        if (!status) return orders;
+        return orders.filter(order => order.status === status);
     };
 
-    const OrderCard = ({ order }: { order: typeof mockOrders[0] }) => {
+    const OrderCard = ({ order }: { order: typeof orders[0] }) => {
         return (
             <Card className="hover:shadow-lg transition-shadow">
                 <CardHeader className="pb-4">
                     <div className="flex justify-between items-start">
                         <div>
-                            <CardTitle className="text-lg">Đơn hàng #{order.id}</CardTitle>
+                            <CardTitle className="text-lg">Đơn hàng #{order.code}</CardTitle>
                             <p className="text-sm text-muted-foreground mt-1">
                                 Đặt ngày {new Date(order.date).toLocaleDateString('vi-VN')}
                             </p>
-                            <p className="text-sm text-muted-foreground">Cửa hàng: {order.vendor}</p>
+                            {/* Nếu có vendor */}
+                            {order.vendor && (
+                                <p className="text-sm text-muted-foreground">Cửa hàng: {order.vendor}</p>
+                            )}
                         </div>
                         {getStatusBadge(order.status)}
                     </div>
@@ -118,10 +92,14 @@ const OrderManagement = () => {
                 <CardContent className="space-y-4">
                     {/* Products */}
                     <div className="space-y-3">
-                        {order.products.map((product, index) => (
+                        {(order.items || []).map((product, index) => (
                             <div key={index} className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg">
-                                <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
-                                    <Package className="w-6 h-6 text-gray-500" />
+                                <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center overflow-hidden">
+                                    {product.image ? (
+                                        <img src={product.image} alt={product.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <Package className="w-6 h-6 text-gray-500" />
+                                    )}
                                 </div>
                                 <div className="flex-1">
                                     <p className="font-medium text-sm">{product.name}</p>
@@ -136,7 +114,7 @@ const OrderManagement = () => {
                     {/* Order Summary */}
                     <div className="flex justify-between items-center pt-3 border-t">
                         <span className="text-sm text-muted-foreground">
-                            {order.items} sản phẩm
+                            {order.items?.length || 0} sản phẩm
                         </span>
                         <span className="font-bold text-lg">
                             {order.total.toLocaleString('vi-VN')}đ
@@ -156,12 +134,12 @@ const OrderManagement = () => {
                             variant="outline"
                             size="sm"
                             className="flex-1"
-                            onClick={() => navigate(`/orders/${order.id}`)}
+                            onClick={() => navigate(`/orders/${order.code}`)}
                         >
                             <Eye className="w-4 h-4 mr-2" />
                             Chi tiết
                         </Button>
-                        {order.status === 'shipping' && (
+                        {order.status === 'shipped' && (
                             <Button variant="outline" size="sm" className="flex-1">
                                 <Truck className="w-4 h-4 mr-2" />
                                 Theo dõi
@@ -224,13 +202,13 @@ const OrderManagement = () => {
                 <Tabs defaultValue="all" className="space-y-6">
                     <TabsList className="grid grid-cols-3 sm:grid-cols-5 w-full gap-2 bg-muted rounded-lg p-1">
                         <TabsTrigger value="all">
-                            Tất cả ({mockOrders.length})
+                            Tất cả ({orders.length})
                         </TabsTrigger>
                         <TabsTrigger value="processing">
                             Đang xử lý ({filterOrders("processing").length})
                         </TabsTrigger>
-                        <TabsTrigger value="shipping">
-                            Đang giao ({filterOrders("shipping").length})
+                        <TabsTrigger value="shipped">
+                            Đang giao ({filterOrders("shipped").length})
                         </TabsTrigger>
                         <TabsTrigger value="delivered">
                             Đã giao ({filterOrders("delivered").length})
@@ -242,7 +220,7 @@ const OrderManagement = () => {
 
                     {/* All Orders */}
                     <TabsContent value="all" className="space-y-4">
-                        {mockOrders.map((order, index) => (
+                        {orders.map((order, index) => (
                             <motion.div
                                 key={order.id}
                                 initial={{ opacity: 0, y: 20 }}
@@ -269,8 +247,8 @@ const OrderManagement = () => {
                     </TabsContent>
 
                     {/* Shipping */}
-                    <TabsContent value="shipping" className="space-y-4">
-                        {filterOrders("shipping").map((order, index) => (
+                    <TabsContent value="shipped" className="space-y-4">
+                        {filterOrders("shipped").map((order, index) => (
                             <motion.div
                                 key={order.id}
                                 initial={{ opacity: 0, y: 20 }}

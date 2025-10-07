@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -22,92 +22,102 @@ import {
     RefreshCw,
     Printer,
     Share2,
-    ChevronRight
+    ChevronRight,
+    Clock
 } from 'lucide-react';
 
 // Mock data cho chi tiết đơn hàng
-const mockOrderDetails = {
-    'DH001234': {
-        id: 'DH001234',
-        status: 'shipping',
-        orderDate: '2024-01-15T10:30:00Z',
-        estimatedDelivery: '2024-01-18T15:00:00Z',
-        total: 2750000,
-        subtotal: 2500000,
-        shippingFee: 50000,
-        discount: 200000,
-        timeline: [
-            { status: 'ordered', label: 'Đặt hàng', timestamp: '2024-01-15T10:30:00Z', completed: true },
-            { status: 'confirmed', label: 'Xác nhận', timestamp: '2024-01-15T11:15:00Z', completed: true },
-            { status: 'packed', label: 'Đóng gói', timestamp: '2024-01-15T14:20:00Z', completed: true },
-            { status: 'shipping', label: 'Vận chuyển', timestamp: '2024-01-16T08:00:00Z', completed: true },
-            { status: 'delivered', label: 'Giao hàng', timestamp: null, completed: false }
-        ],
-        customer: {
-            name: 'Nguyễn Văn Minh',
-            phone: '0987654321',
-            email: 'minh.nguyen@email.com',
-            address: '123 Đường Láng, Phường Láng Thượng, Quận Đống Đa, Hà Nội'
-        },
-        shipping: {
-            method: 'Giao hàng nhanh',
-            carrier: 'Giao Hàng Tiết Kiệm',
-            trackingCode: 'GHTK123456789',
-            fee: 50000,
-            estimatedDays: '2-3 ngày'
-        },
-        payment: {
-            method: 'Ví điện tử MoMo',
-            status: 'Đã thanh toán',
-            transactionId: 'TXN_20240115_001234',
-            paidAt: '2024-01-15T10:35:00Z'
-        },
-        vendor: {
-            name: 'Cửa hàng Thời trang Elegance',
-            rating: 4.8,
-            reviewCount: 2341,
-            phone: '024-3456-7890',
-            email: 'elegance@shop.vn',
-            address: '456 Phố Huế, Quận Hai Bà Trưng, Hà Nội',
-            policies: 'Đổi trả trong 7 ngày, bảo hành 12 tháng'
-        },
-        items: [
-            {
-                id: 1,
-                name: 'Áo sơ mi nam cao cấp',
-                image: 'https://encrypted-tbn2.gstatic.com/shopping?q=tbn:ANd9GcToZKuhEkjvFh1i8c_PdmKtch991gRuqZe_3ocLnyLcyJONLE14moHTUvXEeTUXfm8ZLnaeyENWybWnCJDQIfAn0uz3eXkpdz9PsMUQB7QK2q03W1-MYj3TjZh32MPlCo64BXnVX1o&usqp=CAc',
-                price: 890000,
-                quantity: 2,
-                variant: 'Màu xanh navy, Size L',
-                sku: 'ASM-XN-L-001'
-            },
-            {
-                id: 2,
-                name: 'Quần tây công sở',
-                image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRamO-KXzYK8E_y65BJ-qOI2B0fmyFKTE1xBQ&s',
-                price: 1200000,
-                quantity: 1,
-                variant: 'Màu đen, Size 32',
-                sku: 'QT-DEN-32-002'
-            },
-            {
-                id: 3,
-                name: 'Cà vạt lụa cao cấp',
-                image: 'https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcQAbBKOACS-vhD8FJRGDuaFJOy1ZrKXLGRcNc4wZk2Ky3CRlHLKLJCgRjL60ccMVTot1wIe5UJZ3oLhommG6GNUFtZPKfua1uJANKYbaL3CWAN9CVrCvCcNOQ5Y&usqp=CAc',
-                price: 410000,
-                quantity: 1,
-                variant: 'Màu đỏ đô, họa tiết sọc',
-                sku: 'CV-DO-SOC-003'
-            }
-        ]
-    }
-};
+// const mockOrderDetails = {
+//     'DH001234': {
+//         id: 'DH001234',
+//         status: 'shipping',
+//         orderDate: '2024-01-15T10:30:00Z',
+//         estimatedDelivery: '2024-01-18T15:00:00Z',
+//         total: 2750000,
+//         subtotal: 2500000,
+//         shippingFee: 50000,
+//         discount: 200000,
+//         timeline: [
+//             { status: 'ordered', label: 'Đặt hàng', timestamp: '2024-01-15T10:30:00Z', completed: true },
+//             { status: 'confirmed', label: 'Xác nhận', timestamp: '2024-01-15T11:15:00Z', completed: true },
+//             { status: 'packed', label: 'Đóng gói', timestamp: '2024-01-15T14:20:00Z', completed: true },
+//             { status: 'shipping', label: 'Vận chuyển', timestamp: '2024-01-16T08:00:00Z', completed: true },
+//             { status: 'delivered', label: 'Giao hàng', timestamp: null, completed: false }
+//         ],
+//         customer: {
+//             name: 'Nguyễn Văn Minh',
+//             phone: '0987654321',
+//             email: 'minh.nguyen@email.com',
+//             address: '123 Đường Láng, Phường Láng Thượng, Quận Đống Đa, Hà Nội'
+//         },
+//         shipping: {
+//             method: 'Giao hàng nhanh',
+//             carrier: 'Giao Hàng Tiết Kiệm',
+//             trackingCode: 'GHTK123456789',
+//             fee: 50000,
+//             estimatedDays: '2-3 ngày'
+//         },
+//         payment: {
+//             method: 'Ví điện tử MoMo',
+//             status: 'Đã thanh toán',
+//             transactionId: 'TXN_20240115_001234',
+//             paidAt: '2024-01-15T10:35:00Z'
+//         },
+//         vendor: {
+//             name: 'Cửa hàng Thời trang Elegance',
+//             rating: 4.8,
+//             reviewCount: 2341,
+//             phone: '024-3456-7890',
+//             email: 'elegance@shop.vn',
+//             address: '456 Phố Huế, Quận Hai Bà Trưng, Hà Nội',
+//             policies: 'Đổi trả trong 7 ngày, bảo hành 12 tháng'
+//         },
+//         items: [
+//             {
+//                 id: 1,
+//                 name: 'Áo sơ mi nam cao cấp',
+//                 image: 'https://encrypted-tbn2.gstatic.com/shopping?q=tbn:ANd9GcToZKuhEkjvFh1i8c_PdmKtch991gRuqZe_3ocLnyLcyJONLE14moHTUvXEeTUXfm8ZLnaeyENWybWnCJDQIfAn0uz3eXkpdz9PsMUQB7QK2q03W1-MYj3TjZh32MPlCo64BXnVX1o&usqp=CAc',
+//                 price: 890000,
+//                 quantity: 2,
+//                 variant: 'Màu xanh navy, Size L',
+//                 sku: 'ASM-XN-L-001'
+//             },
+//             {
+//                 id: 2,
+//                 name: 'Quần tây công sở',
+//                 image: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRamO-KXzYK8E_y65BJ-qOI2B0fmyFKTE1xBQ&s',
+//                 price: 1200000,
+//                 quantity: 1,
+//                 variant: 'Màu đen, Size 32',
+//                 sku: 'QT-DEN-32-002'
+//             },
+//             {
+//                 id: 3,
+//                 name: 'Cà vạt lụa cao cấp',
+//                 image: 'https://encrypted-tbn3.gstatic.com/shopping?q=tbn:ANd9GcQAbBKOACS-vhD8FJRGDuaFJOy1ZrKXLGRcNc4wZk2Ky3CRlHLKLJCgRjL60ccMVTot1wIe5UJZ3oLhommG6GNUFtZPKfua1uJANKYbaL3CWAN9CVrCvCcNOQ5Y&usqp=CAc',
+//                 price: 410000,
+//                 quantity: 1,
+//                 variant: 'Màu đỏ đô, họa tiết sọc',
+//                 sku: 'CV-DO-SOC-003'
+//             }
+//         ]
+//     }
+// };
 
 const OrderDetail = () => {
-    const { orderId } = useParams();
+    // const { orderId } = useParams();
+    const { code } = useParams();
+    const [order, setOrder] = useState<any>(null);
     const navigate = useNavigate();
 
-    const order = mockOrderDetails[orderId as keyof typeof mockOrderDetails];
+    useEffect(() => {
+        if (!code) return;
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/api/order/order_detail.php?code=${code}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) setOrder(data.order);
+            });
+    }, [code]);
 
     if (!order) {
         return (
@@ -125,26 +135,56 @@ const OrderDetail = () => {
 
     const getStatusIcon = (status: string, completed: boolean) => {
         if (!completed) return <div className="w-3 h-3 rounded-full border-2 border-muted-foreground bg-background" />;
-
         switch (status) {
-            case 'ordered': return <Package className="w-4 h-4 text-primary" />;
-            case 'confirmed': return <CheckCircle className="w-4 h-4 text-green-500" />;
-            case 'packed': return <Package className="w-4 h-4 text-blue-500" />;
-            case 'shipping': return <Truck className="w-4 h-4 text-orange-500" />;
+            case 'pending': return <Clock className="w-4 h-4 text-yellow-500" />;
+            case 'processing': return <Package className="w-4 h-4 text-primary" />;
+            case 'shipped': return <Truck className="w-4 h-4 text-orange-500" />;
             case 'delivered': return <CheckCircle className="w-4 h-4 text-green-500" />;
+            case 'cancelled': return <XCircle className="w-4 h-4 text-red-500" />;
             default: return <div className="w-3 h-3 rounded-full bg-muted" />;
         }
     };
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'processing': return <Badge className="bg-blue-100 text-blue-800 border-blue-200">Đang xử lý</Badge>;
-            case 'shipping': return <Badge className="bg-orange-100 text-orange-800 border-orange-200">Đang giao</Badge>;
-            case 'delivered': return <Badge className="bg-green-100 text-green-800 border-green-200">Đã giao</Badge>;
+            case 'pending': return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Chờ xác nhận</Badge>;
+            case 'processing': return <Badge className="bg-blue-100 text-blue-800 border-blue-200">Đang chuẩn bị</Badge>;
+            case 'shipped': return <Badge className="bg-orange-100 text-orange-800 border-orange-200">Đang giao hàng</Badge>;
+            case 'delivered': return <Badge className="bg-green-100 text-green-800 border-green-200">Đã giao hàng</Badge>;
             case 'cancelled': return <Badge className="bg-red-100 text-red-800 border-red-200">Đã hủy</Badge>;
             default: return <Badge variant="secondary">{status}</Badge>;
         }
     };
+
+    const getStatusDescription = (status: string) => {
+        switch (status) {
+            case "pending": return "Đặt hàng thành công";
+            case "processing": return "Đơn hàng đang được chuẩn bị";
+            case "shipped": return "Đơn hàng đang được giao";
+            case "delivered": return "Đơn hàng đã giao thành công";
+            case "cancelled": return "Đơn hàng đã bị hủy";
+            default: return "";
+        }
+    };
+
+    const defaultTimeline = [
+        { status: 'pending', label: 'Chờ xác nhận' },
+        { status: 'processing', label: 'Đang chuẩn bị' },
+        { status: 'shipped', label: 'Đang giao hàng' },
+        { status: 'delivered', label: 'Đã giao hàng' },
+        { status: 'cancelled', label: 'Đã hủy' }
+    ];
+    const timeline = order.timeline && Array.isArray(order.timeline) ? order.timeline : defaultTimeline;
+    const timelineBase = order.timeline && Array.isArray(order.timeline) ? order.timeline : defaultTimeline;
+    const currentIndex = timelineBase.findIndex(t => t.status === order.status);
+    const timelineArr = timelineBase.map((step, idx) => ({
+        ...step,
+        completed: order.status === 'cancelled'
+            ? false
+            : idx <= currentIndex
+    }));
+    const completedCount = timelineArr.filter(t => t.completed).length;
+    const percent = timelineArr.length > 1 ? ((completedCount - 1) / (timelineArr.length - 1)) * 100 : 0;
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('vi-VN', {
@@ -179,7 +219,7 @@ const OrderDetail = () => {
                         </Button>
                     </div>
                 );
-            case 'shipping':
+            case 'shipped':
                 return (
                     <div className="flex gap-2 flex-wrap">
                         <Button variant="outline" size="sm">
@@ -244,7 +284,7 @@ const OrderDetail = () => {
                         </Button>
                         <div className="flex flex-col items-start">
                             <h1 className="text-lg md:text-2xl font-bold">Đơn hàng #{order.id}</h1>
-                            <p className="text-xs md:text-sm text-muted-foreground">Đặt hàng lúc {formatDate(order.orderDate)}</p>
+                            <p className="text-xs md:text-sm text-muted-foreground">Đặt hàng lúc {formatDate(order.created_at)}</p>
                         </div>
                         <span className="mt-2 md:mt-0">{getStatusBadge(order.status)}</span>
                     </div>
@@ -265,47 +305,77 @@ const OrderDetail = () => {
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                        {/* Icon trạng thái lớn */}
                         {getStatusIcon(order.status, true)}
                         Trạng thái đơn hàng
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="flex flex-col items-center gap-4">
-                        {/* Hiển thị trạng thái hiện tại */}
-                        <div className="flex items-center gap-3 flex-wrap text-base md:text-lg">
-                            {getStatusBadge(order.status)}
-                            <span className="font-semibold">
-                                {order.timeline.find(t => t.status === order.status)?.label || 'Đang xử lý'}
-                            </span>
-                        </div>
-                        {/* Ngày dự kiến giao hàng nếu có */}
-                        {order.estimatedDelivery && (
-                            <div className="text-xs md:text-sm text-muted-foreground">
-                                Dự kiến giao: <span className="font-medium text-primary">{formatDate(order.estimatedDelivery)}</span>
-                            </div>
-                        )}
-                        {/* Hiển thị tiến trình timeline - scroll ngang trên mobile */}
-                        <div className="w-full overflow-x-auto pb-2">
-                            <div className="flex items-center justify-between min-w-[400px] md:min-w-0 relative mt-6">
-                                <div className="absolute top-6 left-0 right-0 h-0.5 bg-muted" />
-                                <div
-                                    className="absolute top-6 left-0 h-0.5 bg-primary transition-all duration-500"
-                                    style={{ width: `${(order.timeline.filter(t => t.completed).length - 1) / (order.timeline.length - 1) * 100}%` }}
-                                />
-                                {order.timeline.map((step, index) => (
-                                    <div key={index} className="flex flex-col items-center relative z-10 w-24 md:w-32 px-1 md:px-0">
-                                        <div className={`p-2 md:p-3 rounded-full border-2 ${order.status === step.status ? 'border-primary bg-primary/10' : step.completed ? 'border-green-400 bg-green-50' : 'border-muted bg-muted'} mb-1 md:mb-2`}>
-                                            {getStatusIcon(step.status, step.completed)}
+                    <div className="flex flex-col gap-2">
+                        {timelineArr.map((step, idx) => {
+                            const isCurrent = order.status === step.status;
+                            const isCompleted = step.completed;
+                            const isCancelled = step.status === 'cancelled';
+                            return (
+                                <div key={step.status || idx} className="flex items-start gap-3 relative group">
+                                    {/* Vạch dọc timeline */}
+                                    <div className="flex flex-col items-center">
+                                        <div className={`
+                                flex items-center justify-center rounded-full border-2
+                                ${isCurrent
+                                                ? 'border-yellow-500 bg-yellow-50'
+                                                : isCompleted
+                                                    ? 'border-green-400 bg-green-50'
+                                                    : isCancelled
+                                                        ? 'border-red-400 bg-red-50'
+                                                        : 'border-muted bg-muted'}
+                                w-8 h-8
+                            `}>
+                                            {getStatusIcon(step.status, true)}
                                         </div>
-                                        <div className="text-center">
-                                            <p className={`text-xs md:text-sm font-medium ${order.status === step.status ? 'text-primary' : step.completed ? 'text-green-700' : 'text-muted-foreground'}`}>{step.label}</p>
-                                            <p className="text-[10px] md:text-xs text-muted-foreground mt-1">{formatDate(step.timestamp)}</p>
-                                        </div>
+                                        {/* Vạch nối dọc */}
+                                        {idx < timelineArr.length - 1 && (
+                                            <div className={`
+                                    w-px flex-1 mx-auto
+                                    ${isCompleted && !isCancelled ? 'bg-green-400' : 'bg-muted'}
+                                `}
+                                                style={{ minHeight: 32 }}
+                                            />
+                                        )}
                                     </div>
-                                ))}
-                            </div>
-                        </div>
+                                    {/* Nội dung trạng thái */}
+                                    <div className="flex-1 pb-6">
+                                        <div className="flex items-center gap-2">
+                                            <span className={`
+                                    text-base font-semibold
+                                    ${isCurrent
+                                                    ? 'text-yellow-700'
+                                                    : isCompleted
+                                                        ? 'text-green-700'
+                                                        : isCancelled
+                                                            ? 'text-red-600'
+                                                            : 'text-muted-foreground'}
+                                `}>
+                                                {step.label}
+                                            </span>
+                                            {isCurrent && (
+                                                <span className="animate-trans-right inline-flex items-center px-2.5 py-0.5 rounded-full text-xs text-white bg-green-700">Hiện tại</span>
+                                            )}
+                                        </div>
+                                        {step.timestamp && (
+                                            <div className="text-xs text-muted-foreground mt-1">
+                                                {formatDate(step.timestamp)}
+                                                {isCurrent && <span className="ml-2">{getStatusDescription(step.status)}</span>}
+                                            </div>
+                                        )}
+                                        {isCurrent && !step.timestamp && (
+                                            <div className="text-xs text-muted-foreground mt-1">
+                                                {getStatusDescription(step.status)}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            );
+                        })}
                     </div>
                 </CardContent>
             </Card>
@@ -320,9 +390,9 @@ const OrderDetail = () => {
                         </CardHeader>
                         <CardContent>
                             <div className="space-y-4">
-                                {order.items.map((item) => (
+                                {(order.items || []).map((item, idx) => (
                                     <div
-                                        key={item.id}
+                                        key={item.id || idx}
                                         className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 p-3 border rounded-lg"
                                     >
                                         {/* Hình ảnh sản phẩm */}
@@ -342,7 +412,7 @@ const OrderDetail = () => {
                                             </p>
                                             <p className="text-xs text-muted-foreground">SKU: {item.sku}</p>
                                         </div>
-                                        
+
                                         {/* Giá & số lượng */}
                                         <div className="flex flex-col items-end w-full sm:w-auto gap-1 text-sm">
                                             <div className="flex flex-col items-end sm:block w-full sm:w-auto">
@@ -363,15 +433,23 @@ const OrderDetail = () => {
                             <div className="space-y-2 text-sm sm:text-base">
                                 <div className="flex justify-between">
                                     <span>Tạm tính:</span>
-                                    <span>{formatCurrency(order.subtotal)}</span>
+                                    <span>
+                                        {formatCurrency(
+                                            (order.items || []).reduce(
+                                                (sum, item) => sum + (item.price * item.quantity), 0
+                                            )
+                                        )}
+                                    </span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Phí vận chuyển:</span>
-                                    <span>{formatCurrency(order.shippingFee)}</span>
+                                    <span>
+                                        {formatCurrency(order.shipping_fee)}
+                                    </span>
                                 </div>
                                 <div className="flex justify-between text-green-600">
                                     <span>Giảm giá:</span>
-                                    <span>-{formatCurrency(order.discount)}</span>
+                                    <span>-{formatCurrency(order.discount ?? 0)}</span>
                                 </div>
                                 <Separator />
                                 <div className="flex justify-between font-bold text-base sm:text-lg">
@@ -406,14 +484,14 @@ const OrderDetail = () => {
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div>
-                                <p className="font-medium">{order.customer.name}</p>
-                                <p className="text-sm text-muted-foreground">{order.customer.phone}</p>
-                                <p className="text-sm text-muted-foreground">{order.customer.email}</p>
+                                <p className="font-medium">{order.customer?.name || "Chưa có tên"}</p>
+                                <p className="text-sm text-muted-foreground">{order.customer.phone || "Chưa có số điện thoại"}</p>
+                                <p className="text-sm text-muted-foreground">{order.customer.email || "Chưa có email"}</p>
                             </div>
                             <Separator />
                             <div>
                                 <p className="text-sm font-medium mb-1">Địa chỉ giao hàng:</p>
-                                <p className="text-sm text-muted-foreground">{order.customer.address}</p>
+                                <p className="text-sm text-muted-foreground">{order.customer.address || "Chưa có địa chỉ"}</p>
                             </div>
                         </CardContent>
                     </Card>
@@ -429,19 +507,19 @@ const OrderDetail = () => {
                         <CardContent className="space-y-3">
                             <div className="flex justify-between">
                                 <span className="text-sm">Phương thức:</span>
-                                <span className="text-sm font-medium">{order.shipping.method}</span>
+                                <p className="text-sm font-medium">{order.shipping?.method || "Chưa có"}</p>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-sm">Đơn vị vận chuyển:</span>
-                                <span className="text-sm font-medium">{order.shipping.carrier}</span>
+                                <span className="text-sm font-medium">{order.shipping?.carrier || "Chưa có"}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-sm">Mã vận đơn:</span>
-                                <span className="text-sm font-medium text-primary">{order.shipping.trackingCode}</span>
+                                <span className="text-sm font-medium text-primary">{order.shipping?.trackingCode || "Chưa có"}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-sm">Thời gian dự kiến:</span>
-                                <span className="text-sm font-medium">{order.shipping.estimatedDays}</span>
+                                <span className="text-sm font-medium">{order.shipping?.estimatedDays || "Chưa có"}</span>
                             </div>
                         </CardContent>
                     </Card>
@@ -457,21 +535,29 @@ const OrderDetail = () => {
                         <CardContent className="space-y-3">
                             <div className="flex justify-between">
                                 <span className="text-sm">Phương thức:</span>
-                                <span className="text-sm font-medium">{order.payment.method}</span>
+                                <span className="text-sm font-medium">
+                                    {order.payment_method === "cod"
+                                        ? "Thanh toán tiền mặt"
+                                        : order.payment_method === "momo"
+                                            ? "Ví điện tử MoMo"
+                                            : order.payment_method === "payos"
+                                                ? "Thanh toán qua VietQr"
+                                                : order.payment_method || "Chưa có"}
+                                </span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-sm">Trạng thái:</span>
-                                <Badge variant="secondary" className="bg-green-100 text-green-800">
-                                    {order.payment.status}
+                                <Badge variant={order.payment?.status === "paid" ? "success" : "secondary"} className='bg-green-100 text-green-800 border-green-200'>
+                                    {order.payment?.status === "paid" ? "Đã thanh toán" : "Chưa thanh toán"}
                                 </Badge>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-sm">Mã giao dịch:</span>
-                                <span className="text-sm font-medium">{order.payment.transactionId}</span>
+                                <span className="text-sm font-medium">{order.payment?.transaction_id || "Chưa có"}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-sm">Thời gian:</span>
-                                <span className="text-sm font-medium">{formatDate(order.payment.paidAt)}</span>
+                                <span className="text-sm font-medium">{order.payment?.paid_at ? formatDate(order.payment.paid_at) : "Chưa có"}</span>
                             </div>
                         </CardContent>
                     </Card>
@@ -485,38 +571,42 @@ const OrderDetail = () => {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div>
-                                <div className="flex items-center justify-between mb-1">
-                                    <p className="font-medium">{order.vendor.name}</p>
-                                    <div className="flex items-center gap-1">
-                                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                        <span className="text-sm font-medium">{order.vendor.rating}</span>
-                                        <span className="text-sm text-muted-foreground">({order.vendor.reviewCount})</span>
+                            {(order.items || []).map((item, idx) => (
+                                <div key={item.id || idx} className="space-y-3">
+                                    <div>
+                                        <div className="flex items-center justify-between mb-1">
+                                            <p className="font-medium">{item.store_name || "Chưa có tên shop"}</p>
+                                            <div className="flex items-center gap-1">
+                                                <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                                                {/* <span className="text-sm font-medium">{order.vendor.rating}</span> */}
+                                                {/* <span className="text-sm text-muted-foreground">({order.vendor.reviewCount})</span> */}
+                                            </div>
+                                        </div>
+                                        <p className="text-sm text-muted-foreground">{item.store_phone || "Chưa có SĐT shop"}</p>
+                                        <p className="text-sm text-muted-foreground">{item.store_email || "Chưa có email shop"}</p>
+                                    </div>
+                                    <Separator />
+                                    <div>
+                                        <p className="text-sm font-medium mb-1">Địa chỉ:</p>
+                                        <p className="text-sm text-muted-foreground">{item.business_address || "Chưa có địa chỉ shop"}</p>
+                                    </div>
+                                    <Separator />
+                                    <div>
+                                        <p className="text-sm font-medium mb-1">Chính sách:</p>
+                                        <p className="text-sm text-muted-foreground">Đổi trả trong 7 ngày, bảo hành 12 tháng</p>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <Button variant="outline" size="sm" className="flex-1">
+                                            <MessageCircle className="mr-2 h-4 w-4" />
+                                            Chat
+                                        </Button>
+                                        <Button variant="outline" size="sm" className="flex-1">
+                                            <Store className="mr-2 h-4 w-4" />
+                                            Xem shop
+                                        </Button>
                                     </div>
                                 </div>
-                                <p className="text-sm text-muted-foreground">{order.vendor.phone}</p>
-                                <p className="text-sm text-muted-foreground">{order.vendor.email}</p>
-                            </div>
-                            <Separator />
-                            <div>
-                                <p className="text-sm font-medium mb-1">Địa chỉ:</p>
-                                <p className="text-sm text-muted-foreground">{order.vendor.address}</p>
-                            </div>
-                            <Separator />
-                            <div>
-                                <p className="text-sm font-medium mb-1">Chính sách:</p>
-                                <p className="text-sm text-muted-foreground">{order.vendor.policies}</p>
-                            </div>
-                            <div className="flex gap-2">
-                                <Button variant="outline" size="sm" className="flex-1">
-                                    <MessageCircle className="mr-2 h-4 w-4" />
-                                    Chat
-                                </Button>
-                                <Button variant="outline" size="sm" className="flex-1">
-                                    <Store className="mr-2 h-4 w-4" />
-                                    Xem shop
-                                </Button>
-                            </div>
+                            ))}
                         </CardContent>
                     </Card>
                 </div>

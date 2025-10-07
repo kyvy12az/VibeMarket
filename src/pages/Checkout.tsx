@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Check, CreditCard, MapPin, Package, Shield, Star, Truck } from "lucide-react";
@@ -11,12 +11,15 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Checkout() {
   const navigate = useNavigate();
   const location = useLocation();
-  const productData = location.state?.product;
-  
+  const productData = location.state?.product; // 1 sản phẩm
+  const productsData = location.state?.products || [];
+  const { user } = useAuth();
+
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     email: "",
@@ -31,33 +34,127 @@ export default function Checkout() {
     shippingMethod: "standard"
   });
 
-  // Mock product data if none provided
-  const product = productData || {
-    id: 1,
-    name: "Áo thun nam cao cấp",
-    image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=880&q=80",
-    price: 299000,
-    originalPrice: 399000,
-    discount: 25,
-    selectedSize: "L",
-    selectedColor: "Xanh Navy",
-    quantity: 2
-  };
+  const [product, setProduct] = useState(productData || null);
 
+  const subtotal = productsData.reduce((sum, p) => sum + p.price * p.quantity, 0);
   const shippingFee = formData.shippingMethod === "express" ? 50000 : 25000;
-  const subtotal = product.price * product.quantity;
   const total = subtotal + shippingFee;
+
+  useEffect(() => {
+    if (!productData && location.state?.productId) {
+      fetch(`${import.meta.env.VITE_BACKEND_URL}/api/product/detail.php?id=${location.state.productId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) setProduct(data.product);
+        });
+    } else if (productData) {
+      setProduct(productData);
+    }
+  }, [productData, location.state]);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (step < 3) {
       setStep(step + 1);
-    } else {
-      toast.success("Đặt hàng thành công! Chúng tôi sẽ liên hệ với bạn sớm nhất.");
-      navigate("/");
+      return;
+    }
+
+    // Chuẩn bị dữ liệu sản phẩm
+    const products = productsData.map(item => ({
+      id: item.id,
+      seller_id: item.seller_id,
+      quantity: item.quantity,
+      price: item.price,
+      size: item.selectedSize,
+      color: item.selectedColor,
+    }));
+    console.log(productsData);
+
+    // Lấy seller_id từ sản phẩm đầu tiên (nếu tất cả cùng seller)
+    const seller_id = productsData[0]?.seller_id || 1;
+
+    // Nếu có user đăng nhập, lấy id
+    const customer_id = user?.id || null;
+
+    // Địa chỉ chi tiết
+    const address = `${formData.address}, ${formData.ward}, ${formData.district}, ${formData.city}`;
+
+    // Tổng tiền
+    const subtotal = productsData.reduce((sum, p) => sum + p.price * p.quantity, 0);
+    const shippingFee = formData.shippingMethod === "express" ? 50000 : 25000;
+    const total = subtotal + shippingFee;
+
+    const orderData = {
+      customer_id,
+      fullName: formData.fullName,
+      phone: formData.phone,
+      address,
+      note: formData.note,
+      payment_method: formData.paymentMethod,
+      products,
+      total,
+      shipping_fee: shippingFee,
+      email: formData.email,
+    };
+    console.log(orderData);
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/order/create.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(orderData),
+      });
+      const data = await res.json();
+
+      if (data.success) {
+        if (formData.paymentMethod === "momo") {
+          // Gọi API MoMo
+          const momoRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/payment/momo/pay.php`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${localStorage.getItem("token") || ""}`
+            },
+            body: JSON.stringify({
+              orderCode: data.code,
+              orderInfo: `Thanh toán đơn hàng #${data.code}`
+            }),
+          });
+          const momoData = await momoRes.json();
+          if (momoData.success && momoData.payUrl) {
+            window.location.href = momoData.payUrl; // Redirect sang MoMo
+            return;
+          } else {
+            toast.error(momoData.error || "Không thể tạo thanh toán MoMo!");
+          }
+        } else if (formData.paymentMethod === "payos") {
+          const payosRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/payment/payos/pay.php`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              orderCode: data.id, 
+              orderInfo: `Thanh toán đơn hàng #${data.code}`
+            }),
+          });
+          const payosData = await payosRes.json();
+          if (payosData.success && payosData.payUrl) {
+            window.location.href = payosData.payUrl; // Redirect sang PayOS
+            return;
+          } else {
+            toast.error(payosData.message || "Không thể tạo thanh toán PayOS!");
+          }
+        } else {
+          toast.success("Đặt hàng thành công! Mã đơn: " + data.code);
+          navigate("/");
+        }
+      } else {
+        toast.error(data.message || "Có lỗi xảy ra!");
+      }
+    } catch (err) {
+      toast.error("Không thể kết nối máy chủ!");
     }
   };
 
@@ -67,14 +164,18 @@ export default function Checkout() {
     { id: 3, title: "Xác nhận đơn hàng", icon: Package }
   ];
 
+  if (!productsData.length) {
+    return <div className="text-center py-20 text-muted-foreground">Không có sản phẩm nào để thanh toán.</div>;
+  }
+
   return (
     <div className="min-h-screen bg-gradient-subtle">
       {/* Header */}
       <div className="bg-background border-b">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="icon"
               onClick={() => navigate(-1)}
               className="shrink-0"
@@ -92,11 +193,10 @@ export default function Checkout() {
           {steps.map((stepItem, index) => (
             <div key={stepItem.id} className="flex items-center gap-2">
               <motion.div
-                className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${
-                  step >= stepItem.id 
-                    ? "bg-primary border-primary text-primary-foreground" 
-                    : "border-muted-foreground text-muted-foreground"
-                }`}
+                className={`flex items-center justify-center w-10 h-10 rounded-full border-2 ${step >= stepItem.id
+                  ? "bg-primary border-primary text-primary-foreground"
+                  : "border-muted-foreground text-muted-foreground"
+                  }`}
                 animate={{ scale: step === stepItem.id ? 1.1 : 1 }}
                 transition={{ duration: 0.2 }}
               >
@@ -106,15 +206,13 @@ export default function Checkout() {
                   <stepItem.icon className="w-5 h-5" />
                 )}
               </motion.div>
-              <span className={`text-sm font-medium ${
-                step >= stepItem.id ? "text-foreground" : "text-muted-foreground"
-              }`}>
+              <span className={`text-sm font-medium ${step >= stepItem.id ? "text-foreground" : "text-muted-foreground"
+                }`}>
                 {stepItem.title}
               </span>
               {index < steps.length - 1 && (
-                <div className={`w-8 h-0.5 mx-4 ${
-                  step > stepItem.id ? "bg-primary" : "bg-muted"
-                }`} />
+                <div className={`w-8 h-0.5 mx-4 ${step > stepItem.id ? "bg-primary" : "bg-muted"
+                  }`} />
               )}
             </div>
           ))}
@@ -142,7 +240,7 @@ export default function Checkout() {
                     <div className="grid md:grid-cols-2 gap-4">
                       <div>
                         <Label htmlFor="fullName">Họ và tên *</Label>
-                        <Input 
+                        <Input
                           id="fullName"
                           value={formData.fullName}
                           onChange={(e) => handleInputChange("fullName", e.target.value)}
@@ -151,7 +249,7 @@ export default function Checkout() {
                       </div>
                       <div>
                         <Label htmlFor="phone">Số điện thoại *</Label>
-                        <Input 
+                        <Input
                           id="phone"
                           value={formData.phone}
                           onChange={(e) => handleInputChange("phone", e.target.value)}
@@ -159,10 +257,10 @@ export default function Checkout() {
                         />
                       </div>
                     </div>
-                    
+
                     <div>
                       <Label htmlFor="email">Email</Label>
-                      <Input 
+                      <Input
                         id="email"
                         type="email"
                         value={formData.email}
@@ -173,7 +271,7 @@ export default function Checkout() {
 
                     <div>
                       <Label htmlFor="address">Địa chỉ chi tiết *</Label>
-                      <Input 
+                      <Input
                         id="address"
                         value={formData.address}
                         onChange={(e) => handleInputChange("address", e.target.value)}
@@ -184,7 +282,7 @@ export default function Checkout() {
                     <div className="grid md:grid-cols-3 gap-4">
                       <div>
                         <Label htmlFor="city">Tỉnh/Thành phố *</Label>
-                        <Input 
+                        <Input
                           id="city"
                           value={formData.city}
                           onChange={(e) => handleInputChange("city", e.target.value)}
@@ -193,7 +291,7 @@ export default function Checkout() {
                       </div>
                       <div>
                         <Label htmlFor="district">Quận/Huyện *</Label>
-                        <Input 
+                        <Input
                           id="district"
                           value={formData.district}
                           onChange={(e) => handleInputChange("district", e.target.value)}
@@ -202,7 +300,7 @@ export default function Checkout() {
                       </div>
                       <div>
                         <Label htmlFor="ward">Phường/Xã *</Label>
-                        <Input 
+                        <Input
                           id="ward"
                           value={formData.ward}
                           onChange={(e) => handleInputChange("ward", e.target.value)}
@@ -213,7 +311,7 @@ export default function Checkout() {
 
                     <div>
                       <Label htmlFor="note">Ghi chú đơn hàng</Label>
-                      <Textarea 
+                      <Textarea
                         id="note"
                         value={formData.note}
                         onChange={(e) => handleInputChange("note", e.target.value)}
@@ -224,8 +322,8 @@ export default function Checkout() {
 
                     <div>
                       <Label>Phương thức vận chuyển</Label>
-                      <RadioGroup 
-                        value={formData.shippingMethod} 
+                      <RadioGroup
+                        value={formData.shippingMethod}
                         onValueChange={(value) => handleInputChange("shippingMethod", value)}
                         className="mt-2"
                       >
@@ -270,8 +368,8 @@ export default function Checkout() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <RadioGroup 
-                      value={formData.paymentMethod} 
+                    <RadioGroup
+                      value={formData.paymentMethod}
                       onValueChange={(value) => handleInputChange("paymentMethod", value)}
                       className="space-y-4"
                     >
@@ -292,9 +390,9 @@ export default function Checkout() {
                       </div>
 
                       <div className="flex items-center space-x-2 p-4 border rounded-lg">
-                        <RadioGroupItem value="banking" id="banking" />
+                        <RadioGroupItem value="payos" id="payos" />
                         <div className="flex-1">
-                          <Label htmlFor="banking" className="flex items-center gap-3 cursor-pointer">
+                          <Label htmlFor="payos" className="flex items-center gap-3 cursor-pointer">
                             <CreditCard className="w-5 h-5 text-blue-500" />
                             <div>
                               <p className="font-medium">Chuyển khoản ngân hàng</p>
@@ -304,7 +402,7 @@ export default function Checkout() {
                         </div>
                       </div>
 
-                      <div className="flex items-center space-x-2 p-4 border rounded-lg opacity-50">
+                      {/* <div className="flex items-center space-x-2 p-4 border rounded-lg opacity-50">
                         <RadioGroupItem value="vnpay" id="vnpay" disabled />
                         <div className="flex-1">
                           <Label htmlFor="vnpay" className="flex items-center justify-between cursor-pointer">
@@ -316,6 +414,19 @@ export default function Checkout() {
                               </div>
                             </div>
                             <Badge variant="outline">Sắp có</Badge>
+                          </Label>
+                        </div>
+                      </div> */}
+
+                      <div className="flex items-center space-x-2 p-4 border rounded-lg">
+                        <RadioGroupItem value="momo" id="momo" />
+                        <div className="flex-1">
+                          <Label htmlFor="momo" className="flex items-center gap-3 cursor-pointer">
+                            <img src="/images/icons/momo.png" alt="MoMo" className="w-5 h-5" />
+                            <div>
+                              <p className="font-medium">Ví MoMo</p>
+                              <p className="text-xs text-muted-foreground">Thanh toán qua ví MoMo</p>
+                            </div>
                           </Label>
                         </div>
                       </div>
@@ -364,15 +475,15 @@ export default function Checkout() {
                     <div>
                       <h4 className="font-medium mb-2">Phương thức thanh toán</h4>
                       <div className="bg-muted p-3 rounded-lg text-sm">
-                        <p>{formData.paymentMethod === "cod" ? "Thanh toán khi nhận hàng (COD)" : 
-                           formData.paymentMethod === "banking" ? "Chuyển khoản ngân hàng" : "Ví điện tử VNPay"}</p>
+                        <p>{formData.paymentMethod === "cod" ? "Thanh toán khi nhận hàng (COD)" :
+                          formData.paymentMethod === "banking" ? "Chuyển khoản ngân hàng" : "Ví điện tử VNPay"}</p>
                       </div>
                     </div>
 
                     {/* Terms */}
                     <div className="p-4 bg-blue-50 dark:bg-blue-950 rounded-lg">
                       <p className="text-sm text-blue-700 dark:text-blue-300">
-                        Bằng cách đặt hàng, bạn đồng ý với <span className="underline cursor-pointer">Điều khoản sử dụng</span> và 
+                        Bằng cách đặt hàng, bạn đồng ý với <span className="underline cursor-pointer">Điều khoản sử dụng</span> và
                         <span className="underline cursor-pointer"> Chính sách bảo mật</span> của chúng tôi.
                       </p>
                     </div>
@@ -390,23 +501,21 @@ export default function Checkout() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {/* Product Info */}
-                <div className="flex gap-3">
-                  <img 
-                    src={product.image} 
-                    alt={product.name}
-                    className="w-16 h-16 object-cover rounded-lg"
-                  />
-                  <div className="flex-1">
-                    <h4 className="font-medium text-sm">{product.name}</h4>
-                    <p className="text-xs text-muted-foreground">
-                      {product.selectedSize} / {product.selectedColor}
-                    </p>
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs">Số lượng: {product.quantity}</span>
-                      <span className="font-medium">{product.price.toLocaleString()}₫</span>
+                {productsData.map((product, idx) => (
+                  <div key={product.id + "-" + idx} className="flex gap-3 mb-3">
+                    <img src={product.image} alt={product.name} className="w-16 h-16 object-cover rounded-lg" />
+                    <div className="flex-1">
+                      <h4 className="font-medium text-sm">{product.name}</h4>
+                      <p className="text-xs text-muted-foreground">
+                        {product.selectedSize} / {product.selectedColor}
+                      </p>
+                      <div className="flex items-center justify-between mt-1">
+                        <span className="text-xs">Số lượng: {product.quantity}</span>
+                        <span className="font-medium">{product.price.toLocaleString()}₫</span>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ))}
 
                 <Separator />
 
@@ -420,12 +529,12 @@ export default function Checkout() {
                     <span>Phí vận chuyển</span>
                     <span>{shippingFee.toLocaleString()}₫</span>
                   </div>
-                  {product.discount && (
+                  {/* {product.discount && (
                     <div className="flex justify-between text-sm text-green-600">
                       <span>Giảm giá</span>
                       <span>-{((product.originalPrice - product.price) * product.quantity).toLocaleString()}₫</span>
                     </div>
-                  )}
+                  )} */}
                 </div>
 
                 <Separator />
@@ -451,7 +560,7 @@ export default function Checkout() {
                   </div>
                 </div>
 
-                <Button 
+                <Button
                   onClick={handleSubmit}
                   className="w-full bg-gradient-primary hover:opacity-90"
                   size="lg"

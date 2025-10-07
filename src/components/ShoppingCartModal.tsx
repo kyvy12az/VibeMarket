@@ -19,7 +19,10 @@ const ShoppingCartModal: React.FC<ShoppingCartModalProps> = ({ open, onOpenChang
   const { toast } = useToast();
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN').format(price) + 'đ';
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(price);
   };
 
   const handleCheckout = () => {
@@ -32,7 +35,7 @@ const ShoppingCartModal: React.FC<ShoppingCartModalProps> = ({ open, onOpenChang
       return;
     }
     onOpenChange(false);
-    navigate('/checkout');
+    navigate('/checkout', {state: { products: items }});
   };
 
   const handleRemoveItem = (id: number, name: string) => {
@@ -72,7 +75,7 @@ const ShoppingCartModal: React.FC<ShoppingCartModalProps> = ({ open, onOpenChang
               <p className="text-muted-foreground mb-6">
                 Hãy thêm một số sản phẩm để bắt đầu mua sắm
               </p>
-              <Button 
+              <Button
                 onClick={() => onOpenChange(false)}
                 className="bg-gradient-primary hover:opacity-90 transition-smooth"
               >
@@ -102,7 +105,7 @@ const ShoppingCartModal: React.FC<ShoppingCartModalProps> = ({ open, onOpenChang
 
                       <div className="flex-1 space-y-2">
                         <h4 className="font-semibold text-foreground">{item.name}</h4>
-                        
+
                         {(item.size || item.color) && (
                           <div className="flex gap-2">
                             {item.size && (
@@ -121,11 +124,11 @@ const ShoppingCartModal: React.FC<ShoppingCartModalProps> = ({ open, onOpenChang
                         <div className="flex items-center justify-between">
                           <div className="flex flex-col">
                             <span className="font-bold text-primary">
-                              {formatPrice(parseFloat(item.price.replace(/\./g, '')))}
+                              {formatPrice(item.price)}
                             </span>
                             {item.originalPrice && (
                               <span className="text-sm text-muted-foreground line-through">
-                                {formatPrice(parseFloat(item.originalPrice.replace(/\./g, '')))}
+                                {formatPrice(item.originalPrice)}
                               </span>
                             )}
                           </div>

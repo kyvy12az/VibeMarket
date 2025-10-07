@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Heart, MapPin, Users, Award, Star, ExternalLink } from "lucide-react";
 import Navigation from "@/components/Navigation";
+import { Link } from "react-router-dom";
 
 const LocalBrand = () => {
   const featuredBrands = [
@@ -221,8 +222,10 @@ const LocalBrand = () => {
                       </div>
 
                       <div className="flex gap-2">
-                        <Button className="flex-1">
-                          Xem {brand.products} sản phẩm
+                        <Button className="flex-1" asChild>
+                          <Link to={`/brand/${brand.id}`}>
+                            Xem {brand.products} sản phẩm
+                          </Link>
                         </Button>
                         <Button variant="outline" size="icon">
                           <ExternalLink className="w-4 h-4" />

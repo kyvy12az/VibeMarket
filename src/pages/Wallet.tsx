@@ -3,10 +3,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Wallet2, CreditCard, Gift, History, Plus, TrendingUp, Star, Coins, Wallet } from "lucide-react";
-import Navigation from "@/components/Navigation";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 const WalletPage = () => {
+  const navigate = useNavigate();
   const balance = 2450000;
   const loyaltyPoints = 850;
   const nextRewardAt = 1000;
@@ -102,7 +103,12 @@ const WalletPage = () => {
                     </div>
                     <Progress value={(loyaltyPoints / nextRewardAt) * 100} className="h-1" />
                   </div>
-                  <Button size="sm" variant="outline" className="w-full mt-4">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full mt-4"
+                    onClick={() => navigate("/rewards")}
+                  >
                     <Gift className="w-4 h-4 mr-1" />
                     Đổi thưởng
                   </Button>

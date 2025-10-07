@@ -3,8 +3,8 @@ import React, { createContext, useContext, useState, ReactNode } from 'react';
 export interface CartItem {
   id: number;
   name: string;
-  price: string;
-  originalPrice?: string;
+  price: number;
+  originalPrice?: number;
   image: string;
   quantity: number;
   size?: string;
@@ -66,7 +66,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const getTotalPrice = () => {
     return items.reduce((total, item) => {
-      const price = parseFloat(item.price.replace(/\./g, ''));
+      const price = item.price;
       return total + (price * item.quantity);
     }, 0);
   };

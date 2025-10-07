@@ -6,80 +6,22 @@ import { Filter, Grid, List, Search, SlidersHorizontal, Shirt, Monitor, Home as 
 import Navigation from "@/components/Navigation";
 import { useCart } from "@/contexts/CartContext";
 import ShoppingCartModal from "@/components/ShoppingCartModal";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "@/components/ui/use-toast";
+import { useNavigate } from "react-router-dom";
 
 const Shopping = () => {
+  const navigate = useNavigate();
   const { addToCart } = useCart();
   const [cartModalOpen, setCartModalOpen] = useState(false);
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const categories = [
     { name: "Thời trang", count: 2450, color: "bg-primary", icon: <Shirt className="w-7 h-7 mx-auto" /> },
     { name: "Điện tử", count: 1890, color: "bg-accent", icon: <Monitor className="w-7 h-7 mx-auto" /> },
     { name: "Gia dụng", count: 1250, color: "bg-success", icon: <HomeIcon className="w-7 h-7 mx-auto" /> },
     { name: "Làm đẹp", count: 890, color: "bg-warning", icon: <Sparkles className="w-7 h-7 mx-auto" /> },
-  ];
-
-  const allProducts = [
-    {
-      id: 1,
-      name: "Áo sơ mi cotton premium",
-      price: "299.000đ",
-      originalPrice: "399.000đ",
-      image: "https://i.ibb.co/ycq9LhXR/o-s-mi-cotton-prenium.jpg",
-      rating: 4.8,
-      sold: 1250,
-      discount: 25,
-      isLive: true,
-      seller: {
-        name: "Canifa",
-        avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=60&h=60&fit=crop"
-      },
-    },
-    {
-      id: 2,
-      name: "Điện thoại Samsung Galaxy",
-      price: "12.990.000đ",
-      originalPrice: "14.990.000đ",
-      image: "https://i.ibb.co/xKpQhF2S/samsung-galaxy.webp",
-      rating: 4.9,
-      sold: 450,
-      discount: 13,
-      isLive: false,
-      seller: {
-        name: "SamsungStore",
-        avatar: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?w=60&h=60&fit=crop"
-      },
-    },
-    {
-      id: 3,
-      name: "Máy xay sinh tố mini",
-      price: "450.000đ",
-      originalPrice: "550.000đ",
-      image: "https://i.ibb.co/KxNnBKb1/shopping.webp",
-      rating: 4.6,
-      sold: 890,
-      discount: 18,
-      isLive: true,
-      seller: {
-        name: "GiaDungPro",
-        avatar: "https://images.unsplash.com/photo-1511367461989-f85a21fda167?w=60&h=60&fit=crop"
-      },
-    },
-    {
-      id: 4,
-      name: "Son môi lâu trôi Maybelline",
-      price: "179.000đ",
-      originalPrice: "220.000đ",
-      image: "https://i.ibb.co/S1hDx7B/shopping.webp",
-      rating: 4.7,
-      sold: 2340,
-      discount: 19,
-      isLive: true,
-      seller: {
-        name: "BeautyShop",
-        avatar: "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?w=60&h=60&fit=crop"
-      },
-    },
   ];
 
   // State for filter/sort modal and grid/list view
@@ -107,6 +49,16 @@ const Shopping = () => {
   const filteredSuggestions = searchTerm.length > 0
     ? aiSuggestions.filter(s => s.toLowerCase().includes(searchTerm.toLowerCase()))
     : [];
+
+  useEffect(() => {
+    fetch(`${import.meta.env.VITE_BACKEND_URL}/api/product/list.php`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setProducts(data.products);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
 
   // Dummy filter/sort handlers
   const handleFilter = (filter: string) => {
@@ -157,13 +109,15 @@ const Shopping = () => {
   };
 
   // Add to cart feedback + open modal
-  const handleAddToCart = (product: typeof allProducts[0]) => {
+  const handleAddToCart = (product: typeof products[0]) => {
     addToCart({
       id: product.id,
       name: product.name,
       price: product.price,
       originalPrice: product.originalPrice,
-      image: product.image
+      image: product.image,
+      quantity: 1,
+      seller_id: product.seller_id,
     });
     setCartModalOpen(true);
     toast({
@@ -174,13 +128,12 @@ const Shopping = () => {
   };
 
   // Filtered and sorted products
-  let products = allProducts.filter(p =>
-    (!selectedCategory || (selectedCategory && categories.find(c => c.name === selectedCategory)?.name === selectedCategory && selectedCategory === getCategoryName(p))) &&
+  let filteredProducts = products.filter(p =>
+    (!selectedCategory || p.category === selectedCategory) &&
     (searchTerm === "" || p.name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  // Helper to map product to category (simple demo logic)
-  function getCategoryName(product: typeof allProducts[0]) {
+  function getCategoryName(product: typeof products[0]) {
     if (product.name.toLowerCase().includes("áo")) return "Thời trang";
     if (product.name.toLowerCase().includes("điện thoại")) return "Điện tử";
     if (product.name.toLowerCase().includes("máy xay")) return "Gia dụng";
@@ -190,14 +143,21 @@ const Shopping = () => {
 
   // Sort logic
   if (sortOption === "Giá tăng dần") {
-    products = [...products].sort((a, b) => parseInt(a.price.replace(/\D/g, "")) - parseInt(b.price.replace(/\D/g, "")));
+    filteredProducts = [...filteredProducts].sort((a, b) => a.price - b.price);
   } else if (sortOption === "Giá giảm dần") {
-    products = [...products].sort((a, b) => parseInt(b.price.replace(/\D/g, "")) - parseInt(a.price.replace(/\D/g, "")));
+    filteredProducts = [...filteredProducts].sort((a, b) => b.price - a.price);
   } else if (sortOption === "Bán chạy") {
-    products = [...products].sort((a, b) => b.sold - a.sold);
+    filteredProducts = [...filteredProducts].sort((a, b) => b.sold - a.sold);
   } else if (sortOption === "Mới nhất") {
-    products = [...products].sort((a, b) => b.id - a.id);
+    filteredProducts = [...filteredProducts].sort((a, b) => b.id - a.id);
   }
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('vi-VN', {
+      style: 'currency',
+      currency: 'VND'
+    }).format(price);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -352,190 +312,217 @@ const Shopping = () => {
           </div>
 
           {/* Products Grid */}
-          {viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-              {products.map((product, index) => (
-                <motion.div
-                  key={product.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <Card className="bg-gradient-card border-border hover-glow overflow-hidden group transition-transform duration-300 will-change-transform hover:scale-105">
-                    <div className="relative">
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-full h-64 object-contain bg-white transition-transform duration-500 group-hover:scale-110"
-                      />
-                      {/* Badges */}
-                      <div className="absolute top-3 left-3 flex flex-col gap-2">
-                        {product.discount > 0 && (
-                          <Badge className="bg-destructive text-white">
-                            -{product.discount}%
-                          </Badge>
-                        )}
-                        {product.isLive && (
-                          <Badge className="bg-accent text-white animate-pulse">
-                            🔴 Live
-                          </Badge>
-                        )}
-                      </div>
-                      {/* Heart Icon */}
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="absolute top-3 right-3 w-8 h-8 bg-background/20 backdrop-blur-sm hover:bg-background/40 text-white"
-                      >
-                        <Heart className="w-4 h-4" />
-                      </Button>
-                      {/* Quick Actions Overlay (only show on hover) */}
-                      <div className="absolute inset-0 flex items-center justify-center gap-2 pointer-events-none">
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto flex gap-2">
-                          <Button size="icon" variant="secondary" className="w-10 h-10" tabIndex={-1}>
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button 
-                            size="icon" 
-                            onClick={() => handleAddToCart(product)}
-                            className="w-10 h-10 bg-gradient-primary" 
-                            tabIndex={-1}
-                          >
-                            <ShoppingCart className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-
-                    <CardContent className="p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <img src={product.seller.avatar} alt={product.seller.name} className="w-7 h-7 rounded-full object-cover border border-muted" />
-                        <span className="text-sm font-semibold text-primary">{product.seller.name}</span>
-                      </div>
-                      <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
-                        {product.name}
-                      </h3>
-
-                      <div className="flex items-center gap-2 md:gap-4 text-xs md:text-sm text-muted-foreground mt-2 mb-2 md:mb-3">
-                        <div className="flex items-center gap-1">
-                          <Star className="w-4 h-4 fill-warning text-warning" />
-                          <span className="text-sm font-medium">{product.rating}</span>
-                        </div>
-                        <span>Đã bán {product.sold}</span>
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex flex-col">
-                          <span className="text-lg font-bold text-primary">
-                            {product.price}đ
-                          </span>
-                          {product.originalPrice && (
-                            <span className="text-sm text-muted-foreground line-through">
-                              {product.originalPrice}đ
-                            </span>
+          {filteredProducts.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
+              <ShoppingBag className="w-16 h-16 mb-4" />
+              <p className="text-lg font-semibold">Chưa có sản phẩm nào</p>
+            </div>
+          ) :
+            viewMode === 'grid' ? (
+              <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+                {filteredProducts.map((product, index) => (
+                  <motion.div
+                    key={product.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <Card className="bg-gradient-card border-border hover-glow overflow-hidden group transition-transform duration-300 will-change-transform hover:scale-105">
+                      <div className="relative">
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          className="w-full h-64 object-contain bg-white transition-transform duration-500 group-hover:scale-110"
+                        />
+                        {/* Badges */}
+                        <div className="absolute top-3 left-3 flex flex-col gap-2">
+                          {product.discount > 0 && (
+                            <Badge className="bg-destructive text-white">
+                              -{product.discount}%
+                            </Badge>
+                          )}
+                          {product.isLive && (
+                            <Badge className="bg-accent text-white animate-pulse">
+                              🔴 Live
+                            </Badge>
                           )}
                         </div>
-
+                        {/* Heart Icon */}
                         <Button
-                          size="sm"
-                          className="bg-gradient-primary hover:opacity-90 transition-smooth"
+                          size="icon"
+                          variant="ghost"
+                          className="absolute top-3 right-3 w-8 h-8 bg-background/20 backdrop-blur-sm hover:bg-background/40 text-white"
+                        >
+                          <Heart className="w-4 h-4" />
+                        </Button>
+                        {/* Quick Actions Overlay (only show on hover) */}
+                        <div className="absolute inset-0 flex items-center justify-center gap-2 pointer-events-none">
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto flex gap-2">
+                            <Button 
+                              size="icon" 
+                              variant="secondary" 
+                              className="w-10 h-10" 
+                              tabIndex={-1}
+                              onClick={() => navigate(`/product/${product.id}`)}
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              onClick={() => handleAddToCart(product)}
+                              className="w-10 h-10 bg-gradient-primary"
+                              tabIndex={-1}
+                            >
+                              <ShoppingCart className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-2 mb-2">
+                          <img 
+                            src={product.seller.avatar || '/images/avatars/default-shop-avatar.png'}
+                            alt={product.seller.name} 
+                            className="w-7 h-7 rounded-full object-cover border border-muted" 
+                          />
+                          <span className="text-sm font-semibold text-primary">{product.seller.name}</span>
+                        </div>
+                        <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
+                          {product.name}
+                        </h3>
+
+                        <div className="flex items-center gap-2 md:gap-4 text-xs md:text-sm text-muted-foreground mt-2 mb-2 md:mb-3">
+                          <div className="flex items-center gap-1">
+                            <Star className="w-4 h-4 fill-warning text-warning" />
+                            <span className="text-sm font-medium">{product.rating}</span>
+                          </div>
+                          <span>Đã bán {product.sold}</span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex flex-col">
+                            <span className="text-lg font-bold text-primary">
+                              {formatPrice(product.price)}
+                            </span>
+                            {product.originalPrice && (
+                              <span className="text-sm text-muted-foreground line-through">
+                                {formatPrice(product.originalPrice)}
+                              </span>
+                            )}
+                          </div>
+
+                          <Button
+                            size="sm"
+                            className="bg-gradient-primary hover:opacity-90 transition-smooth"
+                            onClick={() => handleAddToCart(product)}
+                          >
+                            <ShoppingCart className="h-4 w-4 mr-1" />
+                            Thêm vào giỏ
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4 md:gap-6">
+                {filteredProducts.map((product, index) => (
+                  <motion.div
+                    key={product.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <Card className="flex flex-col md:flex-row overflow-hidden hover-lift bg-gradient-card border-border group">
+                      <div className="relative md:w-1/3">
+                        <img
+                          src={product.image}
+                          alt={product.name}
+                          className="w-full h-40 xs:h-48 md:h-full object-contain bg-white"
+                        />
+                        <div className="absolute top-3 left-3 flex flex-col gap-2">
+                          {product.discount > 0 && (
+                            <Badge className="bg-destructive text-white">
+                              -{product.discount}%
+                            </Badge>
+                          )}
+                          {product.isLive && (
+                            <Badge className="bg-accent text-white animate-pulse">
+                              🔴 Live
+                            </Badge>
+                          )}
+                        </div>
+                        {/* Heart Icon */}
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="absolute top-3 right-3 w-8 h-8 bg-background/20 backdrop-blur-sm hover:bg-background/40 text-white"
+                        >
+                          <Heart className="w-4 h-4" />
+                        </Button>
+                        {/* Quick Actions Overlay (only show on hover) */}
+                        <div className="absolute inset-0 flex items-center justify-center gap-2 pointer-events-none">
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto flex gap-2">
+                            <Button 
+                              size="icon" 
+                              variant="secondary" 
+                              className="w-10 h-10" 
+                              tabIndex={-1}
+                              onClick={() => navigate(`/product/${product.id}`)}
+                            >
+
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              onClick={() => handleAddToCart(product)}
+                              className="w-10 h-10 bg-gradient-primary"
+                              tabIndex={-1}
+                            >
+                              <ShoppingCart className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-3 md:p-4 flex-1 flex flex-col justify-between">
+                        <div className="flex items-center gap-2 mb-2">
+                          <img 
+                            src={product.seller.avatar || '/images/avatars/default-shop-avatar.png'} 
+                            alt={product.seller.name} 
+                            className="w-7 h-7 rounded-full object-cover border border-muted" 
+                          />
+                          <span className="text-sm font-semibold text-primary">{product.seller.name}</span>
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-card-foreground text-base md:text-lg mb-1 md:mb-2">
+                            {product.name}
+                          </h3>
+                          <div className="flex items-center gap-2 mb-1 md:mb-2">
+                            <span className="text-base md:text-lg font-bold text-primary">{formatPrice(product.price)}</span>
+                            <span className="text-xs md:text-sm text-muted-foreground line-through">
+                              {formatPrice(product.originalPrice)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 md:gap-4 text-xs md:text-sm text-muted-foreground mb-1 md:mb-2">
+                            <span>⭐ {product.rating}</span>
+                            <span>Đã bán {product.sold}</span>
+                          </div>
+                        </div>
+                        <Button
+                          className="w-full md:w-auto mt-2 md:mt-0 text-xs md:text-base py-2 md:py-3"
                           onClick={() => handleAddToCart(product)}
                         >
                           <ShoppingCart className="h-4 w-4 mr-1" />
                           Thêm vào giỏ
                         </Button>
                       </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4 md:gap-6">
-              {products.map((product, index) => (
-                <motion.div
-                  key={product.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <Card className="flex flex-col md:flex-row overflow-hidden hover-lift bg-gradient-card border-border group">
-                    <div className="relative md:w-1/3">
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-full h-40 xs:h-48 md:h-full object-contain bg-white"
-                      />
-                      <div className="absolute top-3 left-3 flex flex-col gap-2">
-                        {product.discount > 0 && (
-                          <Badge className="bg-destructive text-white">
-                            -{product.discount}%
-                          </Badge>
-                        )}
-                        {product.isLive && (
-                          <Badge className="bg-accent text-white animate-pulse">
-                            🔴 Live
-                          </Badge>
-                        )}
-                      </div>
-                      {/* Heart Icon */}
-                      <Button
-                        size="icon"
-                        variant="ghost"
-                        className="absolute top-3 right-3 w-8 h-8 bg-background/20 backdrop-blur-sm hover:bg-background/40 text-white"
-                      >
-                        <Heart className="w-4 h-4" />
-                      </Button>
-                      {/* Quick Actions Overlay (only show on hover) */}
-                      <div className="absolute inset-0 flex items-center justify-center gap-2 pointer-events-none">
-                        <div className="opacity-0 group-hover:opacity-100 transition-opacity pointer-events-auto flex gap-2">
-                          <Button size="icon" variant="secondary" className="w-10 h-10" tabIndex={-1}>
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button 
-                            size="icon" 
-                            onClick={() => handleAddToCart(product)}
-                            className="w-10 h-10 bg-gradient-primary" 
-                            tabIndex={-1}
-                          >
-                            <ShoppingCart className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="p-3 md:p-4 flex-1 flex flex-col justify-between">
-                      <div className="flex items-center gap-2 mb-2">
-                        <img src={product.seller.avatar} alt={product.seller.name} className="w-7 h-7 rounded-full object-cover border border-muted" />
-                        <span className="text-sm font-semibold text-primary">{product.seller.name}</span>
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-card-foreground text-base md:text-lg mb-1 md:mb-2">
-                          {product.name}
-                        </h3>
-                        <div className="flex items-center gap-2 mb-1 md:mb-2">
-                          <span className="text-base md:text-lg font-bold text-primary">{product.price}</span>
-                          <span className="text-xs md:text-sm text-muted-foreground line-through">
-                            {product.originalPrice}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 md:gap-4 text-xs md:text-sm text-muted-foreground mb-1 md:mb-2">
-                          <span>⭐ {product.rating}</span>
-                          <span>Đã bán {product.sold}</span>
-                        </div>
-                      </div>
-                      <Button
-                        className="w-full md:w-auto mt-2 md:mt-0 text-xs md:text-base py-2 md:py-3"
-                        onClick={() => handleAddToCart(product)}
-                      >
-                        <ShoppingCart className="h-4 w-4 mr-1" />
-                        Thêm vào giỏ
-                      </Button>
-                    </div>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-          )}
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            )}
           {/* ShoppingCart Modal */}
           {/* <ShoppingCartModal
             open={cartModalOpen}

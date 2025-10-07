@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { User, mockUsers } from '@/data/mockUsers';
+import { User } from '@/data/mockUsers';
 import { toast } from '@/hooks/use-toast';
 
 interface AuthContextType {
@@ -24,45 +24,58 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:80";
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Lấy lại user và token khi load lại trang
   useEffect(() => {
-    // Check for saved user in localStorage
     const savedUser = localStorage.getItem('vibeventure_user');
-    if (savedUser) {
+    const savedToken = localStorage.getItem('vibeventure_token');
+    if (savedUser && savedToken) {
       try {
         setUser(JSON.parse(savedUser));
       } catch (error) {
         localStorage.removeItem('vibeventure_user');
+        localStorage.removeItem('vibeventure_token');
       }
     }
   }, []);
 
   const login = async (email: string, password: string, rememberMe = false): Promise<boolean> => {
     setIsLoading(true);
-    
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    const foundUser = mockUsers.find(u => u.email === email && u.password === password);
-    
-    if (foundUser) {
-      setUser(foundUser);
-      if (rememberMe) {
-        localStorage.setItem('vibeventure_user', JSON.stringify(foundUser));
-      }
-      toast({
-        title: "Đăng nhập thành công!",
-        description: `Chào mừng ${foundUser.name}`,
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/auth/login.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
       });
-      setIsLoading(false);
-      return true;
-    } else {
+      const data = await res.json();
+      if (data.success) {
+        setUser(data.user);
+        localStorage.setItem('vibeventure_user', JSON.stringify(data.user));
+        localStorage.setItem('vibeventure_token', data.token);
+        toast({
+          title: "Đăng nhập thành công!",
+          description: `Chào mừng ${data.user.name}`,
+        });
+        setIsLoading(false);
+        return true;
+      } else {
+        toast({
+          title: "Đăng nhập thất bại",
+          description: data.error || "Email hoặc mật khẩu không đúng",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return false;
+      }
+    } catch (err) {
       toast({
-        title: "Đăng nhập thất bại",
-        description: "Email hoặc mật khẩu không đúng",
+        title: "Lỗi hệ thống",
+        description: "Không thể kết nối máy chủ",
         variant: "destructive",
       });
       setIsLoading(false);
@@ -72,50 +85,187 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const register = async (email: string, password: string, name: string): Promise<boolean> => {
     setIsLoading(true);
-    
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Check if user already exists
-    const existingUser = mockUsers.find(u => u.email === email);
-    if (existingUser) {
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/auth/register.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, name }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUser(data.user);
+        localStorage.setItem('vibeventure_user', JSON.stringify(data.user));
+        localStorage.setItem('vibeventure_token', data.token);
+        toast({
+          title: "Đăng ký thành công!",
+          description: `Chào mừng ${data.user.name}`,
+        });
+        setIsLoading(false);
+        return true;
+      } else {
+        toast({
+          title: "Đăng ký thất bại",
+          description: data.error || "Đã có lỗi xảy ra",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return false;
+      }
+    } catch (err) {
       toast({
-        title: "Đăng ký thất bại",
-        description: "Email này đã được sử dụng",
+        title: "Lỗi hệ thống",
+        description: "Không thể kết nối máy chủ",
         variant: "destructive",
       });
       setIsLoading(false);
       return false;
     }
+  };
 
-    const newUser: User = {
-      id: Date.now().toString(),
-      email,
-      password,
-      name,
-      role: 'user',
-      createdAt: new Date(),
-      isVendor: false
-    };
+  const googleLogin = async (credential: string, type: "id_token" | "code" = "id_token"): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/auth/google.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(type === "id_token" ? { googleToken: credential } : { code: credential }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUser(data.user);
+        localStorage.setItem('vibeventure_user', JSON.stringify(data.user));
+        localStorage.setItem('vibeventure_token', data.token);
+        toast({
+          title: "Đăng nhập Google thành công!",
+          description: `Chào mừng ${data.user.name}`,
+        });
+        setIsLoading(false);
+        return true;
+      } else {
+        toast({
+          title: "Đăng nhập Google thất bại",
+          description: data.message || "Có lỗi xảy ra",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return false;
+      }
+    } catch (err) {
+      toast({
+        title: "Lỗi hệ thống",
+        description: "Không thể kết nối máy chủ",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return false;
+    }
+  };
 
-    // Add to mock users (in real app, this would be API call)
-    mockUsers.push(newUser);
-    
-    setUser(newUser);
-    localStorage.setItem('vibeventure_user', JSON.stringify(newUser));
-    
-    toast({
-      title: "Đăng ký thành công!",
-      description: `Chào mừng ${newUser.name}`,
-    });
-    
-    setIsLoading(false);
-    return true;
+  const zaloLogin = async (zaloToken: string): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${BACKEND_URL}/api/auth/zalo.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ zaloToken }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUser(data.user);
+        localStorage.setItem('vibeventure_user', JSON.stringify(data.user));
+        localStorage.setItem('vibeventure_token', data.token);
+        toast({
+          title: "Đăng nhập Zalo thành công!",
+          description: `Chào mừng ${data.user.name}`,
+        });
+        setIsLoading(false);
+        return true;
+      } else {
+        toast({
+          title: "Đăng nhập Zalo thất bại",
+          description: data.message || "Có lỗi xảy ra",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return false;
+      }
+    } catch (err) {
+      toast({
+        title: "Lỗi hệ thống",
+        description: "Không thể kết nối máy chủ",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return false;
+    }
+  };
+
+  const facebookLogin = async (code: string): Promise<boolean> => {
+    setIsLoading(true);
+    try {
+      // Đổi code lấy accessToken từ Facebook
+      const FACEBOOK_APP_ID = import.meta.env.VITE_FACEBOOK_APP_ID;
+      const FACEBOOK_APP_SECRET = import.meta.env.VITE_FACEBOOK_APP_SECRET;
+      const REDIRECT_URI_FACEBOOK = `${window.location.origin}/callback/facebook`;
+
+      // Lấy access_token từ Facebook
+      const tokenRes = await fetch(
+        `https://graph.facebook.com/v19.0/oauth/access_token?` +
+        `client_id=${FACEBOOK_APP_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI_FACEBOOK)}` +
+        `&client_secret=${FACEBOOK_APP_SECRET}&code=${code}`
+      );
+      const tokenData = await tokenRes.json();
+      if (!tokenData.access_token) {
+        toast({
+          title: "Đăng nhập Facebook thất bại",
+          description: tokenData.error?.message || "Không lấy được access token",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return false;
+      }
+
+      // Gửi access_token lên backend để lấy user & token
+      const res = await fetch(`${BACKEND_URL}/api/auth/facebook.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ accessToken: tokenData.access_token }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setUser(data.user);
+        localStorage.setItem('vibeventure_user', JSON.stringify(data.user));
+        localStorage.setItem('vibeventure_token', data.token);
+        toast({
+          title: "Đăng nhập Facebook thành công!",
+          description: `Chào mừng ${data.user.name}`,
+        });
+        setIsLoading(false);
+        return true;
+      } else {
+        toast({
+          title: "Đăng nhập Facebook thất bại",
+          description: data.message || "Có lỗi xảy ra",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return false;
+      }
+    } catch (err) {
+      toast({
+        title: "Lỗi hệ thống",
+        description: "Không thể kết nối máy chủ",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return false;
+    }
   };
 
   const logout = () => {
     setUser(null);
     localStorage.removeItem('vibeventure_user');
+    localStorage.removeItem('vibeventure_token');
     toast({
       title: "Đã đăng xuất",
       description: "Hẹn gặp lại bạn!",
@@ -126,6 +276,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     login,
     register,
+    googleLogin,
+    facebookLogin,
+    zaloLogin,
     logout,
     isLoading
   };

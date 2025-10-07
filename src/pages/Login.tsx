@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
 
 const loginSchema = z.object({
   email: z.string().email('Email không hợp lệ'),
@@ -22,7 +23,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 const Login: React.FC = () => {
   const [showPassword, setShowPassword] = React.useState(false);
-  const { login, isLoading } = useAuth();
+  const { login, isLoading, googleLogin } = useAuth();
   const navigate = useNavigate();
 
   const form = useForm<LoginFormValues>({
@@ -41,23 +42,50 @@ const Login: React.FC = () => {
     }
   };
 
+  // Đăng nhập bằng Zalo
+  const ZALO_APP_ID = import.meta.env.VITE_ZALO_APP_ID;
+  const REDIRECT_URI = `${window.location.origin}/callback/zalo`;
+  const handleZaloLogin = () => {
+    const authUrl = `https://oauth.zaloapp.com/v4/permission?app_id=${ZALO_APP_ID}&redirect_uri=${encodeURIComponent(
+      REDIRECT_URI
+    )}&state=nguyenkyvy&scope=public_profile,email`;
+    window.location.href = authUrl;
+  };
+
+  // Đăng nhập bằng Google
+  const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+  const REDIRECT_URI_GOOGLE = `${window.location.origin}/callback/google`;
+  const handleGoogleLogin = () => {
+    const authUrl =
+      `https://accounts.google.com/o/oauth2/v2/auth?` +
+      `client_id=${GOOGLE_CLIENT_ID}&` +
+      `redirect_uri=${encodeURIComponent(REDIRECT_URI_GOOGLE)}&` +
+      `response_type=code&` +
+      `scope=openid email profile&` +
+      `state=google_oauth`;
+    window.location.href = authUrl;
+  };
+
+  const FACEBOOK_APP_ID = import.meta.env.VITE_FACEBOOK_APP_ID;
+  const REDIRECT_URI_FACEBOOK = `${window.location.origin}/callback/facebook`;
+
+  const handleFacebookLogin = () => {
+    const authUrl =
+      `https://www.facebook.com/v19.0/dialog/oauth?` +
+      `client_id=${FACEBOOK_APP_ID}&` +
+      `redirect_uri=${encodeURIComponent(REDIRECT_URI_FACEBOOK)}&` +
+      `state=facebook_oauth&` +
+      `scope=email,public_profile`;
+    window.location.href = authUrl;
+  };
+
   return (
-    <AuthLayout 
-      title="Đăng nhập" 
+    <AuthLayout
+      title="Đăng nhập"
       subtitle="Chào mừng bạn quay trở lại!"
     >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {/* Demo accounts info */}
-          <div className="bg-white/5 rounded-lg p-4 border border-white/10">
-            <h3 className="text-white font-medium mb-2">Tài khoản demo:</h3>
-            <div className="text-white/80 text-sm space-y-1">
-              <div>Admin: admin@vibeventure.com / 123456</div>
-              <div>User: user@gmail.com / 123456</div>
-              <div>Seller: seller@gmail.com / 123456</div>
-            </div>
-          </div>
-
           {/* Email */}
           <FormField
             control={form.control}
@@ -156,27 +184,36 @@ const Login: React.FC = () => {
           </div>
 
           {/* Social login */}
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3">
+            {/* Google Login */}
             <Button
               type="button"
               variant="outline"
               className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              onClick={handleGoogleLogin}
             >
-              <Chrome className="w-4 h-4" />
+              <img src="/images/icons/google.png" alt="Icon Google" className='w-5 h-5' />
+              Đăng nhập với Google
             </Button>
             <Button
               type="button"
               variant="outline"
               className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              onClick={handleFacebookLogin}
             >
-              <Facebook className="w-4 h-4" />
+              <img src="/images/icons/facebook.png" alt="Icon Facebook" className='w-5 h-5' />
+              Đăng nhập với Facebook
             </Button>
             <Button
               type="button"
               variant="outline"
               className="bg-white/10 border-white/20 text-white hover:bg-white/20"
+              onClick={() => {
+                handleZaloLogin();
+              }}
             >
-              <Twitter className="w-4 h-4" />
+              <img src="/images/icons/zalo.png" alt="Icon Zalo" className="w-5 h-5" />
+              Đăng nhập với Zalo
             </Button>
           </div>
 

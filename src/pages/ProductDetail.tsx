@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useParams, useNavigate } from "react-router-dom";
 import {
@@ -16,7 +16,8 @@ import {
     ChevronLeft,
     ChevronRight,
     Plus,
-    Minus
+    Minus,
+    AlertTriangle
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,51 +26,58 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
+import { useCart } from "@/contexts/CartContext";
+import { useToast } from "@/hooks/use-toast";
 
 const ProductDetail = () => {
     const { id } = useParams();
     const navigate = useNavigate();
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
+    const { addToCart } = useCart();
+    const [cartModalOpen, setCartModalOpen] = useState(false);
     const [quantity, setQuantity] = useState(1);
-    const [selectedSize, setSelectedSize] = useState("M");
-    const [selectedColor, setSelectedColor] = useState("Đen");
+    const [selectedSize, setSelectedSize] = useState("");
+    const [selectedColor, setSelectedColor] = useState("");
     const [isLiked, setIsLiked] = useState(false);
+    const [product, setProduct] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const { toast } = useToast();
 
     // Mock product data - In real app, fetch by ID
-    const product = {
-        id: 1,
-        name: "Áo thun local brand premium",
-        price: "299.000",
-        originalPrice: "399.000",
-        discount: 25,
-        rating: 4.8,
-        totalReviews: 124,
-        sold: 1250,
-        inStock: 45,
-        brand: "VietStyle Co.",
-        description: "Áo thun local brand cao cấp với chất liệu cotton 100% tự nhiên, thiết kế tối giản nhưng tinh tế. Phù hợp cho mọi hoạt động hàng ngày.",
-        features: [
-            "Chất liệu cotton 100% tự nhiên",
-            "Form áo vừa vặn, thoải mái",
-            "Màu sắc bền đẹp sau nhiều lần giặt",
-            "Thiết kế unisex phù hợp mọi giới tính"
-        ],
-        images: [
-            "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600&h=600&fit=crop",
-            "https://images.unsplash.com/photo-1503341338145-b5c2b2e19337?w=600&h=600&fit=crop",
-            "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=600&h=600&fit=crop",
-            "https://images.unsplash.com/photo-1583743814966-8936f37f2e14?w=600&h=600&fit=crop"
-        ],
-        sizes: ["S", "M", "L", "XL", "XXL"],
-        colors: ["Đen", "Trắng", "Xám", "Navy"],
-        specifications: {
-            "Chất liệu": "Cotton 100%",
-            "Xuất xứ": "Việt Nam",
-            "Kích thước": "S-XXL",
-            "Trọng lượng": "180g",
-            "Kiểu dáng": "Regular fit"
-        }
-    };
+    // const product = {
+    //     id: 1,
+    //     name: "Áo thun local brand premium",
+    //     price: "299.000",
+    //     originalPrice: "399.000",
+    //     discount: 25,
+    //     rating: 4.8,
+    //     totalReviews: 124,
+    //     sold: 1250,
+    //     inStock: 45,
+    //     brand: "VietStyle Co.",
+    //     description: "Áo thun local brand cao cấp với chất liệu cotton 100% tự nhiên, thiết kế tối giản nhưng tinh tế. Phù hợp cho mọi hoạt động hàng ngày.",
+    //     features: [
+    //         "Chất liệu cotton 100% tự nhiên",
+    //         "Form áo vừa vặn, thoải mái",
+    //         "Màu sắc bền đẹp sau nhiều lần giặt",
+    //         "Thiết kế unisex phù hợp mọi giới tính"
+    //     ],
+    //     images: [
+    //         "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600&h=600&fit=crop",
+    //         "https://images.unsplash.com/photo-1503341338145-b5c2b2e19337?w=600&h=600&fit=crop",
+    //         "https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=600&h=600&fit=crop",
+    //         "https://images.unsplash.com/photo-1583743814966-8936f37f2e14?w=600&h=600&fit=crop"
+    //     ],
+    //     sizes: ["S", "M", "L", "XL", "XXL"],
+    //     colors: ["Đen", "Trắng", "Xám", "Navy"],
+    //     specifications: {
+    //         "Chất liệu": "Cotton 100%",
+    //         "Xuất xứ": "Việt Nam",
+    //         "Kích thước": "S-XXL",
+    //         "Trọng lượng": "180g",
+    //         "Kiểu dáng": "Regular fit"
+    //     }
+    // };
 
     const reviews = [
         {
@@ -136,6 +144,23 @@ const ProductDetail = () => {
         { stars: 1, count: 2, percentage: 2 }
     ];
 
+    useEffect(() => {
+        setLoading(true);
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/api/product/detail.php?id=${id}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) setProduct(data.product);
+                setLoading(false);
+            });
+    }, [id]);
+
+    useEffect(() => {
+        if (product) {
+            setSelectedSize(product.sizes?.[0] || "");
+            setSelectedColor(product.colors?.[0] || "");
+        }
+    }, [product]);
+
     const nextImage = () => {
         setCurrentImageIndex((prev) => (prev + 1) % product.images.length);
     };
@@ -152,6 +177,86 @@ const ProductDetail = () => {
             />
         ));
     };
+
+    const handleAddToCart = () => {
+        if (quantity < 1 || quantity > product.inStock) {
+            toast({
+                title: "Số lượng không hợp lệ!",
+                description: `Vui lòng chọn số lượng từ 1 đến ${product.inStock}`,
+                variant: "destructive",
+            });
+            return;
+        }
+        addToCart({
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            originalPrice: product.originalPrice,
+            image: product.images?.[0] || "",
+            quantity,
+            seller_id: product.seller_id,
+            size: selectedSize,
+            color: selectedColor,
+        });
+        setCartModalOpen(true);
+        toast({
+            title: "Đã thêm vào giỏ hàng!",
+            description: `${product.name} x${quantity}`,
+            duration: 2000,
+        });
+    };
+
+    const formatPrice = (price: number) => {
+        return new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND'
+        }).format(price);
+    };
+
+    if (loading) return (
+        <div className="flex min-h-[100vh] items-center justify-center">
+            {loading && (
+                <div className="flex items-center justify-center min-h-screen">
+                    <div className="flex flex-col items-center">
+                        <div className="relative w-20 h-20">
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <img src="/logo.png" alt="Logo" className="w-10 h-10" />
+                            </div>
+                            <div className="absolute inset-0 rounded-full border-4 border-gray-300 border-t-transparent animate-spin"></div>
+                        </div>
+                        <span className="mt-4 text-sm text-gray-500 animate-pulse">
+                            Đang tải dữ liệu....
+                        </span>
+                    </div>
+                </div>
+            )}
+            {!loading && (
+                <div className='flex flex-col items-center'>
+                    {/* <div className="mb-4 p-4 bg-error-50 text-error-700 rounded-lg text-sm">
+                        {error}
+                    </div> */}
+                    <button onClick={() => (navigate('/login', { replace: true }))} className='mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg'>
+                        Thử lại
+                    </button>
+                </div>
+            )}
+        </div>
+    )
+    if (!product) return (
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-muted-foreground">
+            <AlertTriangle className="w-16 h-16 mb-4 text-destructive" />
+            <h2 className="text-2xl font-bold mb-2">Không tìm thấy sản phẩm</h2>
+            <p className="mb-6">Sản phẩm này không tồn tại hoặc đã bị xóa khỏi hệ thống.</p>
+            <Button
+                variant="outline"
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-2"
+            >
+                <ArrowLeft className="w-4 h-4" />
+                Quay về trang trước
+            </Button>
+        </div>
+    );
 
     return (
         <div className="min-h-screen bg-background">
@@ -259,49 +364,53 @@ const ProductDetail = () => {
                             </div>
 
                             <div className="flex items-baseline gap-3 mb-6">
-                                <span className="text-3xl font-bold text-primary">{product.price}đ</span>
+                                <span className="text-3xl font-bold text-primary">{formatPrice(product.price)}</span>
                                 {product.originalPrice && (
                                     <span className="text-lg text-muted-foreground line-through">
-                                        {product.originalPrice}đ
+                                        {formatPrice(product.originalPrice)}
                                     </span>
                                 )}
                             </div>
                         </div>
 
                         {/* Size Selection */}
-                        <div>
-                            <h3 className="font-semibold mb-3">Kích thước</h3>
-                            <div className="flex gap-2 flex-wrap">
-                                {product.sizes.map((size) => (
-                                    <Button
-                                        key={size}
-                                        variant={selectedSize === size ? "default" : "outline"}
-                                        size="sm"
-                                        onClick={() => setSelectedSize(size)}
-                                        className="min-w-[48px]"
-                                    >
-                                        {size}
-                                    </Button>
-                                ))}
+                        {product.sizes && product.sizes.filter(s => s.trim() !== "").length > 0 && (
+                            <div>
+                                <h3 className="font-semibold mb-3">Kích thước</h3>
+                                <div className="flex gap-2 flex-wrap">
+                                    {product.sizes.filter(s => s.trim() !== "").map((size) => (
+                                        <Button
+                                            key={size}
+                                            variant={selectedSize === size ? "default" : "outline"}
+                                            size="sm"
+                                            onClick={() => setSelectedSize(size)}
+                                            className="min-w-[48px]"
+                                        >
+                                            {size}
+                                        </Button>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Color Selection */}
-                        <div>
-                            <h3 className="font-semibold mb-3">Màu sắc</h3>
-                            <div className="flex gap-2 flex-wrap">
-                                {product.colors.map((color) => (
-                                    <Button
-                                        key={color}
-                                        variant={selectedColor === color ? "default" : "outline"}
-                                        size="sm"
-                                        onClick={() => setSelectedColor(color)}
-                                    >
-                                        {color}
-                                    </Button>
-                                ))}
+                        {product.colors && product.colors.filter(c => c.trim() !== "").length > 0 && (
+                            <div>
+                                <h3 className="font-semibold mb-3">Màu sắc</h3>
+                                <div className="flex gap-2 flex-wrap">
+                                    {product.colors.filter(c => c.trim() !== "").map((color) => (
+                                        <Button
+                                            key={color}
+                                            variant={selectedColor === color ? "default" : "outline"}
+                                            size="sm"
+                                            onClick={() => setSelectedColor(color)}
+                                        >
+                                            {color}
+                                        </Button>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* Quantity */}
                         <div>
@@ -334,7 +443,11 @@ const ProductDetail = () => {
 
                         {/* Action Buttons */}
                         <div className="space-y-3">
-                            <Button size="lg" className="w-full bg-gradient-primary hover:opacity-90">
+                            <Button
+                                size="lg"
+                                className="w-full bg-gradient-primary hover:opacity-90"
+                                onClick={() => handleAddToCart()}
+                            >
                                 <ShoppingCart className="w-5 h-5 mr-2" />
                                 Thêm vào giỏ hàng
                             </Button>
@@ -342,7 +455,15 @@ const ProductDetail = () => {
                                 variant="outline"
                                 size="lg"
                                 className="w-full"
-                                onClick={() => navigate("/checkout")}
+                                onClick={() => navigate("/checkout", { state: { products: [{ 
+                                    ...product, 
+                                    seller_id: product.seller_id,
+                                    image: product.images?.[0] || product.image || "",
+                                    selectedSize, 
+                                    selectedColor, 
+                                    quantity,
+                                    shipping_fee: product.shipping_fee
+                                }] } })}
                             >
                                 Mua ngay
                             </Button>
@@ -543,7 +664,7 @@ const ProductDetail = () => {
                                 key={item.id}
                                 whileHover={{ y: -5 }}
                                 className="group cursor-pointer"
-                                onClick={() => navigate(`/san-pham/${item.id}`)}
+                                onClick={() => navigate(`/product/${item.id}`)}
                             >
                                 <Card className="bg-gradient-card border-border hover-glow overflow-hidden">
                                     <div className="relative">
