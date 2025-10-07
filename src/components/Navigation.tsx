@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetTrigger, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Search, ShoppingCart, MessageCircle, User, Users, Bell, Menu, Settings, LogOut, Heart, Package, CreditCard, HelpCircle, Star, Home, Zap, StoreIcon, Store, SearchCheck, LucideIcon, ChevronDown, ShoppingBag, Sparkles, Percent, Gift, UserCircle, Wallet } from "lucide-react";
 import ShoppingCartModal from "./ShoppingCartModal";
 import { useCart } from "@/contexts/CartContext";
@@ -11,6 +11,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import Login from '@/pages/Login';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { cn } from "@/lib/utils";
 interface SubMenuItem {
     to: string;
     label: string;
@@ -81,6 +83,7 @@ const Navigation = () => {
     const [showMobileUserMenu, setShowMobileUserMenu] = useState(false);
     const userMenuRef = useRef<HTMLDivElement>(null);
     const submenuRef = useRef<HTMLDivElement>(null);
+    const [open, setOpen] = useState(false);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -106,6 +109,16 @@ const Navigation = () => {
                 else setVendorStatus("none");
             });
     }, [user]);
+
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth >= 768 && open) {
+                setOpen(false);
+            }
+        };
+        window.addEventListener("resize", handleResize);
+        return () => window.removeEventListener("resize", handleResize);
+    }, [open]);
 
     return (
         <motion.nav
@@ -407,14 +420,27 @@ const Navigation = () => {
                             </div>
                         )}
                         {/* Mobile Menu Trigger */}
-                        <Sheet>
+                        <Sheet open={open} onOpenChange={setOpen}>
                             <SheetTrigger asChild>
                                 <Button variant="ghost" size="icon" className="md:hidden">
                                     <Menu className="w-5 h-5" />
                                 </Button>
                             </SheetTrigger>
-                            <SheetContent side="left" className="p-0 bg-black text-white w-72">
+
+                            <SheetContent
+                                side="left"
+                                className={cn(
+                                    "p-0 bg-black text-white w-72 border-none",
+                                    "animate-in slide-in-from-left duration-300 ease-out" // 👈 hiệu ứng mượt
+                                )}
+                            >
+                                {/* Title ẩn để bỏ cảnh báo accessibility */}
+                                <VisuallyHidden>
+                                    <SheetTitle>Navigation Menu</SheetTitle>
+                                </VisuallyHidden>
+
                                 <div className="flex flex-col h-full">
+                                    {/* Header */}
                                     <div className="flex items-center space-x-3 px-6 py-6 border-b border-white/10">
                                         <div className="w-10 h-10 bg-gradient-hero rounded-xl flex items-center justify-center">
                                             <span className="text-white font-bold text-xl">V</span>
@@ -423,6 +449,8 @@ const Navigation = () => {
                                             VibeMarket
                                         </span>
                                     </div>
+
+                                    {/* Navigation */}
                                     <nav className="flex-1 flex flex-col gap-1 px-6 py-4">
                                         {[
                                             { name: "Trang chủ", href: "/", icon: <Home className="w-5 h-5 mr-4 ml-2" /> },
@@ -430,7 +458,7 @@ const Navigation = () => {
                                             { name: "Cộng đồng", href: "/community", icon: <User className="w-5 h-5 mr-4 ml-2" /> },
                                             { name: "Khám phá", href: "/discover", icon: <Search className="w-5 h-5 mr-4 ml-2" /> },
                                             { name: "Flash Sale", href: "/flash-sale", icon: <Zap className="w-5 h-5 mr-4 ml-2" /> },
-                                            { name: "Local Brand", href: "/local-brand", icon: <StoreIcon className="w-5 h-5 mr-4 ml-2" /> }
+                                            { name: "Local Brand", href: "/local-brand", icon: <StoreIcon className="w-5 h-5 mr-4 ml-2" /> },
                                         ].map((item) => (
                                             <a
                                                 key={item.name}
@@ -442,6 +470,8 @@ const Navigation = () => {
                                             </a>
                                         ))}
                                     </nav>
+
+                                    {/* User info */}
                                     {user ? (
                                         <div className="px-6 pb-6 mt-auto">
                                             <div className="flex items-center gap-3 mb-3">
@@ -458,7 +488,10 @@ const Navigation = () => {
                                                 </div>
                                             </div>
 
-                                            <Button variant="outline" className="w-full border-white/20 text-white hover:bg-white/10">
+                                            <Button
+                                                variant="outline"
+                                                className="w-full border-white/20 text-white hover:bg-white/10"
+                                            >
                                                 Đăng xuất
                                             </Button>
                                         </div>
