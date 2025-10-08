@@ -33,7 +33,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           protocol: ftp
           port: 21
-          local-dir: build/
+          local-dir: dist/
           server-dir: domains/komer.id.vn/public_html/
           exclude: |
             **/.git*
