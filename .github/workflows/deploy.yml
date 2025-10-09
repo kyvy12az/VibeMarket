@@ -33,7 +33,7 @@ jobs:
           protocol: ftp
           port: 21
           local-dir: dist/
-          server-dir: /htdocs/
+          server-dir: domains/komer.id.vn/public_html/
           exclude: |
             **/.git*
             **/.github*
