@@ -1,13 +1,10 @@
-# Redirect all requests to index.html (for SPA routing)
+# VITE/REACT SPA: Redirect all routes to index.html
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
+
+  # Nếu request không phải file hoặc thư mục thật thì chuyển hướng về index.html
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
   RewriteRule ^ index.html [L]
-</IfModule>
-
-# Enable CORS for all origins (optional, only for static files)
-<IfModule mod_headers.c>
-  Header set Access-Control-Allow-Origin "*"
 </IfModule>
