@@ -1,20 +1,19 @@
-name: 🚀 Deploy React App to Hosting
+name: 🚀 Deploy FE to InfinityFree via FTP
 
 on:
   push:
     branches:
-      - main  # Tự động chạy khi push lên nhánh main
-  workflow_dispatch:  # Cho phép chạy thủ công từ tab Actions
+      - main   # hoặc 'master' tùy nhánh bạn đang dùng
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 🧩 Checkout code
+      - name: 🧭 Checkout source
         uses: actions/checkout@v3
 
-      - name: ⚙️ Setup Node.js
+      - name: 🧩 Setup Node
         uses: actions/setup-node@v3
         with:
           node-version: 18
@@ -25,8 +24,8 @@ jobs:
       - name: 🏗️ Build project
         run: npm run build
 
-      - name: 🚀 Deploy via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - name: 📂 Upload via FTP to InfinityFree
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
@@ -34,7 +33,7 @@ jobs:
           protocol: ftp
           port: 21
           local-dir: dist/
-          server-dir: domains/komer.id.vn/public_html/
+          server-dir: /htdocs/
           exclude: |
             **/.git*
             **/.github*
