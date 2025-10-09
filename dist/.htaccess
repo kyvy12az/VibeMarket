@@ -1,0 +1,38 @@
+# =======================================================
+# ✅ InfinityFree SPA + Vite/React Configuration
+# =======================================================
+
+# Bật rewrite (cho phép xử lý các route frontend)
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # Nếu không phải file hoặc thư mục thật -> chuyển về index.html
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+# =======================================================
+# ✅ MIME Type Fix (cho JS module lỗi “text/html”)
+# =======================================================
+AddType application/javascript .js
+AddType text/css .css
+AddType application/json .json
+AddType image/svg+xml .svg
+AddType text/html .html
+
+# =======================================================
+# ✅ Chống cache (đảm bảo tải đúng file build mới)
+# =======================================================
+<IfModule mod_headers.c>
+  Header set Cache-Control "no-cache, no-store, must-revalidate"
+  Header set Pragma "no-cache"
+  Header set Expires 0
+</IfModule>
+
+# =======================================================
+# ✅ Error pages fallback
+# =======================================================
+ErrorDocument 403 /index.html
+ErrorDocument 404 /index.html
