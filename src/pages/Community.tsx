@@ -179,7 +179,7 @@ const Community = () => {
         >
           {/* Header */}
           <div className="text-left space-y-3 max-w-3xl">
-            {/* <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg">
                 <Users className="w-6 h-6 text-white" />
               </div>
@@ -189,7 +189,7 @@ const Community = () => {
             </div>
             <p className="text-muted-foreground md:text-lg text-base">
               Chia sẻ, thảo luận và kết nối với hàng triệu người dùng
-            </p> */}
+            </p>
             {/* Community Stats */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
