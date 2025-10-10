@@ -33,7 +33,7 @@ jobs:
           protocol: ftps
           port: 21
           local-dir: dist/
-          server-dir: ./domains/vibemarket.kyvydev.id.vn/
+          server-dir: /home/uojnvwmnhosting/domains/vibemarket.kyvydev.id.vn/
           exclude: |
             **/.git*
             **/.github*
