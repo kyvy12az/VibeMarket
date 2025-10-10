@@ -44,6 +44,14 @@ const VendorRegistration = () => {
   });
   const [loading, setLoading] = useState(false);
   const [sellerInfo, setSellerInfo] = useState<any>(null);
+  const [pendingFiles, setPendingFiles] = useState<{ [key: string]: File | null }>({
+    license_image: null,
+    idcard_image: null,
+  });
+  const [previewUrls, setPreviewUrls] = useState<{ [key: string]: string | null }>({
+    license_image: null,
+    idcard_image: null,
+  });
 
   useEffect(() => {
     const fetchStatus = async () => {
@@ -65,25 +73,11 @@ const VendorRegistration = () => {
   }, [user]);
 
   // Hàm upload ảnh (giống như AddProduct)
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: "license_image" | "idcard_image") => {
-    if (e.target.files && e.target.files.length > 0) {
-      const file = e.target.files[0];
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/upload.php`, {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      if (data.url) {
-        setForm(f => ({ ...f, [field]: data.url }));
-      }
-    }
+  const handleFilePick = (e: React.ChangeEvent<HTMLInputElement>, field: "license_image" | "idcard_image") => {
+    const file = e.target.files?.[0] || null;
+    setPendingFiles(f => ({ ...f, [field]: file }));
+    setPreviewUrls(u => ({ ...u, [field]: file ? URL.createObjectURL(file) : null }));
   };
-
-  const handleRemoveFile = (field: string) => {
-    setForm(prev => ({ ...prev, [field]: "" }))
-  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
@@ -101,8 +95,8 @@ const VendorRegistration = () => {
       !form.phone.trim() ||
       !form.email.trim() ||
       !form.business_address.trim() ||
-      !form.license_image ||
-      !form.idcard_image
+      (!form.license_image && !pendingFiles.license_image) ||
+      (!form.idcard_image && !pendingFiles.idcard_image)
     ) {
       toast({
         title: "Thiếu thông tin",
@@ -113,12 +107,62 @@ const VendorRegistration = () => {
     }
 
     setLoading(true);
+
+    // Upload ảnh nếu chưa upload
+    let licenseImageUrl = form.license_image;
+    let idcardImageUrl = form.idcard_image;
+
+    if (pendingFiles.license_image) {
+      const formData = new FormData();
+      formData.append("file", pendingFiles.license_image);
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/upload.php`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.url) {
+        licenseImageUrl = data.url;
+      } else {
+        toast({
+          title: "Upload ảnh thất bại",
+          description: "Không thể upload giấy phép kinh doanh.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+    }
+
+    if (pendingFiles.idcard_image) {
+      const formData = new FormData();
+      formData.append("file", pendingFiles.idcard_image);
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/upload.php`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.url) {
+        idcardImageUrl = data.url;
+      } else {
+        toast({
+          title: "Upload ảnh thất bại",
+          description: "Không thể upload CMND/CCCD.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+    }
+
+    // Gửi đăng ký vendor
     const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/vendor/register.php`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         user_id: user.id,
-        ...form
+        ...form,
+        license_image: licenseImageUrl,
+        idcard_image: idcardImageUrl,
       })
     });
     const data = await res.json();
@@ -129,7 +173,7 @@ const VendorRegistration = () => {
         description: "Hồ sơ của bạn đã được gửi đi và đang chờ xét duyệt.",
         variant: "success",
       });
-      setRegistrationStatus("pending"); // Hiển thị giao diện pending ngay lập tức
+      setRegistrationStatus("pending");
     } else {
       toast({
         title: "Đăng ký thất bại",
@@ -253,8 +297,8 @@ const VendorRegistration = () => {
                   </ul>
                 </div>
 
-                <Button 
-                  className="w-full" 
+                <Button
+                  className="w-full"
                   size="lg"
                   onClick={() => navigate('/vendor-management')}
                 >
@@ -424,7 +468,7 @@ const VendorRegistration = () => {
                       accept="image/*,application/pdf"
                       style={{ display: "none" }}
                       id="license_image_upload"
-                      onChange={e => handleFileUpload(e, "license_image")}
+                      onChange={e => handleFilePick(e, "license_image")}
                     />
                     {form.license_image ? (
                       <div className="w-full h-full relative group">
@@ -446,13 +490,23 @@ const VendorRegistration = () => {
                             className="object-contain w-full h-full"
                           />
                         )}
-                        {/* Nút xóa */}
-                        <button
-                          onClick={() => handleRemoveFile("license_image")}
-                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 shadow hover:bg-red-600 z-10"
+                      </div>
+                    ) : pendingFiles.license_image && previewUrls.license_image ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center relative">
+                        <img
+                          src={previewUrls.license_image}
+                          alt="Preview giấy phép kinh doanh"
+                          className="object-contain w-full h-full"
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          type="button"
+                          className="absolute top-1 right-1 bg-red-500 text-white"
+                          onClick={() => setPendingFiles(f => ({ ...f, license_image: null }))}
                         >
                           <X className="w-4 h-4" />
-                        </button>
+                        </Button>
                       </div>
                     ) : (
                       <div
@@ -480,7 +534,7 @@ const VendorRegistration = () => {
                       accept="image/*,application/pdf"
                       style={{ display: "none" }}
                       id="idcard_image_upload"
-                      onChange={e => handleFileUpload(e, "idcard_image")}
+                      onChange={e => handleFilePick(e, "idcard_image")}
                     />
                     {form.idcard_image ? (
                       <div className="w-full h-full relative group">
@@ -502,13 +556,23 @@ const VendorRegistration = () => {
                             className="object-contain w-full h-full"
                           />
                         )}
-                        {/* Nút xóa */}
-                        <button
-                          onClick={() => handleRemoveFile("idcard_image")}
-                          className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 shadow hover:bg-red-600 z-10"
+                      </div>
+                    ) : pendingFiles.idcard_image && previewUrls.idcard_image ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center relative">
+                        <img
+                          src={previewUrls.idcard_image}
+                          alt="Preview CMND/CCCD"
+                          className="object-contain w-full h-full"
+                        />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          type="button"
+                          className="absolute top-1 right-1 bg-red-500 text-white"
+                          onClick={() => setPendingFiles(f => ({ ...f, idcard_image: null }))}
                         >
                           <X className="w-4 h-4" />
-                        </button>
+                        </Button>
                       </div>
                     ) : (
                       <div
