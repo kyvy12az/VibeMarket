@@ -1,28 +1,39 @@
-name: 🚀 Deploy via FTP
+name: 🚀 Deploy FE via FTP
 
 on:
   push:
     branches:
-      - main   # Tự động deploy khi push lên nhánh main
+      - main   # hoặc 'master' tùy nhánh bạn đang dùng
 
 jobs:
-  ftp-deploy:
-    name: 📂 Upload to Hosting via FTP
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: 🧭 Checkout source
+        uses: actions/checkout@v3
 
-      - name: 📤 Deploy files via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+      - name: 🧩 Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: 📦 Install dependencies
+        run: npm install
+
+      - name: 🏗️ Build project
+        run: npm run build
+
+      - name: 📂 Upload via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          port: ${{ secrets.FTP_PORT }}
-          server-dir: /home/uojnvwmnhosting/public_html/
+          protocol: ftp
+          port: 21
           local-dir: dist/
+          server-dir: /home/uojnvwmnhosting/public_html/
           exclude: |
             **/.git*
             **/.github*
