@@ -22,7 +22,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           port: ${{ secrets.FTP_PORT }}
           server-dir: /home/uojnvwmnhosting/public_html/
-          local-dir: /dist/
+          local-dir: dist/
           exclude: |
             **/.git*
             **/.github*
