@@ -33,7 +33,7 @@ jobs:
           protocol: ftps
           port: 21
           local-dir: dist/
-          server-dir: /home/uojnvwmnhosting/public_html
+          server-dir: /home/uojnvwmnhosting/public_html/
           exclude: |
             **/.git*
             **/.github*
