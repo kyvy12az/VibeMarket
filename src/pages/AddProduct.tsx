@@ -71,6 +71,9 @@ const AddProduct = () => {
         "Zara"
     ];
 
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const [previewImages, setPreviewImages] = useState<string[]>([]);
+
     // Thêm state cho form
     const [form, setForm] = useState({
         name: "",
@@ -127,16 +130,42 @@ const AddProduct = () => {
         fetchSellerId();
     }, [user]);
 
+    const handleImagePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            const files = Array.from(e.target.files);
+            setSelectedFiles(prev => [...prev, ...files]);
+            setPreviewImages(prev => [
+                ...prev,
+                ...files.map(file => URL.createObjectURL(file))
+            ]);
+        }
+    };
+
     // Hàm xử lý submit
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!form.name || !form.price || selectedImages.length === 0) {
+        if (!form.name || !form.price || selectedFiles.length === 0) {
             toast({ title: "Vui lòng nhập đủ thông tin sản phẩm", variant: "destructive" });
             return;
         }
         if (!sellerId) {
             toast({ title: "Không tìm thấy seller_id", variant: "destructive" });
             return;
+        }
+
+        // Upload ảnh lên BE
+        let uploadedImageUrls: string[] = [];
+        for (const file of selectedFiles) {
+            const formData = new FormData();
+            formData.append("file", file);
+            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/upload.php`, {
+                method: "POST",
+                body: formData,
+            });
+            const data = await res.json();
+            if (data.url) {
+                uploadedImageUrls.push(data.url);
+            }
         }
 
         // Tính discount %
@@ -147,6 +176,7 @@ const AddProduct = () => {
             discount = Math.round(((originalPrice - price) / originalPrice) * 100);
         }
 
+        // Gửi API tạo sản phẩm
         const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/product/add.php`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -154,7 +184,7 @@ const AddProduct = () => {
                 ...form,
                 price: Number(form.price),
                 originalPrice: Number(form.originalPrice),
-                image: selectedImages,
+                image: uploadedImageUrls,
                 rating: Number(form.rating),
                 sold: Number(form.sold),
                 discount,
@@ -189,25 +219,6 @@ const AddProduct = () => {
         }
     };
 
-    const handleImageUpload = async (e?: React.ChangeEvent<HTMLInputElement>) => {
-        if (e && e.target.files && e.target.files.length > 0) {
-            const files = Array.from(e.target.files);
-            for (const file of files) {
-                const formData = new FormData();
-                formData.append("file", file);
-
-                const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/upload.php`, {
-                    method: "POST",
-                    body: formData,
-                });
-                const data = await res.json();
-                if (data.url) {
-                    setSelectedImages(prev => [...prev, data.url]);
-                }
-            }
-        }
-    };
-
     useEffect(() => {
         if (selectedImages.length > 0) {
             setForm(f => ({ ...f, image: selectedImages[0] }));
@@ -221,28 +232,6 @@ const AddProduct = () => {
             [id]: value
         }));
     };
-
-    const handleSellerChange = (field: "name" | "avatar", value: string) => {
-        setForm(f => ({
-            ...f,
-            seller: { ...f.seller, [field]: value }
-        }));
-    };
-
-    // const addVariant = (type: string) => {
-    //     const newVariant: ProductVariant = {
-    //         id: Date.now().toString(),
-    //         name: type,
-    //         value: '',
-    //         price: 0,
-    //         stock: 0
-    //     };
-    //     setVariants([...variants, newVariant]);
-    // };
-
-    // const removeVariant = (id: string) => {
-    //     setVariants(variants.filter(v => v.id !== id));
-    // };
 
     const addTag = (tag: string) => {
         if (tag && !tags.includes(tag)) {
@@ -693,7 +682,7 @@ const AddProduct = () => {
                                                     accept="image/*"
                                                     multiple
                                                     style={{ display: "none" }}
-                                                    onChange={handleImageUpload}
+                                                    onChange={handleImagePick}
                                                 />
                                                 <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                                                 <p className="text-lg font-medium mb-2">Tải lên hình ảnh sản phẩm</p>
@@ -703,29 +692,28 @@ const AddProduct = () => {
                                             </div>
 
                                             {/* Hiển thị preview ảnh đã chọn */}
-                                            {selectedImages.length > 0 && (
+                                            {previewImages.length > 0 && (
                                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
-                                                    {selectedImages.map((image, index) => (
+                                                    {previewImages.map((img, index) => (
                                                         <div key={index} className="relative group">
                                                             <img
-                                                                src={image}
+                                                                src={img}
                                                                 alt={`Ảnh sản phẩm ${index + 1}`}
                                                                 className="aspect-square object-cover rounded-lg w-full h-full"
                                                             />
-                                                            <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-smooth rounded-lg flex items-center justify-center">
-                                                                <Button
-                                                                    size="sm"
-                                                                    variant="destructive"
-                                                                    onClick={e => {
-                                                                        e.stopPropagation();
-                                                                        setSelectedImages(selectedImages.filter((_, i) => i !== index));
-                                                                    }}
-                                                                    type="button"
-                                                                    className="absolute top-1 right-1"
-                                                                >
-                                                                    <X className="w-4 h-4" />
-                                                                </Button>
-                                                            </div>
+                                                            <Button
+                                                                size="sm"
+                                                                variant="destructive"
+                                                                onClick={e => {
+                                                                    e.stopPropagation();
+                                                                    setPreviewImages(previewImages.filter((_, i) => i !== index));
+                                                                    setSelectedFiles(selectedFiles.filter((_, i) => i !== index));
+                                                                }}
+                                                                type="button"
+                                                                className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            >
+                                                                <X className="w-4 h-4" />
+                                                            </Button>
                                                             {index === 0 && (
                                                                 <Badge className="absolute top-2 left-2 bg-primary">
                                                                     Ảnh chính
