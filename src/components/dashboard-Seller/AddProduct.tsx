@@ -165,20 +165,48 @@ const AddProduct = () => {
         try {
             // Upload ảnh lên BE
             let uploadedImageUrls: string[] = [];
-            for (const file of selectedFiles) {
+
+            if (selectedFiles.length > 0) {
                 const formData = new FormData();
-                formData.append("file", file);
+                selectedFiles.forEach((f) => formData.append("files[]", f)); // backend hỗ trợ mảng files[]
+
                 const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/upload.php`, {
                     method: "POST",
                     body: formData,
                 });
-                const data = await res.json();
-                if (data.url) {
-                    uploadedImageUrls.push(data.url);
-                } else {
-                    // nếu upload 1 file fail vẫn tiếp tục hoặc có thể throw tuỳ logic
-                    console.warn("Upload image failed for one file", data);
+
+                // đọc raw text trước (tránh lỗi parse khi server trả HTML)
+                const text = await res.text();
+                let uploadResp: any = null;
+                try {
+                    uploadResp = text ? JSON.parse(text) : null;
+                } catch (err) {
+                    console.error("Upload response is not valid JSON:", text, err);
+                    toast({ title: "Upload ảnh thất bại", description: "Server trả về response không hợp lệ", variant: "destructive" });
+                    setIsProcessing(false);
+                    return;
                 }
+
+                // ưu tiên trường 'urls' (mảng absolute url để lưu vào DB)
+                if (uploadResp && Array.isArray(uploadResp.urls) && uploadResp.urls.length > 0) {
+                    uploadedImageUrls = uploadResp.urls;
+                } else if (uploadResp && Array.isArray(uploadResp.data) && uploadResp.data.length > 0) {
+                    // fallback: backend trả data[] với property 'url' hoặc 'file_url'
+                    uploadedImageUrls = uploadResp.data.map((d: any) => d.url ?? d.file_url ?? d.fileUrl).filter(Boolean);
+                } else if (uploadResp && uploadResp.url) {
+                    // single-file legacy
+                    uploadedImageUrls = [uploadResp.url];
+                } else {
+                    console.warn("Upload image failed", uploadResp);
+                    toast({ title: "Upload ảnh thất bại", description: uploadResp?.message || "Không có đường dẫn trả về", variant: "destructive" });
+                    setIsProcessing(false);
+                    return;
+                }
+            }
+
+            // set ảnh chính trong form (nếu có)
+            if (uploadedImageUrls.length > 0) {
+                setForm(f => ({ ...f, image: uploadedImageUrls[0] }));
             }
 
             // Tính discount %
@@ -197,7 +225,7 @@ const AddProduct = () => {
                     ...form,
                     price: Number(form.price),
                     originalPrice: Number(form.originalPrice),
-                    image: JSON.stringify(uploadedImageUrls),
+                    image: uploadedImageUrls,
                     rating: Number(form.rating),
                     sold: Number(form.sold),
                     discount,
