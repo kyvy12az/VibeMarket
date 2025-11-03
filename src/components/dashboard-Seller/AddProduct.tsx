@@ -197,7 +197,7 @@ const AddProduct = () => {
                     ...form,
                     price: Number(form.price),
                     originalPrice: Number(form.originalPrice),
-                    image: uploadedImageUrls,
+                    image: JSON.stringify(uploadedImageUrls),
                     rating: Number(form.rating),
                     sold: Number(form.sold),
                     discount,
