@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,10 +10,18 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { toast } from "sonner";
+import {
   LineChart,
   Line,
-  AreaChart,
-  Area,
   PieChart,
   Pie,
   Cell,
@@ -40,24 +49,35 @@ import {
   Trophy,
   Users,
   MessageSquare,
-  ThumbsUp,
   Target,
   Star,
   Gift,
   Zap,
   Save,
   Package,
-  UserPlus
+  UserPlus,
+  Settings,
+  LogOut,
+  Crown,
+  Sparkles,
+  Wallet,
+  Wallet2,
+  DollarSign,
+  HeartHandshake
 } from "lucide-react";
 
-const UserProfile = () => {
+const Profile = () => {
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+
   const mockUser = {
-    name: "Nguyễn Minh Anh",
-    email: "minhanh@example.com",
+    name: "Nguyễn Kỳ Vỹ",
+    email: "kyvydev@gmail.com",
     phone: "0901234567",
-    avatar: "/placeholder.svg",
-    bio: "Yêu thích mua sắm và chia sẻ những sản phẩm tuyệt vời với cộng đồng. Đam mê làm đẹp và thời trang.",
-    address: "123 Nguyễn Huệ, Quận 1, TP.HCM",
+    avatar: "/images/avatars/Avt-Vy.jpg",
+    bio: "Yêu thích mua sắm và chia sẻ những sản phẩm tuyệt vời với cộng đồng.",
+    address: "Cổ Thành, Triệu Phong, Quảng Trị",
     joinDate: "Tháng 3, 2023",
     points: 1250,
     level: "Gold Member",
@@ -70,7 +90,6 @@ const UserProfile = () => {
     }
   };
 
-  // Analytics Data
   const spendingData = [
     { month: "T1", amount: 1200000, orders: 3 },
     { month: "T2", amount: 800000, orders: 2 },
@@ -78,12 +97,6 @@ const UserProfile = () => {
     { month: "T4", amount: 2200000, orders: 6 },
     { month: "T5", amount: 1800000, orders: 5 },
     { month: "T6", amount: 2500000, orders: 7 },
-    { month: "T7", amount: 1900000, orders: 5 },
-    { month: "T8", amount: 2800000, orders: 8 },
-    { month: "T9", amount: 2100000, orders: 6 },
-    { month: "T10", amount: 3200000, orders: 9 },
-    { month: "T11", amount: 2700000, orders: 7 },
-    { month: "T12", amount: 3500000, orders: 10 }
   ];
 
   const categoryData = [
@@ -93,6 +106,33 @@ const UserProfile = () => {
     { name: "Gia dụng", value: 12, amount: 3000000, color: "hsl(var(--warning))" },
     { name: "Khác", value: 8, amount: 2000000, color: "hsl(var(--muted-foreground))" }
   ];
+
+  const CategoryTooltip = ({ active, payload }: any) => {
+    if (!active || !payload || !payload.length) return null;
+    const item = payload[0].payload;
+    const value = payload[0].value;
+    const bg = item.color || "hsl(var(--primary))";
+    const amount = item.amount ?? 0;
+
+    return (
+      <div
+        style={{
+          background: bg,
+          color: "background",
+          padding: "8px 12px",
+          borderRadius: 8,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.12)",
+          border: "1px solid rgba(255,255,255,0.08)",
+          minWidth: 140,
+        }}
+      >
+        <div style={{ fontWeight: 700, fontSize: 13 }}>{item.name}</div>
+        <div style={{ fontSize: 12, opacity: 0.95, marginTop: 4 }}>
+          {value}% · {(amount / 1000000).toFixed(1)}M đ
+        </div>
+      </div>
+    );
+  };
 
   const communityData = [
     { month: "T7", posts: 5, likes: 45, comments: 12 },
@@ -148,496 +188,630 @@ const UserProfile = () => {
     { name: "Máy pha cà phê", price: 15000000, image: "/placeholder.svg", category: "Gia dụng" }
   ];
 
-  const socialConnections = [
-    { name: "Beauty Guru", avatar: "/placeholder.svg", mutual: 12, type: "influencer" },
-    { name: "Fashion Lover", avatar: "/placeholder.svg", mutual: 8, type: "user" },
-    { name: "Tech Reviewer", avatar: "/placeholder.svg", mutual: 15, type: "expert" },
-    { name: "Lifestyle Blog", avatar: "/placeholder.svg", mutual: 6, type: "blogger" }
+  const recentActivity = [
+    { type: "review", content: "Đánh giá 5 sao cho Kem dưỡng da Olay", time: "2 giờ trước", icon: Star },
+    { type: "order", content: "Đặt hàng thành công #DH001234", time: "1 ngày trước", icon: ShoppingBag },
+    { type: "follow", content: "Theo dõi cửa hàng Beauty World", time: "3 ngày trước", icon: Heart },
+    { type: "post", content: "Chia sẻ bài viết về xu hướng thời trang", time: "5 ngày trước", icon: Edit3 },
   ];
 
-  const recentActivity = [
-    { type: "review", content: "Đánh giá 5 sao cho Kem dưỡng da Olay", time: "2 giờ trước" },
-    { type: "order", content: "Đặt hàng thành công #DH001234", time: "1 ngày trước" },
-    { type: "follow", content: "Theo dõi cửa hàng Beauty World", time: "3 ngày trước" },
-    { type: "post", content: "Chia sẻ bài viết về xu hướng thời trang mùa hè", time: "5 ngày trước" },
-  ];
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("Kích thước ảnh không được vượt quá 5MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleAvatarSave = () => {
+    if (avatarPreview) {
+      toast.success("Avatar đã được cập nhật thành công!");
+      setIsAvatarModalOpen(false);
+      // TODO: Upload avatar to server
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
-        {/* Header Profile */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-gradient-to-r from-[#7C3AED] via-[#9333EA] to-[#3B82F6] 
-                     rounded-2xl p-8 text-white mb-8 shadow-xl"
-        >
-          <div className="flex flex-col md:flex-row items-center gap-6">
-            <div className="relative">
-              <Avatar className="w-24 h-24 border-4 border-primary shadow-lg">
-                <AvatarImage src={mockUser.avatar} alt={mockUser.name} />
-                <AvatarFallback className="text-2xl text-primary bg-white">{mockUser.name[0]}</AvatarFallback>
-              </Avatar>
-              <Button size="icon" className="absolute -bottom-2 -right-2 w-8 h-8 bg-primary text-white hover:bg-primary/80 shadow-md">
-                <Camera className="w-4 h-4" />
-              </Button>
-            </div>
-
-            <div className="flex-1 text-center md:text-left">
-              <h1 className="text-3xl font-bold mb-2 text-shadow-lg drop-shadow-md">{mockUser.name}</h1>
-              <p className="text-white/80 mb-3">{mockUser.bio}</p>
-              <div className="flex flex-wrap gap-2 justify-center md:justify-start">
-                <Badge variant="secondary" className="bg-primary/80 text-white border-primary/40 shadow">
-                  {mockUser.level}
-                </Badge>
-                <Badge variant="secondary" className="bg-accent/80 text-white border-accent/40 shadow">
-                  {mockUser.points} điểm
-                </Badge>
-              </div>
-            </div>
-
-            <Button variant="outline" className="bg-white/10 border-white/30 text-white hover:bg-white/20">
-              <Edit3 className="w-4 h-4 mr-2 text-white" />
-              <span className="text-white">Chỉnh sửa</span>
-            </Button>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-white/20">
-            {[
-              { value: mockUser.stats.totalOrders, label: "Đơn hàng", gradient: "from-purple-400 to-indigo-400", icon: Package },
-              { value: mockUser.stats.reviews, label: "Đánh giá", gradient: "from-pink-400 to-fuchsia-400", icon: Star },
-              { value: mockUser.stats.followers, label: "Người theo dõi", gradient: "from-yellow-400 to-orange-400", icon: Users },
-              { value: mockUser.stats.following, label: "Đang theo dõi", gradient: "from-green-400 to-emerald-400", icon: UserPlus },
-            ].map((item, i) => (
-              <div
-                key={i}
-                className="text-center p-4 rounded-xl bg-white/5 backdrop-blur-md border border-white/10 shadow"
-              >
-                <div className="flex flex-col items-center gap-2">
-                  <item.icon className="w-6 h-6 text-white/80" />
-                  <div
-                    className={`text-2xl font-bold bg-gradient-to-r ${item.gradient} bg-clip-text text-transparent drop-shadow`}
-                  >
-                    {item.value}
-                  </div>
-                  <div className="text-sm text-white/80">{item.label}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-        </motion.div>
-
-        {/* Main Content */}
-        <Tabs defaultValue="dashboard" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="info">Thông tin</TabsTrigger>
-            <TabsTrigger value="activity">Hoạt động</TabsTrigger>
-            <TabsTrigger value="wishlist">Wishlist</TabsTrigger>
-            <TabsTrigger value="social">Kết nối</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="dashboard" className="space-y-6">
-            {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <Card className="bg-gradient-card border-0">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Chi tiêu tháng này</p>
-                      <p className="text-2xl font-bold">3.5M</p>
-                      <p className="text-xs text-success">+12% so với tháng trước</p>
+      <div className="mx-auto px-4 py-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* LEFT SIDEBAR - Profile Info */}
+          <motion.aside
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="lg:col-span-1"
+          >
+            <div className="sticky top-6 space-y-4">
+              {/* Profile Card */}
+              <Card className="overflow-hidden border-0 shadow-lg">
+                <div className="h-24 bg-gradient-primary" />
+                <CardContent className="relative pt-0 pb-6">
+                  <div className="flex flex-col items-center -mt-12">
+                    <div className="relative">
+                      <Avatar className="w-24 h-24 border-4 border-card shadow-xl">
+                        <AvatarImage src={avatarPreview || mockUser.avatar} alt={mockUser.name} />
+                        <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
+                          {mockUser.name[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <Dialog open={isAvatarModalOpen} onOpenChange={setIsAvatarModalOpen}>
+                        <DialogTrigger asChild>
+                          <Button
+                            size="icon"
+                            className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full shadow-md"
+                            variant="default"
+                          >
+                            <Camera className="w-4 h-4" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-md">
+                          <DialogHeader>
+                            <DialogTitle className="flex items-center gap-2">
+                              <Camera className="w-5 h-5 text-primary" />
+                              Thay đổi ảnh đại diện
+                            </DialogTitle>
+                            <DialogDescription>
+                              Chọn một ảnh mới để làm ảnh đại diện của bạn
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4 py-4">
+                            <div className="flex flex-col items-center gap-4">
+                              <Avatar className="w-32 h-32 border-4 border-primary/20 shadow-lg">
+                                <AvatarImage src={avatarPreview || mockUser.avatar} alt="Preview" />
+                                <AvatarFallback className="text-4xl">{mockUser.name[0]}</AvatarFallback>
+                              </Avatar>
+                              <div className="w-full space-y-2">
+                                <Label htmlFor="avatar-upload" className="text-sm font-medium">
+                                  Chọn ảnh từ thiết bị của bạn
+                                </Label>
+                                <Input
+                                  id="avatar-upload"
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={handleAvatarChange}
+                                  className="cursor-pointer file:mr-4 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                  Định dạng: JPG, PNG, GIF. Kích thước tối đa: 5MB
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                          <DialogFooter className="flex-col sm:flex-row gap-2">
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setIsAvatarModalOpen(false);
+                                setAvatarPreview(null);
+                              }}
+                              className="w-full sm:w-auto"
+                            >
+                              Hủy
+                            </Button>
+                            <Button
+                              onClick={handleAvatarSave}
+                              disabled={!avatarPreview}
+                              className="w-full sm:w-auto"
+                            >
+                              <Save className="w-4 h-4 mr-2" />
+                              Lưu ảnh đại diện
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
                     </div>
-                    <div className="w-10 h-10 bg-primary/20 rounded-full flex items-center justify-center">
-                      <TrendingUp className="w-5 h-5 text-primary" />
+
+                    <h2 className="mt-4 text-xl font-bold text-center">{mockUser.name}</h2>
+                    <p className="text-sm text-muted-foreground text-center mt-1">{mockUser.bio}</p>
+
+                    <div className="flex gap-2 mt-4">
+                      <Badge className="bg-gradient-primary text-white border-0 shadow-sm">
+                        <Crown className="w-3 h-3 mr-1" />
+                        {mockUser.level}
+                      </Badge>
+                      <Badge variant="secondary" className="shadow-sm">
+                        <Sparkles className="w-3 h-3 mr-1" />
+                        {mockUser.points} điểm
+                      </Badge>
+                    </div>
+
+                    <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+                      <DialogTrigger asChild>
+                        <Button className="w-full mt-4" variant="outline">
+                          <Edit3 className="w-4 h-4 mr-2" />
+                          Chỉnh sửa
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[500px]">
+                        <DialogHeader>
+                          <DialogTitle>Chỉnh sửa thông tin cá nhân</DialogTitle>
+                          <DialogDescription>
+                            Cập nhật thông tin cá nhân của bạn
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-name">Họ và tên</Label>
+                            <Input id="edit-name" defaultValue={mockUser.name} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-email">Email</Label>
+                            <Input id="edit-email" type="email" defaultValue={mockUser.email} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-phone">Số điện thoại</Label>
+                            <Input id="edit-phone" defaultValue={mockUser.phone} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-bio">Giới thiệu</Label>
+                            <Textarea id="edit-bio" defaultValue={mockUser.bio} rows={3} />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="edit-address">Địa chỉ</Label>
+                            <Input id="edit-address" defaultValue={mockUser.address} />
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-3">
+                          <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
+                            Hủy
+                          </Button>
+                          <Button onClick={() => setIsEditModalOpen(false)}>
+                            <Save className="w-4 h-4 mr-2" />
+                            Lưu thay đổi
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+
+                  {/* Quick Stats */}
+                  <div className="grid grid-cols-2 gap-3 mt-6 pt-6 border-t">
+                    <div className="text-center p-3 rounded-lg bg-primary/5">
+                      <Package className="w-5 h-5 mx-auto mb-1 text-primary" />
+                      <div className="text-xl font-bold">{mockUser.stats.totalOrders}</div>
+                      <div className="text-xs text-muted-foreground">Đơn hàng</div>
+                    </div>
+                    <div className="text-center p-3 rounded-lg bg-accent/5">
+                      <Star className="w-5 h-5 mx-auto mb-1 text-accent" />
+                      <div className="text-xl font-bold">{mockUser.stats.reviews}</div>
+                      <div className="text-xs text-muted-foreground">Đánh giá</div>
+                    </div>
+                    <div className="text-center p-3 rounded-lg bg-success/5">
+                      <Users className="w-5 h-5 mx-auto mb-1 text-success" />
+                      <div className="text-xl font-bold">{mockUser.stats.followers}</div>
+                      <div className="text-xs text-muted-foreground">Followers</div>
+                    </div>
+                    <div className="text-center p-3 rounded-lg bg-warning/5">
+                      <UserPlus className="w-5 h-5 mx-auto mb-1 text-warning" />
+                      <div className="text-xl font-bold">{mockUser.stats.following}</div>
+                      <div className="text-xs text-muted-foreground">Following</div>
                     </div>
                   </div>
                 </CardContent>
               </Card>
-
-              <Card className="bg-gradient-card border-0">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Điểm thưởng</p>
-                      <p className="text-2xl font-bold">{mockUser.points}</p>
-                      <p className="text-xs text-warning">Còn 250 điểm lên VIP</p>
-                    </div>
-                    <div className="w-10 h-10 bg-warning/20 rounded-full flex items-center justify-center">
-                      <Trophy className="w-5 h-5 text-warning" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-card border-0">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Hoạt động cộng đồng</p>
-                      <p className="text-2xl font-bold">156</p>
-                      <p className="text-xs text-accent">Tương tác tuần này</p>
-                    </div>
-                    <div className="w-10 h-10 bg-accent/20 rounded-full flex items-center justify-center">
-                      <MessageSquare className="w-5 h-5 text-accent" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-gradient-card border-0">
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm text-muted-foreground">Thứ hạng</p>
-                      <p className="text-2xl font-bold">#47</p>
-                      <p className="text-xs text-success">Top 5% người dùng</p>
-                    </div>
-                    <div className="w-10 h-10 bg-success/20 rounded-full flex items-center justify-center">
-                      <Zap className="w-5 h-5 text-success" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Charts */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <Card>
+              {/* Achievements */}
+              <Card className="border-0 shadow-md">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-primary" />
-                    Chi tiêu theo tháng (12 tháng)
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={spendingData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
-                      <YAxis stroke="hsl(var(--muted-foreground))" />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "hsl(var(--card))",
-                          border: "1px solid hsl(var(--border))",
-                          borderRadius: "8px"
-                        }}
-                        formatter={(value: number, name: string) => [
-                          name === 'amount' ? `${(value / 1000000).toFixed(1)}M đ` : value,
-                          name === 'amount' ? 'Chi tiêu' : 'Số đơn'
-                        ]}
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey="amount"
-                        stroke="hsl(var(--primary))"
-                        strokeWidth={3}
-                        dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Target className="w-5 h-5 text-accent" />
-                    Danh mục yêu thích
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={categoryData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={60}
-                        outerRadius={120}
-                        paddingAngle={5}
-                        dataKey="value"
-                      >
-                        {categoryData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        formatter={(value: number, name: string, props: any) => [
-                          `${value}%`,
-                          `${(props.payload.amount / 1000000).toFixed(1)}M đ`
-                        ]}
-                      />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <MessageSquare className="w-5 h-5 text-success" />
-                    Hoạt động cộng đồng
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={communityData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                      <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
-                      <YAxis stroke="hsl(var(--muted-foreground))" />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "hsl(var(--card))",
-                          border: "1px solid hsl(var(--border))",
-                          borderRadius: "8px"
-                        }}
-                      />
-                      <Bar dataKey="posts" fill="hsl(var(--primary))" name="Bài viết" />
-                      <Bar dataKey="likes" fill="hsl(var(--accent))" name="Lượt thích" />
-                      <Bar dataKey="comments" fill="hsl(var(--success))" name="Bình luận" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Trophy className="w-5 h-5 text-warning" />
+                    <Award className="w-5 h-5 text-warning" />
                     Thành tích & Huy hiệu
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
                     {achievements.map((achievement, index) => (
-                      <div key={index} className="flex items-center gap-4 p-4 border border-border rounded-lg">
+                      <div
+                        key={index}
+                        className="p-4 rounded-lg shadow-sm flex flex-col items-center text-center border hover-lift"
+                        aria-labelledby={`achv-title-${index}`}
+                        role="group"
+                      >
                         <div
-                          className="w-12 h-12 rounded-full flex items-center justify-center"
-                          style={{ backgroundColor: `${achievement.color}20` }}
+                          className="w-14 h-14 rounded-full flex items-center justify-center mb-3 flex-shrink-0"
+                          style={{ backgroundColor: `${achievement.color}10` }}
+                          aria-hidden="true"
                         >
-                          <achievement.icon
-                            className="w-6 h-6"
-                            style={{ color: achievement.color }}
-                          />
+                          <achievement.icon className="sm:w-7 sm:h-7 w-6 h-6" style={{ color: achievement.color }} />
                         </div>
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-medium">{achievement.title}</h4>
-                            {achievement.earned && (
-                              <Badge variant="secondary" className="bg-success/20 text-success">
-                                Hoàn thành
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground">{achievement.description}</p>
-                          {!achievement.earned && achievement.target && (
-                            <div className="mt-2">
-                              <div className="flex justify-between text-xs mb-1">
-                                <span>{achievement.progress}</span>
-                                <span>{achievement.target}</span>
-                              </div>
-                              <Progress
-                                value={(achievement.progress / achievement.target) * 100}
-                                className="h-2"
-                              />
+
+                        <h4 id={`achv-title-${index}`} className="sm:text-sm text-xs font-semibold mb-1 truncate">
+                          {achievement.title}
+                        </h4>
+
+                        <p className="text-xs text-muted-foreground mb-3 truncate">
+                          {achievement.description}
+                        </p>
+
+                        {achievement.earned ? (
+                          <Badge className="px-2 py-1 text-xs bg-success/10 text-success">Hoàn thành</Badge>
+                        ) : null}
+
+                        {!achievement.earned && achievement.target && (
+                          <div className="w-full mt-1">
+                            <div className="flex justify-between text-xs mb-2">
+                              <span>{achievement.progress}</span>
+                              <span>{achievement.target}</span>
                             </div>
-                          )}
-                        </div>
+                            <Progress
+                              value={(achievement.progress / achievement.target) * 100}
+                              className="h-2 w-full"
+                              aria-valuenow={(achievement.progress / achievement.target) * 100}
+                              aria-valuemin={0}
+                              aria-valuemax={100}
+                              role="progressbar"
+                            />
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
+          </motion.aside>
 
-          <TabsContent value="info" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="w-5 h-5" />
-                  Thông tin cơ bản
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="name">Họ và tên</Label>
-                    <Input id="name" value={mockUser.name} />
-                  </div>
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input id="email" value={mockUser.email} type="email" />
-                  </div>
-                  <div>
-                    <Label htmlFor="phone">Số điện thoại</Label>
-                    <Input id="phone" value={mockUser.phone} />
-                  </div>
-                  <div>
-                    <Label htmlFor="joinDate">Ngày tham gia</Label>
-                    <Input id="joinDate" value={mockUser.joinDate} disabled />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="bio">Giới thiệu bản thân</Label>
-                  <Textarea id="bio" value={mockUser.bio} rows={3} />
-                </div>
-                <div>
-                  <Label htmlFor="address">Địa chỉ</Label>
-                  <Input id="address" value={mockUser.address} />
-                </div>
-                <Button
-                  className="w-full md:w-auto"
+          {/* RIGHT MAIN CONTENT */}
+          <motion.main
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="lg:col-span-2"
+          >
+            <Tabs defaultValue="dashboard" className="space-y-6">
+              <TabsList className="w-full grid grid-cols-4 h-auto p-1 bg-card shadow-md">
+                <TabsTrigger
+                  value="dashboard"
+                  className="peer data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:pb-2"
                 >
-                  <Save className="w-4 h-4 mr-2" />
-                  Lưu thay đổi
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  Dashboard
+                </TabsTrigger>
+                <TabsTrigger
+                  value="activity"
+                  className="peer data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:pb-2"
+                >
+                  <MessageSquare className="w-4 h-4 mr-2" />
+                  Hoạt động
+                </TabsTrigger>
+                <TabsTrigger
+                  value="wishlist"
+                  className="peer data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:pb-2"
+                >
+                  <Heart className="w-4 h-4 mr-2" />
+                  Wishlist
+                </TabsTrigger>
+                <TabsTrigger
+                  value="info"
+                  className="peer data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:pb-2"
+                >
+                  <User className="w-4 h-4 mr-2" />
+                  Thông tin
+                </TabsTrigger>
+              </TabsList>
 
-          <TabsContent value="activity" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Hoạt động gần đây</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {recentActivity.map((activity, index) => (
-                    <div key={index} className="flex items-start gap-4 p-4 border border-border rounded-lg">
-                      <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                        {activity.type === 'review' && <Award className="w-5 h-5 text-primary" />}
-                        {activity.type === 'order' && <ShoppingBag className="w-5 h-5 text-primary" />}
-                        {activity.type === 'follow' && <Heart className="w-5 h-5 text-primary" />}
-                        {activity.type === 'post' && <Edit3 className="w-5 h-5 text-primary" />}
+              {/* DASHBOARD TAB */}
+              <TabsContent value="dashboard" className="space-y-6">
+                {/* Quick Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <Card className="border border-primary/20 bg-primary/10 rounded-lg shadow-sm hover:shadow-md">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-primary/80 mb-1">Chi tiêu tháng này</p>
+                          <p className="text-3xl font-bold text-primary">2.5M</p>
+                          <p className="text-xs text-primary mt-1 flex items-center gap-1">
+                            <TrendingUp className="w-3 h-3" />
+                            +12% so với tháng trước
+                          </p>
+                        </div>
+                        <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
+                          <DollarSign className="w-6 h-6 text-white" />
+                        </div>
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm text-muted-foreground mb-1">{activity.content}</p>
-                        <p className="text-xs text-muted-foreground">{activity.time}</p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border border-accent/20 bg-accent/10 rounded-lg shadow-sm hover:shadow-md">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-blue-500 mb-1">Điểm thưởng</p>
+                          <p className="text-3xl font-bold text-blue-500">{mockUser.points}</p>
+                          <p className="text-xs text-blue-500 mt-1">Còn 250 điểm lên VIP</p>
+                        </div>
+                        <div className="w-12 h-12 rounded-full bg-blue-500 flex items-center justify-center">
+                          <Gift className="w-6 h-6 text-white" />
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border border-success/20 bg-success/10 rounded-lg shadow-sm hover:shadow-md">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-success/80 mb-1">Cộng đồng</p>
+                          <p className="text-3xl font-bold text-success">156</p>
+                          <p className="text-xs text-success/80 mt-1">Tương tác tuần này</p>
+                        </div>
+                        <div className="w-12 h-12 rounded-full bg-success flex items-center justify-center">
+                          <HeartHandshake className="w-6 h-6 text-white" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border border-warning/20 bg-warning/10 rounded-lg shadow-sm hover:shadow-md">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium text-warning/80 mb-1">Thứ hạng</p>
+                          <p className="text-3xl font-bold text-warning">#47</p>
+                          <p className="text-xs text-warning/80 mt-1">Top 5% người dùng</p>
+                        </div>
+                        <div className="w-12 h-12 rounded-full bg-warning flex items-center justify-center">
+                          <Trophy className="w-6 h-6 text-white" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
 
-          <TabsContent value="wishlist" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Heart className="w-5 h-5 text-primary" />
-                  Danh sách yêu thích ({wishlistItems.length} sản phẩm)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {wishlistItems.map((item, index) => (
-                    <div key={index} className="flex items-center gap-4 p-4 border border-border rounded-lg hover-lift">
-                      <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center">
-                        <ShoppingBag className="w-8 h-8 text-muted-foreground" />
-                      </div>
-                      <div className="flex-1">
-                        <h4 className="font-medium">{item.name}</h4>
-                        <p className="text-sm text-muted-foreground">{item.category}</p>
-                        <p className="text-primary font-semibold">{item.price.toLocaleString('vi-VN')}đ</p>
-                      </div>
-                      <Button size="sm" variant="outline">
-                        <ShoppingBag className="w-4 h-4 mr-2" />
-                        Mua ngay
-                      </Button>
-                    </div>
-                  ))}
+                {/* Charts Section */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Spending Chart */}
+                  <Card className="border-0 shadow-md">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <TrendingUp className="w-5 h-5 text-primary" />
+                        Chi tiêu 6 tháng gần đây
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={280}>
+                        <LineChart data={spendingData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                          <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: "hsl(var(--card))",
+                              border: "1px solid hsl(var(--border))",
+                              borderRadius: "8px"
+                            }}
+                          />
+                          <Line
+                            type="monotone"
+                            dataKey="amount"
+                            stroke="hsl(var(--primary))"
+                            strokeWidth={3}
+                            dot={{ fill: "hsl(var(--primary))", r: 5 }}
+                          />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+
+                  {/* Category Distribution - Donut Chart */}
+                  <Card className="border-0 shadow-md">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Target className="w-5 h-5 text-accent" />
+                        Danh mục yêu thích
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={280}>
+                        <PieChart>
+                          <Pie
+                            data={categoryData}
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={70}
+                            outerRadius={110}
+                            paddingAngle={2}
+                            dataKey="value"
+                            label={false}
+                          >
+                            {categoryData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                          <Tooltip content={<CategoryTooltip />} wrapperStyle={{ pointerEvents: "none" }} />
+                          <text
+                            x="50%"
+                            y="45%"
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            className="text-3xl font-bold fill-foreground"
+                          >
+                            {categoryData.reduce((sum, item) => sum + item.value, 0)}%
+                          </text>
+                          <text
+                            x="50%"
+                            y="55%"
+                            textAnchor="middle"
+                            dominantBaseline="middle"
+                            className="text-sm fill-muted-foreground"
+                          >
+                            Danh mục
+                          </text>
+                          <Legend
+                            verticalAlign="bottom"
+                            height={36}
+                            iconType="circle"
+                            formatter={(value) => <span className="text-sm">{value}</span>}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+
+                  {/* Community Activity */}
+                  <Card className="border-0 shadow-md lg:col-span-2">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <MessageSquare className="w-5 h-5 text-success" />
+                        Hoạt động cộng đồng
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={280}>
+                        <BarChart data={communityData}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
+                          <YAxis stroke="hsl(var(--muted-foreground))" />
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: "hsl(var(--card))",
+                              border: "1px solid hsl(var(--border))",
+                              borderRadius: "8px"
+                            }}
+                          />
+                          <Bar dataKey="posts" fill="hsl(var(--primary))" name="Bài viết" radius={[8, 8, 0, 0]} />
+                          <Bar dataKey="likes" fill="hsl(var(--accent))" name="Lượt thích" radius={[8, 8, 0, 0]} />
+                          <Bar dataKey="comments" fill="hsl(var(--success))" name="Bình luận" radius={[8, 8, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </TabsContent>
 
-          <TabsContent value="social" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="w-5 h-5 text-accent" />
-                  Kết nối xã hội
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <h3 className="font-semibold mb-4">Người theo dõi nổi bật</h3>
+              {/* ACTIVITY TAB */}
+              <TabsContent value="activity" className="space-y-4">
+                <Card className="border-0 shadow-md">
+                  <CardHeader>
+                    <CardTitle>Hoạt động gần đây</CardTitle>
+                  </CardHeader>
+                  <CardContent>
                     <div className="space-y-3">
-                      {socialConnections.map((connection, index) => (
-                        <div key={index} className="flex items-center gap-3 p-3 border border-border rounded-lg">
-                          <Avatar className="w-10 h-10">
-                            <AvatarImage src={connection.avatar} />
-                            <AvatarFallback>{connection.name[0]}</AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1">
-                            <p className="font-medium">{connection.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {connection.mutual} bạn chung
-                            </p>
+                      {recentActivity.map((activity, index) => (
+                        <div
+                          key={index}
+                          className="flex items-start gap-4 p-4 rounded-xl border hover-lift"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <activity.icon className="w-5 h-5 text-primary" />
                           </div>
-                          <Badge variant="secondary" className="capitalize">
-                            {connection.type}
-                          </Badge>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium mb-1">{activity.content}</p>
+                            <p className="text-xs text-muted-foreground">{activity.time}</p>
+                          </div>
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-                  <div>
-                    <h3 className="font-semibold mb-4">Xu hướng theo dõi</h3>
-                    <div className="space-y-4">
-                      <Card className="bg-primary/5 border-primary/20">
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium">Beauty Influencers</p>
-                              <p className="text-sm text-muted-foreground">Đang theo dõi 23</p>
-                            </div>
-                            <TrendingUp className="w-5 h-5 text-primary" />
+              {/* WISHLIST TAB */}
+              <TabsContent value="wishlist" className="space-y-4">
+                <Card className="border-0 shadow-md">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Heart className="w-5 h-5 text-accent" />
+                      Danh sách yêu thích ({wishlistItems.length} sản phẩm)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {wishlistItems.map((item, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center gap-4 p-4 rounded-xl border hover-lift"
+                        >
+                          <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
+                            <Gift className="w-8 h-8 text-muted-foreground" />
                           </div>
-                        </CardContent>
-                      </Card>
-
-                      <Card className="bg-accent/5 border-accent/20">
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium">Fashion Brands</p>
-                              <p className="text-sm text-muted-foreground">Đang theo dõi 15</p>
-                            </div>
-                            <Heart className="w-5 h-5 text-accent" />
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-sm mb-1">{item.name}</h4>
+                            <p className="text-xs text-muted-foreground mb-1">{item.category}</p>
+                            <p className="text-primary font-bold text-sm">
+                              {item.price.toLocaleString('vi-VN')}đ
+                            </p>
                           </div>
-                        </CardContent>
-                      </Card>
-
-                      <Card className="bg-success/5 border-success/20">
-                        <CardContent className="p-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <p className="font-medium">Tech Reviewers</p>
-                              <p className="text-sm text-muted-foreground">Đang theo dõi 8</p>
-                            </div>
-                            <Star className="w-5 h-5 text-success" />
-                          </div>
-                        </CardContent>
-                      </Card>
+                          <Button size="sm" className="flex-shrink-0">
+                            <ShoppingBag className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
                     </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* INFO TAB */}
+              <TabsContent value="info" className="space-y-6">
+                <Card className="border-0 shadow-md">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <User className="w-5 h-5" />
+                      Thông tin cơ bản
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="name" className="flex items-center gap-2">
+                          <User className="w-4 h-4" />
+                          Họ và tên
+                        </Label>
+                        <Input id="name" defaultValue={mockUser.name} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="email" className="flex items-center gap-2">
+                          <Mail className="w-4 h-4" />
+                          Email
+                        </Label>
+                        <Input id="email" type="email" defaultValue={mockUser.email} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="phone" className="flex items-center gap-2">
+                          <Phone className="w-4 h-4" />
+                          Số điện thoại
+                        </Label>
+                        <Input id="phone" defaultValue={mockUser.phone} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="joinDate" className="flex items-center gap-2">
+                          <Calendar className="w-4 h-4" />
+                          Ngày tham gia
+                        </Label>
+                        <Input id="joinDate" defaultValue={mockUser.joinDate} disabled />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="bio">Giới thiệu bản thân</Label>
+                      <Textarea id="bio" defaultValue={mockUser.bio} rows={3} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="address" className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4" />
+                        Địa chỉ
+                      </Label>
+                      <Input id="address" defaultValue={mockUser.address} />
+                    </div>
+                    <Button className="w-full md:w-auto">
+                      <Save className="w-4 h-4 mr-2" />
+                      Lưu thay đổi
+                    </Button>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </motion.main>
+        </div>
       </div>
     </div>
   );
 };
 
-export default UserProfile;
+export default Profile;

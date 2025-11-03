@@ -37,66 +37,38 @@ const AIStylist = () => {
   const [analyzing, setAnalyzing] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>("outfit");
+  const API_URL = (import.meta as any).env?.VITE_AI_ANALYZE_URL ||
+    "http://localhost/VIBE_MARKET_BACKEND/VibeMarket-BE/api/ai/analyze.php";
 
-  // Mock data for AI analysis
-  const analysisResult = {
-    id: 1,
-    imageUrl: uploadedImage || "/placeholder.svg",
-    category: selectedCategory,
-    detectedStyle: "Modern Minimalist",
-    colorPalette: ["#2C3E50", "#ECF0F1", "#95A5A6", "#E74C3C"],
-    mood: "Professional & Clean",
-    confidence: 92,
-    suggestions: ["blazer", "trousers", "loafers", "watch"],
+  type AnalysisResult = {
+    id: number;
+    imageUrl: string;
+    category: string;
+    detectedStyle: string;
+    colorPalette: string[];
+    mood: string;
+    confidence: number;
+    suggestions: string[];
   };
 
-  // Mock AI suggested products
-  const aiSuggestions = [
-    {
-      id: 1,
-      name: "Áo blazer xanh navy cao cấp",
-      price: 890000,
-      image: "/placeholder.svg",
-      matchScore: 94,
-      reason: "Màu sắc hài hòa với outfit hiện tại",
-      category: "Áo khoác",
-      rating: 4.8,
-      shop: "Fashion Elite",
-    },
-    {
-      id: 2,
-      name: "Quần tây ống đứng",
-      price: 650000,
-      image: "/placeholder.svg",
-      matchScore: 92,
-      reason: "Phong cách phù hợp với blazer",
-      category: "Quần",
-      rating: 4.7,
-      shop: "Style Hub",
-    },
-    {
-      id: 3,
-      name: "Giày lười da cao cấp",
-      price: 1200000,
-      image: "/placeholder.svg",
-      matchScore: 89,
-      reason: "Hoàn thiện set đồ công sở",
-      category: "Giày dép",
-      rating: 4.9,
-      shop: "Leather Luxury",
-    },
-    {
-      id: 4,
-      name: "Đồng hồ thời trang",
-      price: 450000,
-      image: "/placeholder.svg",
-      matchScore: 85,
-      reason: "Phụ kiện tối giản sang trọng",
-      category: "Phụ kiện",
-      rating: 4.6,
-      shop: "Time Classic",
-    },
-  ];
+  type ProductSuggestion = {
+    id: number;
+    name: string;
+    price: number;
+    image: string;
+    matchScore: number;
+    reason: string;
+    category: string;
+    rating: number;
+    shop: string;
+  };
+
+  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+  const [aiSuggestions, setAiSuggestions] = useState<ProductSuggestion[]>([]);
+
+  // Note: analysisResult & aiSuggestions will be populated from API
+
+  // Suggestions are generated from API response
 
   // Mock community posts
   const communityPosts = [
@@ -192,16 +164,85 @@ const AIStylist = () => {
     }
   };
 
-  const handleAnalyze = () => {
-    setAnalyzing(true);
-    setTimeout(() => {
-      setAnalyzing(false);
+  const handleAnalyze = async () => {
+    if (!uploadedImage) return;
+    try {
+      setAnalyzing(true);
+      setShowResults(false);
+
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ image_base64: uploadedImage }),
+      });
+      const data = await res.json();
+      if (!data?.success) {
+        throw new Error(data?.error || "Phân tích thất bại");
+      }
+
+      const a = data.analysis;
+      const detectedStyle: string = a?.detectedStyle || "Modern Minimalist";
+      const colors: string[] = a?.colorPalette || ["#2C3E50", "#ECF0F1", "#95A5A6", "#E74C3C"];
+      const mood: string = a?.mood || "Professional & Clean";
+      const confidence: number = a?.confidence ?? 90;
+      const sugg: string[] = Array.isArray(a?.suggestions) ? a.suggestions : ["blazer", "trousers", "loafers", "watch"];
+
+      setAnalysisResult({
+        id: 1,
+        imageUrl: uploadedImage,
+        category: selectedCategory,
+        detectedStyle,
+        colorPalette: colors,
+        mood,
+        confidence,
+        suggestions: sugg,
+      });
+
+      const mappedFromApi: ProductSuggestion[] | null = Array.isArray(a?.products)
+        ? a.products.map((p: any, idx: number) => ({
+            id: Number(p.id ?? idx + 1),
+            name: String(p.name ?? sugg[idx] ?? `Sản phẩm ${idx + 1}`),
+            price: Number(p.price ?? 0),
+            image: String(p.image ?? "/placeholder.svg"),
+            matchScore: Number(p.matchScore ?? Math.max(75, 95 - idx * 3)),
+            reason: String(p.reason ?? `Gợi ý theo phong cách ${detectedStyle}`),
+            category: String(p.category ?? selectedCategory),
+            rating: Number(p.rating ?? 4.7),
+            shop: String(p.shop ?? "AI Stylist"),
+          }))
+        : null;
+
+      if (mappedFromApi && mappedFromApi.length > 0) {
+        setAiSuggestions(mappedFromApi);
+      } else {
+        const fallback: ProductSuggestion[] = sugg.map((name: string, idx: number) => ({
+          id: idx + 1,
+          name,
+          price: 0,
+          image: "/placeholder.svg",
+          matchScore: Math.max(75, 95 - idx * 3),
+          reason: `Gợi ý theo phong cách ${detectedStyle}`,
+          category: selectedCategory,
+          rating: 4.7,
+          shop: "AI Stylist",
+        }));
+        setAiSuggestions(fallback);
+      }
+
       setShowResults(true);
       toast({
         title: "✨ Phân tích hoàn tất!",
-        description: `AI đã phát hiện phong cách: ${analysisResult.detectedStyle}`,
+        description: `AI đã phát hiện phong cách: ${detectedStyle}`,
       });
-    }, 2000);
+    } catch (err: any) {
+      toast({
+        title: "Không thể phân tích",
+        description: err?.message || "Vui lòng thử lại sau",
+        variant: "destructive",
+      });
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   const categories = [
@@ -325,7 +366,7 @@ const AIStylist = () => {
               )}
 
               {/* AI Analysis Results */}
-              {showResults && (
+              {showResults && analysisResult && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -341,8 +382,8 @@ const AIStylist = () => {
                       <p className="text-sm text-muted-foreground mb-2">
                         Phong cách phát hiện
                       </p>
-                      <Badge className="text-lg px-4 py-2">
-                        {analysisResult.detectedStyle}
+                          <Badge className="text-lg px-4 py-2">
+                        {analysisResult?.detectedStyle}
                       </Badge>
                     </div>
                     <div>
@@ -350,9 +391,9 @@ const AIStylist = () => {
                         Độ tự tin
                       </p>
                       <div className="space-y-2">
-                        <Progress value={analysisResult.confidence} className="h-2" />
+                        <Progress value={analysisResult?.confidence || 0} className="h-2" />
                         <p className="text-sm font-medium">
-                          {analysisResult.confidence}% phù hợp
+                          {analysisResult?.confidence}% phù hợp
                         </p>
                       </div>
                     </div>
@@ -363,7 +404,7 @@ const AIStylist = () => {
                       Bảng màu chính
                     </p>
                     <div className="flex gap-2">
-                      {analysisResult.colorPalette.map((color, index) => (
+                      {(analysisResult?.colorPalette || []).map((color, index) => (
                         <div
                           key={index}
                           className="w-12 h-12 rounded-lg border-2 border-border"
@@ -376,7 +417,7 @@ const AIStylist = () => {
 
                   <div>
                     <p className="text-sm text-muted-foreground mb-2">Mood/Vibe</p>
-                    <p className="text-lg font-medium">{analysisResult.mood}</p>
+                    <p className="text-lg font-medium">{analysisResult?.mood}</p>
                   </div>
                 </motion.div>
               )}
@@ -384,7 +425,7 @@ const AIStylist = () => {
           </Card>
 
           {/* AI Product Recommendations */}
-          {showResults && (
+          {showResults && aiSuggestions.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/contexts/CartContext";
 import { Minus, Plus, Trash2, ShoppingBag, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import hotToast from "react-hot-toast";
 
 interface ShoppingCartModalProps {
   open: boolean;
@@ -35,7 +36,14 @@ const ShoppingCartModal: React.FC<ShoppingCartModalProps> = ({ open, onOpenChang
       return;
     }
     onOpenChange(false);
-    navigate('/checkout', {state: { products: items }});
+    hotToast.loading("Đang chuyển đến trang thanh toán...", {
+      duration: 1500,
+      position: "top-center",
+    });
+
+    setTimeout(() => {
+      navigate('/checkout', { state: { products: items } });
+    }, 1000);
   };
 
   const handleRemoveItem = (id: number, name: string) => {

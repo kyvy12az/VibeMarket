@@ -12,10 +12,12 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import CheckoutLoadingOverlay from "@/components/CheckoutLoadingOverlay";
 
 export default function Checkout() {
   const navigate = useNavigate();
   const location = useLocation();
+  const [isProcessing, setIsProcessing] = useState(false);
   const productData = location.state?.product; // 1 sản phẩm
   const productsData = location.state?.products || [];
   const { user } = useAuth();
@@ -57,10 +59,17 @@ export default function Checkout() {
   };
 
   const handleSubmit = async () => {
+    // prevent double submit
+    if (isProcessing) return;
+
     if (step < 3) {
       setStep(step + 1);
       return;
     }
+
+    const isOnlinePayment = ["momo", "vnpay", "payos"].includes(formData.paymentMethod);
+    if (!isOnlinePayment) setIsProcessing(true);
+    let keepLoadingForRedirect = false;
 
     // Chuẩn bị dữ liệu sản phẩm
     const products = productsData.map(item => ({
@@ -71,7 +80,6 @@ export default function Checkout() {
       size: item.selectedSize,
       color: item.selectedColor,
     }));
-    console.log(productsData);
 
     // Lấy seller_id từ sản phẩm đầu tiên (nếu tất cả cùng seller)
     const seller_id = productsData[0]?.seller_id || 1;
@@ -99,7 +107,6 @@ export default function Checkout() {
       shipping_fee: shippingFee,
       email: formData.email,
     };
-    console.log(orderData);
 
     try {
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/order/create.php`, {
@@ -109,52 +116,93 @@ export default function Checkout() {
       });
       const data = await res.json();
 
-      if (data.success) {
-        if (formData.paymentMethod === "momo") {
-          // Gọi API MoMo
-          const momoRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/payment/momo/pay.php`, {
+      if (!data.success) {
+        toast.error(data.message || "Có lỗi xảy ra!");
+        return;
+      }
+
+      // xử lý các phương thức thanh toán
+      if (formData.paymentMethod === "momo") {
+        const momoRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/payment/momo/pay.php`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("token") || ""}`
+          },
+          body: JSON.stringify({
+            orderCode: data.code,
+            orderInfo: `Thanh toán đơn hàng #${data.code}`
+          }),
+        });
+        const momoData = await momoRes.json();
+        if (momoData.success && momoData.payUrl) {
+          keepLoadingForRedirect = true;
+          window.location.href = momoData.payUrl;
+          return;
+        } else {
+          toast.error(momoData.error || "Không thể tạo thanh toán MoMo!");
+        }
+      } else if (formData.paymentMethod === "payos") {
+        const payosRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/payment/payos/pay.php`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            orderCode: data.id,
+            orderInfo: `Thanh toán đơn hàng #${data.code}`
+          }),
+        });
+        const payosData = await payosRes.json();
+        if (payosData.success && payosData.payUrl) {
+          keepLoadingForRedirect = true;
+          window.location.href = payosData.payUrl;
+          return;
+        } else {
+          toast.error(payosData.message || "Không thể tạo thanh toán PayOS!");
+        }
+      } else if (formData.paymentMethod === "vnpay") {
+        try {
+          const vnpRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/payment/vnpay/pay.php`, {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${localStorage.getItem("token") || ""}`
-            },
-            body: JSON.stringify({
-              orderCode: data.code,
-              orderInfo: `Thanh toán đơn hàng #${data.code}`
-            }),
-          });
-          const momoData = await momoRes.json();
-          if (momoData.success && momoData.payUrl) {
-            window.location.href = momoData.payUrl; // Redirect sang MoMo
-            return;
-          } else {
-            toast.error(momoData.error || "Không thể tạo thanh toán MoMo!");
-          }
-        } else if (formData.paymentMethod === "payos") {
-          const payosRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/payment/payos/pay.php`, {
-            method: "POST",
+            credentials: "include",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              orderCode: data.id, 
-              orderInfo: `Thanh toán đơn hàng #${data.code}`
+              orderCode: data.code || data.id || data.order_code,
+              orderInfo: `Thanh toán đơn hàng #${data.code || data.id}`,
+              amount: total
             }),
           });
-          const payosData = await payosRes.json();
-          if (payosData.success && payosData.payUrl) {
-            window.location.href = payosData.payUrl; // Redirect sang PayOS
+
+          if (!vnpRes.ok) {
+            const txt = await vnpRes.text();
+            toast.error("Lỗi khi tạo VNPay: " + vnpRes.status + " " + txt);
+            return;
+          }
+
+          const vnpData = await vnpRes.json();
+          if (vnpData.success && vnpData.payUrl) {
+            keepLoadingForRedirect = true;
+            window.location.href = vnpData.payUrl;
             return;
           } else {
-            toast.error(payosData.message || "Không thể tạo thanh toán PayOS!");
+            toast.error(vnpData.message || "Không thể tạo thanh toán VNPay!");
           }
-        } else {
-          toast.success("Đặt hàng thành công! Mã đơn: " + data.code);
-          navigate("/");
+        } catch (err) {
+          console.error(err);
+          toast.error("Không thể kết nối máy chủ cho VNPay!");
         }
       } else {
-        toast.error(data.message || "Có lỗi xảy ra!");
+        // COD / bank fallback
+        toast.success("Đặt hàng thành công! Mã đơn: " + data.code);
+        navigate("/");
+        // navigate will unmount this page; no need to keep overlay
       }
     } catch (err) {
+      console.error(err);
       toast.error("Không thể kết nối máy chủ!");
+    } finally {
+      if (!keepLoadingForRedirect) {
+        setIsProcessing(false);
+      }
     }
   };
 
@@ -170,6 +218,7 @@ export default function Checkout() {
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
+      <CheckoutLoadingOverlay isVisible={isProcessing} />
       {/* Header */}
       <div className="bg-background border-b">
         <div className="container mx-auto px-4 py-4">
@@ -402,21 +451,18 @@ export default function Checkout() {
                         </div>
                       </div>
 
-                      {/* <div className="flex items-center space-x-2 p-4 border rounded-lg opacity-50">
-                        <RadioGroupItem value="vnpay" id="vnpay" disabled />
+                      <div className="flex items-center space-x-2 p-4 border rounded-lg">
+                        <RadioGroupItem value="vnpay" id="vnpay" />
                         <div className="flex-1">
-                          <Label htmlFor="vnpay" className="flex items-center justify-between cursor-pointer">
-                            <div className="flex items-center gap-3">
-                              <Shield className="w-5 h-5 text-red-500" />
-                              <div>
-                                <p className="font-medium">Ví điện tử VNPay</p>
-                                <p className="text-xs text-muted-foreground">Thanh toán qua ví VNPay</p>
-                              </div>
+                          <Label htmlFor="vnpay" className="flex items-center gap-3 cursor-pointer">
+                            <img src="/images/icons/vnpay.png" alt="VNPay" className="w-5 h-5" />
+                            <div>
+                              <p className="font-medium">VNPay</p>
+                              <p className="text-xs text-muted-foreground">Thanh toán qua VNPay (QR/ATM)</p>
                             </div>
-                            <Badge variant="outline">Sắp có</Badge>
                           </Label>
                         </div>
-                      </div> */}
+                      </div>
 
                       <div className="flex items-center space-x-2 p-4 border rounded-lg">
                         <RadioGroupItem value="momo" id="momo" />

@@ -120,7 +120,7 @@ const HeroSection = () => {
   const next = () => setCurrent((c) => (c === heroSlides.length - 1 ? 0 : c + 1));
 
   return (
-  <section className="relative overflow-hidden min-h-screen md:min-h-[700px] group">
+    <section className="relative overflow-hidden min-h-screen md:min-h-[700px] group">
       {/* Background Image with Overlay - dùng framer-motion để animate khi chuyển slide */}
       <motion.div
         key={current}

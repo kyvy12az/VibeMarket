@@ -55,10 +55,34 @@ const QuickActions = () => {
   ];
 
   const stats = [
-    { icon: Users, label: "Thành viên online", value: "12,345", color: "text-green-500" },
-    { icon: ShoppingBag, label: "Đơn hàng hôm nay", value: "8,921", color: "text-blue-500" },
-    { icon: Trophy, label: "Xếp hạng của bạn", value: "#156", color: "text-yellow-500" },
-    { icon: Coins, label: "Điểm tích lũy", value: "2,847", color: "text-purple-500" },
+    {
+      icon: Users,
+      label: "Thành viên online",
+      value: "12,345",
+      gradient: "bg-gradient-to-br from-green-400 to-emerald-600",
+      accent: "from-green-300/40 to-emerald-700/30",
+    },
+    {
+      icon: ShoppingBag,
+      label: "Đơn hàng hôm nay",
+      value: "8,921",
+      gradient: "bg-gradient-to-br from-blue-400 to-indigo-600",
+      accent: "from-blue-300/40 to-indigo-700/30",
+    },
+    {
+      icon: Trophy,
+      label: "Xếp hạng của bạn",
+      value: "#156",
+      gradient: "bg-gradient-to-br from-yellow-400 to-orange-500",
+      accent: "from-yellow-300/40 to-orange-600/30",
+    },
+    {
+      icon: Coins,
+      label: "Điểm tích lũy",
+      value: "2,847",
+      gradient: "bg-gradient-to-br from-purple-400 to-fuchsia-600",
+      accent: "from-purple-300/40 to-fuchsia-700/30",
+    },
   ];
 
   return (
@@ -143,25 +167,44 @@ const QuickActions = () => {
           {stats.map((stat, index) => (
             <motion.div
               key={stat.label}
-              initial={{ opacity: 0, scale: 0.9 }}
+              initial={{ opacity: 0, scale: 0.98 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
-              transition={{ delay: index * 0.1 }}
-              whileHover={{ scale: 1.05 }}
+              transition={{ delay: index * 0.06 }}
+              whileHover={{ y: -6, scale: 1.02 }}
+              className="relative"
             >
-              <Card className="bg-gradient-card border-border hover-glow text-center">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-center w-12 h-12 mx-auto mb-3 bg-card rounded-xl">
-                    <stat.icon className={`w-6 h-6 ${stat.color}`} />
+              <div
+                className={`rounded-2xl p-5 overflow-hidden text-white shadow-2xl ${stat.gradient} border border-white/10`}
+              >
+                {/* decorative blurred orb */}
+                <div
+                  className={`absolute -top-10 -right-10 w-40 h-40 rounded-full opacity-25 blur-3xl ${stat.accent}`}
+                  aria-hidden
+                />
+
+                <div className="flex items-center justify-between relative z-10">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-lg bg-white/18 backdrop-blur-sm flex items-center justify-center shadow-sm">
+                      <stat.icon className="w-7 h-7 text-white" />
+                    </div>
+
+                    <div>
+                      <div className="text-2xl lg:text-3xl font-extrabold leading-none">
+                        {stat.value}
+                      </div>
+                      <div className="text-sm opacity-90">
+                        {stat.label}
+                      </div>
+                    </div>
                   </div>
-                  <div className="text-2xl font-bold text-foreground mb-1">
-                    {stat.value}
+
+                  <div className="text-right">
+                    <div className="text-sm font-medium opacity-90">+{index % 3 + 4}%</div>
+                    <div className="text-xs opacity-70">so với hôm qua</div>
                   </div>
-                  <div className="text-sm text-muted-foreground">
-                    {stat.label}
-                  </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </motion.div>
           ))}
         </motion.div>
@@ -195,7 +238,7 @@ const QuickActions = () => {
               <Button 
                 variant="outline" 
                 size="lg"
-                className="border-white text-white hover:bg-white/10 transition-smooth"
+                className="border-white bg-card-100 text-white hover:bg-white/10 transition-smooth"
               >
                 Tìm hiểu thêm
               </Button>

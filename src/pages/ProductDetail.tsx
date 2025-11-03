@@ -19,6 +19,7 @@ import {
     Minus,
     AlertTriangle
 } from "lucide-react";
+import hotToast from "react-hot-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -455,15 +456,29 @@ const ProductDetail = () => {
                                 variant="outline"
                                 size="lg"
                                 className="w-full"
-                                onClick={() => navigate("/checkout", { state: { products: [{ 
-                                    ...product, 
-                                    seller_id: product.seller_id,
-                                    image: product.images?.[0] || product.image || "",
-                                    selectedSize, 
-                                    selectedColor, 
-                                    quantity,
-                                    shipping_fee: product.shipping_fee
-                                }] } })}
+                                onClick={() => {
+                                    hotToast.loading("Đang chuyển đến trang thanh toán...", {
+                                        duration: 1500,
+                                        position: "top-center",
+                                    });
+
+                                    setTimeout(() => {
+                                        navigate("/checkout", {
+                                            state: {
+                                                products: [{
+                                                    ...product,
+                                                    seller_id: product.seller_id,
+                                                    image: product.images?.[0] || product.image || "",
+                                                    selectedSize,
+                                                    selectedColor,
+                                                    quantity,
+                                                    shipping_fee: product.shipping_fee
+                                                }]
+                                            }
+                                        })
+                                    }, 1000);
+
+                                }}
                             >
                                 Mua ngay
                             </Button>

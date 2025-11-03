@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetTrigger, SheetContent, SheetTitle } from "@/components/ui/sheet";
-import { Search, ShoppingCart, MessageCircle, User, Users, Bell, Menu, Settings, LogOut, Heart, Package, CreditCard, HelpCircle, Star, Home, Zap, StoreIcon, Store, SearchCheck, LucideIcon, ChevronDown, ShoppingBag, Sparkles, Percent, Gift, UserCircle, Wallet } from "lucide-react";
+import { Search, ShoppingCart, MessageCircle, Gamepad, Box, User, Users, Bell, Menu, Settings, LogOut, Heart, Package, CreditCard, HelpCircle, Star, Home, Zap, StoreIcon, Store, SearchCheck, LucideIcon, ChevronDown, ShoppingBag, Sparkles, Percent, Gift, UserCircle, Wallet, Info } from "lucide-react";
 import ShoppingCartModal from "./ShoppingCartModal";
 import { useCart } from "@/contexts/CartContext";
 import { useState, useEffect, useRef } from "react";
@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "./ThemeToggle";
 interface SubMenuItem {
     to: string;
     label: string;
@@ -61,9 +62,18 @@ const menuItems: MenuItem[] = [
         ]
     },
     {
-        to: "/wallet",
-        label: "Ví & Điểm thưởng",
-        icon: Wallet,
+        label: "Tiện ích & Dịch vụ",
+        icon: Box,
+        hasSubmenu: true,
+        submenu: [
+            { to: "/wallet", label: "Ví & Điểm thưởng", icon: Wallet },
+            { to: "/lucky-wheel", label: "Vòng quay nhận quà", icon: Gamepad },
+        ]
+    },
+    {
+        to: "/about",
+        label: "Giới thiệu",
+        icon: Info,
         hasSubmenu: false
     }
 ];
@@ -126,7 +136,7 @@ const Navigation = () => {
             animate={{ y: 0 }}
             className="sticky top-0 z-50 bg-card/80 backdrop-blur-xl border-b border-border"
         >
-            <div className="container mx-auto px-4 py-4">
+            <div className="mx-auto px-6 py-4">
                 <div className="flex items-center justify-between">
                     {/* Logo */}
                     <Link to="/">
@@ -264,6 +274,7 @@ const Navigation = () => {
                         <Button variant="ghost" size="icon" className="relative">
                             <Bell className="w-5 h-5" />
                         </Button>
+                        <ThemeToggle />
                         <Button variant="ghost" size="icon" className="relative" onClick={() => setCartModalOpen(true)}>
                             <ShoppingCart className="w-5 h-5" />
                             {items.length > 0 && (
@@ -459,6 +470,10 @@ const Navigation = () => {
                                             { name: "Khám phá", href: "/discover", icon: <Search className="w-5 h-5 mr-4 ml-2" /> },
                                             { name: "Flash Sale", href: "/flash-sale", icon: <Zap className="w-5 h-5 mr-4 ml-2" /> },
                                             { name: "Local Brand", href: "/local-brand", icon: <StoreIcon className="w-5 h-5 mr-4 ml-2" /> },
+                                            { name: "AI Stylist", href: "/ai-stylist", icon: <Sparkles className="w-5 h-5 mr-4 ml-2" /> },
+                                            { name: "Ví & Điểm thưởng", href: "/wallet", icon: <Wallet className="w-5 h-5 mr-4 ml-2" /> },
+                                            { name: "Vòng quay nhận quà", href: "/lucky-wheel", icon: <Gift className="w-5 h-5 mr-4 ml-2" /> },
+                                            { name: "Giới thiệu", href: "/about", icon: <Info className="w-5 h-5 mr-4 ml-2" /> },
                                         ].map((item) => (
                                             <a
                                                 key={item.name}
