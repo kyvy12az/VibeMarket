@@ -18,12 +18,14 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { ReviewDialog } from "@/components/ReviewDialog";
 
 const OrderManagement = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
     const [orders, setOrders] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
 
     useEffect(() => {
         if (!user?.id) return; // Chưa đăng nhập thì không gọi API
@@ -68,6 +70,10 @@ const OrderManagement = () => {
     const filterOrders = (status?: string) => {
         if (!status) return orders;
         return orders.filter(order => order.status === status);
+    };
+
+    const handleReviewClick = (orderId: number) => {
+        navigate(`/orders/${orderId}/review`);
     };
 
     const OrderCard = ({ order }: { order: typeof orders[0] }) => {
@@ -146,7 +152,12 @@ const OrderManagement = () => {
                             </Button>
                         )}
                         {order.status === 'delivered' && (
-                            <Button variant="outline" size="sm" className="flex-1">
+                            <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="flex-1"
+                                onClick={() => handleReviewClick(order.id)}
+                            >
                                 <MessageSquare className="w-4 h-4 mr-2" />
                                 Đánh giá
                             </Button>
@@ -165,7 +176,7 @@ const OrderManagement = () => {
 
     return (
         <div className="min-h-screen bg-background">
-            <div className="container mx-auto px-4 py-8 max-w-6xl">
+            <div className="container mx-auto px-4 py-8">
                 {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}

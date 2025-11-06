@@ -9,9 +9,11 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-    SidebarTrigger,
     useSidebar,
 } from "@/components/ui/sidebar";
+import { useAuth } from "@/contexts/AuthContext";
+import { useEffect, useState } from "react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const menuItems = [
     { title: "Tổng quan", url: "/vendor-management", icon: LayoutDashboard },
@@ -24,8 +26,41 @@ const menuItems = [
 
 export function ShopSidebar() {
     const { state } = useSidebar();
+    const { user } = useAuth();
     const location = useLocation();
     const collapsed = state === "collapsed";
+
+    const [storeInfo, setStoreInfo] = useState<{
+        store_name: string;
+        avatar: string | null;
+    } | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchStoreInfo = async () => {
+            if (!user?.id) return;
+
+            try {
+                const response = await fetch(
+                    `${import.meta.env.VITE_BACKEND_URL}/api/vendor/get_store_info.php?user_id=${user.id}`
+                );
+                const data = await response.json();
+
+                if (data.success) {
+                    setStoreInfo({
+                        store_name: data.store_name,
+                        avatar: data.avatar,
+                    });
+                }
+            } catch (error) {
+                console.error("Error fetching store info:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStoreInfo();
+    }, [user]);
 
     const isActive = (path: string) => {
         if (path === "/vendor-management") {
@@ -37,19 +72,53 @@ export function ShopSidebar() {
     const getNavCls = (active: boolean) =>
         active ? "bg-primary text-primary-foreground font-medium" : "hover:bg-muted/50";
 
+    // Lấy chữ cái đầu của tên cửa hàng để làm fallback
+    const getInitials = (name: string) => {
+        return name
+            .split(" ")
+            .map((word) => word[0])
+            .join("")
+            .toUpperCase()
+            .slice(0, 2);
+    };
+
     return (
         <Sidebar className={collapsed ? "w-16" : "w-64"} collapsible="icon">
-            {/* Nội dung chính */}
             <SidebarContent className="bg-card border-r flex flex-col h-full justify-between">
                 <div>
                     {/* Header */}
                     <div className="p-4 border-b">
-                        <div className="flex items-center gap-2">
-                            <Store className="w-6 h-6 text-primary" />
-                            {!collapsed && (
-                                <span className="font-bold text-lg bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-                                    Shop Manager
-                                </span>
+                        <div className="flex items-center gap-3">
+                            {loading ? (
+                                <>
+                                    <div className="w-8 h-8 rounded-full bg-muted animate-pulse" />
+                                    {!collapsed && (
+                                        <div className="h-4 w-32 bg-muted animate-pulse rounded" />
+                                    )}
+                                </>
+                            ) : storeInfo ? (
+                                <>
+                                    <Avatar className={collapsed ? "w-5 h-5" : "w-10 h-10"} collapsible="icon">
+                                        <AvatarImage src={storeInfo.avatar || undefined} alt={storeInfo.store_name} />
+                                        <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-500 text-white text-xs">
+                                            {getInitials(storeInfo.store_name)}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    {!collapsed && (
+                                        <span className="font-bold text-base bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent truncate">
+                                            {storeInfo.store_name}
+                                        </span>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    <Store className="w-6 h-6 text-primary" />
+                                    {!collapsed && (
+                                        <span className="font-bold text-lg bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                                            Shop Manager
+                                        </span>
+                                    )}
+                                </>
                             )}
                         </div>
                     </div>

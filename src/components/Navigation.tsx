@@ -14,6 +14,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "./ThemeToggle";
+import { NotificationDropdown } from "./NoficationDropdown";
 interface SubMenuItem {
     to: string;
     label: string;
@@ -271,9 +272,9 @@ const Navigation = () => {
                                 <MessageCircle className="w-5 h-5" />
                             </Button>
                         </Link>
-                        <Button variant="ghost" size="icon" className="relative">
-                            <Bell className="w-5 h-5" />
-                        </Button>
+                        
+                        <NotificationDropdown />
+                        
                         <ThemeToggle />
                         <Button variant="ghost" size="icon" className="relative" onClick={() => setCartModalOpen(true)}>
                             <ShoppingCart className="w-5 h-5" />

@@ -47,6 +47,8 @@ import ScrollToTop from "./components/ScrollToTop";
 import LuckyWheel from "./pages/LuckyWheel";
 import { Toaster as HotToaster } from "react-hot-toast";
 import CallClient from "./pages/CallClient";
+import {EditProduct} from "./components/dashboard-Seller/EditProduct";
+import ReviewOrder from "./pages/ReviewOrder";
 
 const queryClient = new QueryClient();
 
@@ -88,6 +90,7 @@ function App() {
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/orders" element={<OrderManagement />} />
                   <Route path="/orders/:code" element={<OrderDetail />} />
+                  <Route path="/orders/:orderId/review" element={<ReviewOrder />} />
                   <Route path="/vendor-registration" element={<VendorRegistration />} />
                   <Route path="/about" element={<About />} />
                   {/* <Route path="/vendor-management" element={<ShopManagement />} /> */}
@@ -102,6 +105,7 @@ function App() {
                   <Route path="*" element={<NotFound />} />
                 </Route>
                 <Route path="/vendor-management/*" element={<ShopDashboard />} />
+                <Route path="/vendor-management/edit-product/:id" element={<EditProduct />} />
                 <Route path="/messages" element={<Messages />} />
                 <Route
                   path="call/:conversationId/:callType/:callId"

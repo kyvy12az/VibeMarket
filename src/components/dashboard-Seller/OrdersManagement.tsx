@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -19,89 +19,41 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Eye, Search, Package, MapPin, Clock, ShoppingCart } from "lucide-react";
+import { Eye, Search, Package, MapPin, Clock, ShoppingCart, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
-interface Order {
-  id: string;
-  customer: string;
-  email: string;
-  phone: string;
-  product: string;
+interface OrderItem {
+  id: number;
+  product_id: number;
+  product_name: string;
+  product_image: string | null;
   quantity: number;
-  amount: number;
-  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
-  date: string;
-  address: string;
-  paymentMethod: string;
+  price: number;
+  size: string | null;
+  color: string | null;
+  subtotal: number;
 }
 
-const mockOrders: Order[] = [
-  {
-    id: "DH001234",
-    customer: "Nguyễn Thị Lan",
-    email: "lan.nguyen@email.com",
-    phone: "0912345678",
-    product: "Kem dưỡng da Olay Regenerist",
-    quantity: 2,
-    amount: 598000,
-    status: "processing",
-    date: "2024-01-25 14:30",
-    address: "123 Nguyễn Huệ, Q.1, TP.HCM",
-    paymentMethod: "COD"
-  },
-  {
-    id: "DH001235",
-    customer: "Trần Văn Nam",
-    email: "nam.tran@email.com",
-    phone: "0987654321",
-    product: "Son môi MAC Ruby Woo",
-    quantity: 1,
-    amount: 450000,
-    status: "shipped",
-    date: "2024-01-24 10:15",
-    address: "456 Lê Lợi, Q.3, TP.HCM",
-    paymentMethod: "Chuyển khoản"
-  },
-  {
-    id: "DH001236",
-    customer: "Lê Thị Mai",
-    email: "mai.le@email.com",
-    phone: "0901234567",
-    product: "Nước hoa Chanel No.5",
-    quantity: 1,
-    amount: 1200000,
-    status: "delivered",
-    date: "2024-01-23 16:45",
-    address: "789 Trần Hưng Đạo, Q.5, TP.HCM",
-    paymentMethod: "Thẻ tín dụng"
-  },
-  {
-    id: "DH001237",
-    customer: "Phạm Văn Hùng",
-    email: "hung.pham@email.com",
-    phone: "0923456789",
-    product: "Serum Vitamin C",
-    quantity: 3,
-    amount: 897000,
-    status: "pending",
-    date: "2024-01-25 09:20",
-    address: "321 Hai Bà Trưng, Q.1, TP.HCM",
-    paymentMethod: "COD"
-  },
-  {
-    id: "DH001238",
-    customer: "Võ Thị Hoa",
-    email: "hoa.vo@email.com",
-    phone: "0934567890",
-    product: "Mặt nạ SK-II",
-    quantity: 1,
-    amount: 850000,
-    status: "cancelled",
-    date: "2024-01-22 11:30",
-    address: "654 Nguyễn Trãi, Q.5, TP.HCM",
-    paymentMethod: "COD"
-  }
-];
+interface Order {
+  id: number;
+  code: string;
+  customer_name: string;
+  email: string | null;
+  phone: string;
+  address: string;
+  note: string | null;
+  total: number;
+  shipping_fee: number;
+  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  payment_method: string;
+  payment_status: string;
+  created_at: string;
+  shipping_tracking_code: string | null;
+  total_quantity: number;
+  seller_total: number;
+  items: OrderItem[];
+}
 
 const statusConfig = {
   pending: { label: "Chờ xử lý", variant: "secondary" as const, color: "bg-yellow-100 text-yellow-800" },
@@ -112,25 +64,103 @@ const statusConfig = {
 };
 
 export function OrdersManagement() {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [activeTab, setActiveTab] = useState("all");
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
 
-  const filterOrders = (status?: string) => {
-    let filtered = mockOrders;
+  useEffect(() => {
+    fetchOrders(activeTab);
+  }, [user, activeTab]);
 
-    if (status && status !== "all") {
-      filtered = filtered.filter(order => order.status === status);
-    }
-
-    if (searchTerm) {
-      filtered = filtered.filter(order =>
-        order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        order.customer.toLowerCase().includes(searchTerm.toLowerCase())
+  const fetchOrders = async (status: string = 'all') => {
+    if (!user?.id) return;
+    
+    setLoading(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/vendor/get_orders.php?user_id=${user.id}&status=${status}`
       );
-    }
+      const data = await response.json();
 
-    return filtered;
+      if (data.success) {
+        setOrders(data.orders);
+      } else {
+        toast({
+          title: "Lỗi",
+          description: data.error || "Không thể tải danh sách đơn hàng",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      toast({
+        title: "Lỗi",
+        description: "Không thể kết nối tới máy chủ",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateOrderStatus = async (orderId: number, newStatus: string) => {
+    if (!user?.id) return;
+
+    setUpdating(true);
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/vendor/update_order_status.php`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: user.id,
+            order_id: orderId,
+            status: newStatus,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast({
+          title: "Thành công",
+          description: "Đã cập nhật trạng thái đơn hàng",
+        });
+        fetchOrders(activeTab);
+        setSelectedOrder(null);
+      } else {
+        toast({
+          title: "Lỗi",
+          description: data.error || "Không thể cập nhật trạng thái",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      toast({
+        title: "Lỗi",
+        description: "Không thể kết nối tới máy chủ",
+        variant: "destructive",
+      });
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const filterOrders = () => {
+    if (!searchTerm) return orders;
+
+    return orders.filter(order =>
+      order.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.customer_name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
   };
 
   const getStatusBadge = (status: string) => {
@@ -142,6 +172,33 @@ export function OrdersManagement() {
     );
   };
 
+  const getStatusCount = (status: string) => {
+    if (status === 'all') return orders.length;
+    return orders.filter(o => o.status === status).length;
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString('vi-VN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
+          <p className="mt-4 text-muted-foreground">Đang tải dữ liệu...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <motion.div
@@ -151,28 +208,22 @@ export function OrdersManagement() {
         className="mb-6"
       >
         <div className="flex items-center gap-3">
-          {/* Icon gradient nổi bật */}
           <div className="p-3 rounded-xl bg-gradient-to-tr from-blue-500 to-indigo-400 text-white shadow-md">
             <ShoppingCart className="w-6 h-6" />
           </div>
 
           <div>
-            {/* Tiêu đề gradient */}
             <h1 className="text-3xl font-extrabold bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-400 bg-clip-text text-transparent tracking-tight">
               Quản lý đơn hàng
             </h1>
-
-            {/* Mô tả tinh tế */}
             <p className="text-sm text-muted-foreground mt-1">
               Theo dõi và xử lý các đơn hàng nhanh chóng, hiệu quả
             </p>
           </div>
         </div>
 
-        {/* Divider gradient nhẹ */}
         <div className="mt-4 h-[2px] w-full bg-gradient-to-r from-blue-500 via-indigo-400 to-purple-400 rounded-full opacity-60"></div>
       </motion.div>
-
 
       <Card>
         <CardHeader>
@@ -192,7 +243,7 @@ export function OrdersManagement() {
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-6">
-              <TabsTrigger value="all">Tất cả ({mockOrders.length})</TabsTrigger>
+              <TabsTrigger value="all">Tất cả ({orders.length})</TabsTrigger>
               <TabsTrigger value="pending">Chờ xử lý</TabsTrigger>
               <TabsTrigger value="processing">Đang xử lý</TabsTrigger>
               <TabsTrigger value="shipped">Đã gửi</TabsTrigger>
@@ -207,8 +258,7 @@ export function OrdersManagement() {
                     <TableRow>
                       <TableHead>Mã đơn hàng</TableHead>
                       <TableHead>Khách hàng</TableHead>
-                      <TableHead>Sản phẩm</TableHead>
-                      <TableHead>Số lượng</TableHead>
+                      <TableHead>Số lượng SP</TableHead>
                       <TableHead>Tổng tiền</TableHead>
                       <TableHead>Trạng thái</TableHead>
                       <TableHead>Ngày đặt</TableHead>
@@ -216,27 +266,43 @@ export function OrdersManagement() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filterOrders(activeTab).map((order) => (
-                      <TableRow key={order.id}>
-                        <TableCell className="font-medium">{order.id}</TableCell>
-                        <TableCell>{order.customer}</TableCell>
-                        <TableCell className="max-w-xs truncate">{order.product}</TableCell>
-                        <TableCell>{order.quantity}</TableCell>
-                        <TableCell>{order.amount.toLocaleString('vi-VN')}đ</TableCell>
-                        <TableCell>{getStatusBadge(order.status)}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{order.date}</TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setSelectedOrder(order)}
-                          >
-                            <Eye className="w-4 h-4 mr-2" />
-                            Chi tiết
-                          </Button>
+                    {filterOrders().length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                          Không có đơn hàng nào
                         </TableCell>
                       </TableRow>
-                    ))}
+                    ) : (
+                      filterOrders().map((order) => (
+                        <TableRow key={order.id}>
+                          <TableCell className="font-medium">{order.code}</TableCell>
+                          <TableCell>
+                            <div>
+                              <div className="font-medium">{order.customer_name}</div>
+                              <div className="text-sm text-muted-foreground">{order.phone}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell>{order.total_quantity} sản phẩm</TableCell>
+                          <TableCell className="font-semibold text-primary">
+                            {order.seller_total.toLocaleString('vi-VN')}đ
+                          </TableCell>
+                          <TableCell>{getStatusBadge(order.status)}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {formatDate(order.created_at)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setSelectedOrder(order)}
+                            >
+                              <Eye className="w-4 h-4 mr-2" />
+                              Chi tiết
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
                   </TableBody>
                 </Table>
               </div>
@@ -247,9 +313,9 @@ export function OrdersManagement() {
 
       {/* Order Detail Dialog */}
       <Dialog open={!!selectedOrder} onOpenChange={() => setSelectedOrder(null)}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Chi tiết đơn hàng #{selectedOrder?.id}</DialogTitle>
+            <DialogTitle>Chi tiết đơn hàng #{selectedOrder?.code}</DialogTitle>
           </DialogHeader>
           {selectedOrder && (
             <div className="space-y-6">
@@ -257,17 +323,19 @@ export function OrdersManagement() {
                 {getStatusBadge(selectedOrder.status)}
                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Clock className="w-4 h-4" />
-                  {selectedOrder.date}
+                  {formatDate(selectedOrder.created_at)}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
                     <h3 className="font-semibold mb-2">Thông tin khách hàng</h3>
                     <div className="space-y-2 text-sm">
-                      <p><span className="text-muted-foreground">Tên:</span> {selectedOrder.customer}</p>
-                      <p><span className="text-muted-foreground">Email:</span> {selectedOrder.email}</p>
+                      <p><span className="text-muted-foreground">Tên:</span> {selectedOrder.customer_name}</p>
+                      {selectedOrder.email && (
+                        <p><span className="text-muted-foreground">Email:</span> {selectedOrder.email}</p>
+                      )}
                       <p><span className="text-muted-foreground">SĐT:</span> {selectedOrder.phone}</p>
                     </div>
                   </div>
@@ -279,29 +347,91 @@ export function OrdersManagement() {
                     </h3>
                     <p className="text-sm text-muted-foreground">{selectedOrder.address}</p>
                   </div>
+
+                  {selectedOrder.note && (
+                    <div>
+                      <h3 className="font-semibold mb-2">Ghi chú</h3>
+                      <p className="text-sm text-muted-foreground">{selectedOrder.note}</p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-4">
                   <div>
-                    <h3 className="font-semibold mb-2 flex items-center gap-2">
-                      <Package className="w-4 h-4" />
-                      Thông tin sản phẩm
-                    </h3>
+                    <h3 className="font-semibold mb-2">Thanh toán</h3>
                     <div className="space-y-2 text-sm">
-                      <p className="font-medium">{selectedOrder.product}</p>
-                      <p><span className="text-muted-foreground">Số lượng:</span> {selectedOrder.quantity}</p>
-                      <p><span className="text-muted-foreground">Đơn giá:</span> {(selectedOrder.amount / selectedOrder.quantity).toLocaleString('vi-VN')}đ</p>
+                      <p>
+                        <span className="text-muted-foreground">Phương thức:</span>{" "}
+                        {selectedOrder.payment_method === 'cod' ? 'Thanh toán khi nhận hàng' : selectedOrder.payment_method}
+                      </p>
+                      <p>
+                        <span className="text-muted-foreground">Trạng thái:</span>{" "}
+                        <Badge variant={selectedOrder.payment_status === 'paid' ? 'default' : 'secondary'}>
+                          {selectedOrder.payment_status === 'paid' ? 'Đã thanh toán' : 'Chưa thanh toán'}
+                        </Badge>
+                      </p>
                     </div>
                   </div>
 
-                  <div>
-                    <h3 className="font-semibold mb-2">Thanh toán</h3>
-                    <div className="space-y-2 text-sm">
-                      <p><span className="text-muted-foreground">Phương thức:</span> {selectedOrder.paymentMethod}</p>
-                      <p className="text-lg font-bold text-primary">
-                        Tổng: {selectedOrder.amount.toLocaleString('vi-VN')}đ
+                  {selectedOrder.shipping_tracking_code && (
+                    <div>
+                      <h3 className="font-semibold mb-2">Mã vận đơn</h3>
+                      <p className="text-sm font-mono bg-muted p-2 rounded">
+                        {selectedOrder.shipping_tracking_code}
                       </p>
                     </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <Package className="w-4 h-4" />
+                  Sản phẩm đã đặt
+                </h3>
+                <div className="space-y-3">
+                  {selectedOrder.items.map((item) => (
+                    <div key={item.id} className="flex gap-3 p-3 border rounded-lg">
+                      {item.product_image && (
+                        <img
+                          src={item.product_image}
+                          alt={item.product_name}
+                          className="w-16 h-16 object-cover rounded"
+                        />
+                      )}
+                      <div className="flex-1">
+                        <p className="font-medium">{item.product_name}</p>
+                        <div className="text-sm text-muted-foreground mt-1">
+                          {item.color && <span className="mr-3">Màu: {item.color}</span>}
+                          {item.size && <span>Size: {item.size}</span>}
+                        </div>
+                        <div className="flex justify-between items-center mt-2">
+                          <span className="text-sm">
+                            {item.price.toLocaleString('vi-VN')}đ x {item.quantity}
+                          </span>
+                          <span className="font-semibold text-primary">
+                            {item.subtotal.toLocaleString('vi-VN')}đ
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Tổng tiền hàng:</span>
+                    <span>{selectedOrder.seller_total.toLocaleString('vi-VN')}đ</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Phí vận chuyển:</span>
+                    <span>{selectedOrder.shipping_fee.toLocaleString('vi-VN')}đ</span>
+                  </div>
+                  <div className="flex justify-between text-lg font-bold text-primary pt-2 border-t">
+                    <span>Tổng cộng:</span>
+                    <span>{(selectedOrder.seller_total + selectedOrder.shipping_fee).toLocaleString('vi-VN')}đ</span>
                   </div>
                 </div>
               </div>
@@ -311,13 +441,33 @@ export function OrdersManagement() {
                   Đóng
                 </Button>
                 {selectedOrder.status === "pending" && (
-                  <Button className="bg-gradient-primary">
+                  <Button
+                    className="bg-gradient-primary"
+                    onClick={() => updateOrderStatus(selectedOrder.id, 'processing')}
+                    disabled={updating}
+                  >
+                    {updating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                     Xác nhận đơn hàng
                   </Button>
                 )}
                 {selectedOrder.status === "processing" && (
-                  <Button className="bg-gradient-primary">
+                  <Button
+                    className="bg-gradient-primary"
+                    onClick={() => updateOrderStatus(selectedOrder.id, 'shipped')}
+                    disabled={updating}
+                  >
+                    {updating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                     Đánh dấu đã gửi
+                  </Button>
+                )}
+                {selectedOrder.status === "shipped" && (
+                  <Button
+                    className="bg-gradient-primary"
+                    onClick={() => updateOrderStatus(selectedOrder.id, 'delivered')}
+                    disabled={updating}
+                  >
+                    {updating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                    Đã giao hàng
                   </Button>
                 )}
               </div>

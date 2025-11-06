@@ -147,7 +147,6 @@ const AddProduct = () => {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        // ngăn double submit
         if (isProcessing) return;
 
         if (!form.name || !form.price || selectedFiles.length === 0) {
@@ -168,41 +167,51 @@ const AddProduct = () => {
 
             if (selectedFiles.length > 0) {
                 const formData = new FormData();
-                selectedFiles.forEach((f) => formData.append("files[]", f)); // backend hỗ trợ mảng files[]
+                selectedFiles.forEach((f) => formData.append("files[]", f));
+                // Thêm type parameter để upload vào thư mục products
+                formData.append("type", "products");
 
                 const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/upload.php`, {
                     method: "POST",
                     body: formData,
                 });
 
-                // đọc raw text trước (tránh lỗi parse khi server trả HTML)
                 const text = await res.text();
                 let uploadResp: any = null;
                 try {
                     uploadResp = text ? JSON.parse(text) : null;
                 } catch (err) {
                     console.error("Upload response is not valid JSON:", text, err);
-                    toast({ title: "Upload ảnh thất bại", description: "Server trả về response không hợp lệ", variant: "destructive" });
+                    toast({ 
+                        title: "Upload ảnh thất bại", 
+                        description: "Server trả về response không hợp lệ", 
+                        variant: "destructive" 
+                    });
                     setIsProcessing(false);
                     return;
                 }
 
-                // ưu tiên trường 'urls' (mảng absolute url để lưu vào DB)
+                // Ưu tiên trường 'urls' (mảng absolute url để lưu vào DB)
                 if (uploadResp && Array.isArray(uploadResp.urls) && uploadResp.urls.length > 0) {
                     uploadedImageUrls = uploadResp.urls;
                 } else if (uploadResp && Array.isArray(uploadResp.data) && uploadResp.data.length > 0) {
-                    // fallback: backend trả data[] với property 'url' hoặc 'file_url'
                     uploadedImageUrls = uploadResp.data.map((d: any) => d.url ?? d.file_url ?? d.fileUrl).filter(Boolean);
                 } else if (uploadResp && uploadResp.url) {
-                    // single-file legacy
                     uploadedImageUrls = [uploadResp.url];
                 } else {
                     console.warn("Upload image failed", uploadResp);
-                    toast({ title: "Upload ảnh thất bại", description: uploadResp?.message || "Không có đường dẫn trả về", variant: "destructive" });
+                    toast({ 
+                        title: "Upload ảnh thất bại", 
+                        description: uploadResp?.message || "Không có đường dẫn trả về", 
+                        variant: "destructive" 
+                    });
                     setIsProcessing(false);
                     return;
                 }
             }
+
+            // Debug log
+            console.log("Uploaded image URLs:", uploadedImageUrls);
 
             // set ảnh chính trong form (nếu có)
             if (uploadedImageUrls.length > 0) {
@@ -225,7 +234,7 @@ const AddProduct = () => {
                     ...form,
                     price: Number(form.price),
                     originalPrice: Number(form.originalPrice),
-                    image: uploadedImageUrls,
+                    image: uploadedImageUrls, // Mảng URL đầy đủ
                     rating: Number(form.rating),
                     sold: Number(form.sold),
                     discount,
@@ -254,14 +263,26 @@ const AddProduct = () => {
 
             const data = await res.json();
             if (data.success) {
-                toast({ title: "Thêm sản phẩm thành công!", description: "Sản phẩm mới đã được thêm vào cửa hàng.", variant: "success" });
+                toast({ 
+                    title: "Thêm sản phẩm thành công!", 
+                    description: "Sản phẩm mới đã được thêm vào cửa hàng.", 
+                    variant: "success" 
+                });
                 navigate("/vendor-management/product-management");
             } else {
-                toast({ title: "Thêm sản phẩm thất bại", description: data.message, variant: "destructive" });
+                toast({ 
+                    title: "Thêm sản phẩm thất bại", 
+                    description: data.message, 
+                    variant: "destructive" 
+                });
             }
         } catch (err) {
             console.error(err);
-            toast({ title: "Có lỗi xảy ra", description: "Không thể kết nối tới máy chủ.", variant: "destructive" });
+            toast({ 
+                title: "Có lỗi xảy ra", 
+                description: "Không thể kết nối tới máy chủ.", 
+                variant: "destructive" 
+            });
         } finally {
             setIsProcessing(false);
         }

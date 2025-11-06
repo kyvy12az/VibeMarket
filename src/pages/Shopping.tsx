@@ -159,6 +159,14 @@ const Shopping = () => {
     }).format(price);
   };
 
+  // Thêm function helper
+  const getSellerAvatar = (avatar: string | null) => {
+    if (!avatar) {
+      return '/images/avatars/default-shop-avatar.png';
+    }
+    return avatar;
+  };
+
   return (
     <div className="min-h-screen bg-background">
       {/* Filter Modal */}
@@ -382,9 +390,13 @@ const Shopping = () => {
                       <CardContent className="p-4">
                         <div className="flex items-center gap-2 mb-2">
                           <img 
-                            src={product.seller.avatar || '/images/avatars/default-shop-avatar.png'}
+                            src={getSellerAvatar(product.seller.avatar)}
                             alt={product.seller.name} 
                             className="w-7 h-7 rounded-full object-cover border border-muted" 
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = '/images/avatars/default-shop-avatar.png';
+                            }}
                           />
                           <span className="text-sm font-semibold text-primary">{product.seller.name}</span>
                         </div>
@@ -489,9 +501,13 @@ const Shopping = () => {
                       <div className="p-3 md:p-4 flex-1 flex flex-col justify-between">
                         <div className="flex items-center gap-2 mb-2">
                           <img 
-                            src={product.seller.avatar || '/images/avatars/default-shop-avatar.png'} 
+                            src={getSellerAvatar(product.seller.avatar)} 
                             alt={product.seller.name} 
                             className="w-7 h-7 rounded-full object-cover border border-muted" 
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = '/images/avatars/default-shop-avatar.png';
+                            }}
                           />
                           <span className="text-sm font-semibold text-primary">{product.seller.name}</span>
                         </div>

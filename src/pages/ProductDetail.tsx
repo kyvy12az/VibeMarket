@@ -17,7 +17,9 @@ import {
     ChevronRight,
     Plus,
     Minus,
-    AlertTriangle
+    AlertTriangle, 
+    X,
+    Loader2
 } from "lucide-react";
 import hotToast from "react-hot-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -29,6 +31,33 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { useCart } from "@/contexts/CartContext";
 import { useToast } from "@/hooks/use-toast";
+
+interface ReviewImage {
+    url: string;
+}
+
+interface Review {
+    id: number;
+    user_name: string;
+    avatar_url: string;
+    rating: number;
+    time_ago: string;
+    comment: string;
+    likes: number;
+    images: string[];
+}
+
+interface RatingDistribution {
+    stars: number;
+    count: number;
+    percentage: number;
+}
+
+interface ReviewStats {
+    total_reviews: number;
+    avg_rating: number;
+    rating_distribution: RatingDistribution[];
+}
 
 const ProductDetail = () => {
     const { id } = useParams();
@@ -42,6 +71,10 @@ const ProductDetail = () => {
     const [isLiked, setIsLiked] = useState(false);
     const [product, setProduct] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [reviews, setReviews] = useState<Review[]>([]);
+    const [reviewStats, setReviewStats] = useState<ReviewStats | null>(null);
+    const [loadingReviews, setLoadingReviews] = useState(false);
+    const [selectedReviewImage, setSelectedReviewImage] = useState<string | null>(null);
     const { toast } = useToast();
 
     // Mock product data - In real app, fetch by ID
@@ -80,39 +113,6 @@ const ProductDetail = () => {
     //     }
     // };
 
-    const reviews = [
-        {
-            id: 1,
-            user: "Minh Anh",
-            avatar: "https://images.unsplash.com/photo-1494790108755-2616b332c38b?w=40&h=40&fit=crop",
-            rating: 5,
-            date: "2 ngày trước",
-            comment: "Chất liệu rất tốt, mặc rất thoải mái. Sẽ mua thêm màu khác!",
-            likes: 12,
-            images: ["https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=100&h=100&fit=crop"]
-        },
-        {
-            id: 2,
-            user: "Đức Hoàng",
-            avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop",
-            rating: 4,
-            date: "1 tuần trước",
-            comment: "Áo đẹp, form chuẩn. Giao hàng nhanh. Recommended!",
-            likes: 8,
-            images: []
-        },
-        {
-            id: 3,
-            user: "Thu Hương",
-            avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=40&h=40&fit=crop",
-            rating: 5,
-            date: "2 tuần trước",
-            comment: "Mình đã mua 3 áo rồi, chất lượng ổn định, giá cả hợp lý.",
-            likes: 15,
-            images: []
-        }
-    ];
-
     const recommendedProducts = [
         {
             id: 2,
@@ -145,15 +145,48 @@ const ProductDetail = () => {
         { stars: 1, count: 2, percentage: 2 }
     ];
 
+    // Fetch product details
     useEffect(() => {
         setLoading(true);
         fetch(`${import.meta.env.VITE_BACKEND_URL}/api/product/detail.php?id=${id}`)
             .then(res => res.json())
             .then(data => {
-                if (data.success) setProduct(data.product);
+                if (data.success) {
+                    setProduct(data.product);
+                    // Fetch reviews after product is loaded
+                    fetchReviews();
+                }
+                setLoading(false);
+            })
+            .catch(error => {
+                console.error("Error fetching product:", error);
                 setLoading(false);
             });
     }, [id]);
+
+    // Fetch reviews
+    const fetchReviews = async () => {
+        if (!id) return;
+        
+        setLoadingReviews(true);
+        try {
+            const response = await fetch(
+                `${import.meta.env.VITE_BACKEND_URL}/api/review/get_product_reviews.php?product_id=${id}`
+            );
+            const data = await response.json();
+            
+            if (data.success) {
+                setReviews(data.reviews);
+                setReviewStats(data.stats);
+            } else {
+                console.error("Error:", data.error);
+            }
+        } catch (error) {
+            console.error("Error fetching reviews:", error);
+        } finally {
+            setLoadingReviews(false);
+        }
+    };
 
     useEffect(() => {
         if (product) {
@@ -170,11 +203,16 @@ const ProductDetail = () => {
         setCurrentImageIndex((prev) => (prev - 1 + product.images.length) % product.images.length);
     };
 
+    // Helper function to render stars
     const renderStars = (rating: number) => {
-        return Array.from({ length: 5 }, (_, i) => (
+        return Array.from({ length: 5 }, (_, index) => (
             <Star
-                key={i}
-                className={`w-4 h-4 ${i < rating ? "fill-warning text-warning" : "text-muted-foreground"}`}
+                key={index}
+                className={`w-4 h-4 ${
+                    index < rating
+                        ? "fill-yellow-400 text-yellow-400"
+                        : "text-gray-300"
+                }`}
             />
         ));
     };
@@ -359,7 +397,7 @@ const ProductDetail = () => {
                                     {renderStars(Math.floor(product.rating))}
                                     <span className="font-medium ml-1">{product.rating}</span>
                                 </div>
-                                <span className="text-muted-foreground">({product.totalReviews} đánh giá)</span>
+                                <span className="text-muted-foreground">({reviewStats && reviewStats.total_reviews} đánh giá)</span>
                                 <span className="text-muted-foreground">•</span>
                                 <span className="text-muted-foreground">Đã bán {product.sold}</span>
                             </div>
@@ -521,120 +559,389 @@ const ProductDetail = () => {
                         <TabsList className="grid w-full grid-cols-4">
                             <TabsTrigger value="description">Mô tả</TabsTrigger>
                             <TabsTrigger value="specifications">Thông số</TabsTrigger>
-                            <TabsTrigger value="reviews">Đánh giá</TabsTrigger>
+                            <TabsTrigger value="reviews">
+                                Đánh giá {reviewStats && reviewStats.total_reviews > 0 && `(${reviewStats.total_reviews})`}
+                            </TabsTrigger>
                             <TabsTrigger value="shipping">Vận chuyển</TabsTrigger>
                         </TabsList>
 
+                        {/* Description Tab */}
                         <TabsContent value="description" className="mt-6">
                             <Card>
                                 <CardContent className="p-6">
                                     <p className="text-muted-foreground mb-4">{product.description}</p>
-                                    <h4 className="font-semibold mb-3">Đặc điểm nổi bật:</h4>
-                                    <ul className="space-y-2">
-                                        {product.features.map((feature, index) => (
-                                            <li key={index} className="flex items-start gap-2">
-                                                <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0" />
-                                                <span className="text-muted-foreground">{feature}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
+                                    {product.features && product.features.length > 0 && (
+                                        <>
+                                            <h4 className="font-semibold mb-3">Đặc điểm nổi bật:</h4>
+                                            <ul className="space-y-2">
+                                                {product.features.map((feature, index) => (
+                                                    <li key={index} className="flex items-start gap-2">
+                                                        <div className="w-1.5 h-1.5 bg-primary rounded-full mt-2 flex-shrink-0" />
+                                                        <span className="text-muted-foreground">{feature}</span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </>
+                                    )}
                                 </CardContent>
                             </Card>
                         </TabsContent>
 
+                        {/* Specifications Tab */}
                         <TabsContent value="specifications" className="mt-6">
                             <Card>
                                 <CardContent className="p-6">
-                                    <div className="space-y-4">
-                                        {Object.entries(product.specifications).map(([key, value]) => (
-                                            <div key={key} className="flex justify-between py-2 border-b border-border last:border-0">
-                                                <span className="font-medium">{key}</span>
-                                                <span className="text-muted-foreground">{value}</span>
+                                    {product.specifications && Object.keys(product.specifications).length > 0 ? (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                            {/* Cột 1: Thông tin cơ bản */}
+                                            <div className="space-y-4">
+                                                <h4 className="font-semibold text-lg mb-4 text-primary border-b pb-2">
+                                                    Thông tin cơ bản
+                                                </h4>
+                                                
+                                                {product.sku && (
+                                                    <div className="flex justify-between py-3 border-b border-border">
+                                                        <span className="text-muted-foreground">Mã SKU</span>
+                                                        <span className="font-medium text-right">{product.sku}</span>
+                                                    </div>
+                                                )}
+                                                
+                                                {product.brand && (
+                                                    <div className="flex justify-between py-3 border-b border-border">
+                                                        <span className="text-muted-foreground">Thương hiệu</span>
+                                                        <span className="font-medium text-right">{product.brand}</span>
+                                                    </div>
+                                                )}
+                                                
+                                                {product.category && (
+                                                    <div className="flex justify-between py-3 border-b border-border">
+                                                        <span className="text-muted-foreground">Danh mục</span>
+                                                        <span className="font-medium text-right">{product.category}</span>
+                                                    </div>
+                                                )}
+                                                
+                                                {product.material && (
+                                                    <div className="flex justify-between py-3 border-b border-border">
+                                                        <span className="text-muted-foreground">Chất liệu</span>
+                                                        <span className="font-medium text-right">{product.material}</span>
+                                                    </div>
+                                                )}
+                                                
+                                                {product.origin && (
+                                                    <div className="flex justify-between py-3 border-b border-border">
+                                                        <span className="text-muted-foreground">Xuất xứ</span>
+                                                        <span className="font-medium text-right">{product.origin}</span>
+                                                    </div>
+                                                )}
+
+                                                {product.colors && product.colors.length > 0 && (
+                                                    <div className="flex justify-between py-3 border-b border-border">
+                                                        <span className="text-muted-foreground">Màu sắc</span>
+                                                        <span className="font-medium text-right">
+                                                            {Array.isArray(product.colors) 
+                                                                ? product.colors.join(", ")
+                                                                : product.colors}
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                {product.sizes && product.sizes.length > 0 && (
+                                                    <div className="flex justify-between py-3 border-b border-border">
+                                                        <span className="text-muted-foreground">Kích cỡ</span>
+                                                        <span className="font-medium text-right">
+                                                            {Array.isArray(product.sizes) 
+                                                                ? product.sizes.join(", ")
+                                                                : product.sizes}
+                                                        </span>
+                                                    </div>
+                                                )}
                                             </div>
-                                        ))}
-                                    </div>
+
+                                            {/* Cột 2: Kích thước & Vận chuyển */}
+                                            <div className="space-y-4">
+                                                <h4 className="font-semibold text-lg mb-4 text-primary border-b pb-2">
+                                                    Kích thước & Vận chuyển
+                                                </h4>
+                                                
+                                                {product.weight && (
+                                                    <div className="flex justify-between py-3 border-b border-border">
+                                                        <span className="text-muted-foreground">Trọng lượng</span>
+                                                        <span className="font-medium text-right">{product.weight}g</span>
+                                                    </div>
+                                                )}
+                                                
+                                                {(product.length || product.width || product.height) && (
+                                                    <div className="flex justify-between py-3 border-b border-border">
+                                                        <span className="text-muted-foreground">Kích thước (D×R×C)</span>
+                                                        <span className="font-medium text-right">
+                                                            {product.length || '-'} × {product.width || '-'} × {product.height || '-'} cm
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                
+                                                {product.shipping_fee !== null && product.shipping_fee !== undefined && (
+                                                    <div className="flex justify-between py-3 border-b border-border">
+                                                        <span className="text-muted-foreground">Phí vận chuyển</span>
+                                                        <span className="font-medium text-right">
+                                                            {product.shipping_fee === 0 
+                                                                ? <Badge variant="secondary">Miễn phí</Badge>
+                                                                : formatPrice(product.shipping_fee)}
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                {product.inStock !== null && product.inStock !== undefined && (
+                                                    <div className="flex justify-between py-3 border-b border-border">
+                                                        <span className="text-muted-foreground">Tồn kho</span>
+                                                        <span className="font-medium text-right">
+                                                            {product.inStock} sản phẩm
+                                                        </span>
+                                                    </div>
+                                                )}
+
+                                                {product.status && (
+                                                    <div className="flex justify-between py-3 border-b border-border">
+                                                        <span className="text-muted-foreground">Trạng thái</span>
+                                                        <Badge variant={product.status === 'active' ? 'default' : 'secondary'}>
+                                                            {product.status === 'active' ? '✓ Đang bán' : 
+                                                             product.status === 'inactive' ? 'Tạm ngưng' : 'Đã xóa'}
+                                                        </Badge>
+                                                    </div>
+                                                )}
+
+                                                {product.flash_sale === 1 && (
+                                                    <div className="flex justify-between py-3 border-b border-border">
+                                                        <span className="text-muted-foreground">Ưu đãi</span>
+                                                        <Badge variant="destructive" className="animate-pulse">
+                                                            🔥 Flash Sale
+                                                        </Badge>
+                                                    </div>
+                                                )}
+
+                                                {product.tags && (
+                                                    <div className="py-3 border-b border-border">
+                                                        <span className="text-muted-foreground block mb-2">Tags</span>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {(() => {
+                                                                // Xử lý tags - có thể là array hoặc string
+                                                                let tagArray: string[] = [];
+                                                                
+                                                                if (Array.isArray(product.tags)) {
+                                                                    tagArray = product.tags;
+                                                                } else if (typeof product.tags === 'string' && product.tags.trim()) {
+                                                                    tagArray = product.tags.split(',');
+                                                                }
+                                                                
+                                                                return tagArray.map((tag: string, index: number) => (
+                                                                    <Badge key={index} variant="outline" className="text-xs">
+                                                                        {tag.trim()}
+                                                                    </Badge>
+                                                                ));
+                                                            })()}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="text-center py-8 text-muted-foreground">
+                                            Không có thông số kỹ thuật
+                                        </div>
+                                    )}
+
+                                    {/* Thông tin người bán */}
+                                    {(product.seller_name || product.seller_id) && (
+                                        <div className="mt-8 pt-6 border-t border-border">
+                                            <h4 className="font-semibold text-lg mb-4 text-primary">
+                                                Thông tin người bán
+                                            </h4>
+                                            <div className="flex items-center gap-4 bg-muted/30 p-4 rounded-lg">
+                                                {product.seller_avatar && (
+                                                    <Avatar className="w-16 h-16 border-2 border-primary">
+                                                        <AvatarImage src={product.seller_avatar} />
+                                                        <AvatarFallback className="bg-primary/10">
+                                                            <User className="w-8 h-8 text-primary" />
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                )}
+                                                <div className="flex-1">
+                                                    {product.seller_name && (
+                                                        <p className="font-semibold text-lg">{product.seller_name}</p>
+                                                    )}
+                                                    {product.seller_id && (
+                                                        <p className="text-sm text-muted-foreground">ID: {product.seller_id}</p>
+                                                    )}
+                                                </div>
+                                                <Button 
+                                                    variant="outline" 
+                                                    size="sm"
+                                                    onClick={() => navigate(`/seller/${product.seller_id}`)}
+                                                >
+                                                    Xem shop
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
                         </TabsContent>
 
                         <TabsContent value="reviews" className="mt-6">
                             <div className="space-y-6">
-                                {/* Rating Summary */}
-                                <Card>
-                                    <CardContent className="p-6">
-                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                            <div className="text-center">
-                                                <div className="text-4xl font-bold text-primary mb-2">{product.rating}</div>
-                                                <div className="flex items-center justify-center gap-1 mb-2">
-                                                    {renderStars(Math.floor(product.rating))}
-                                                </div>
-                                                <p className="text-muted-foreground">{product.totalReviews} đánh giá</p>
-                                            </div>
-
-                                            <div className="space-y-2">
-                                                {ratingDistribution.map((item) => (
-                                                    <div key={item.stars} className="flex items-center gap-3">
-                                                        <span className="text-sm w-8">{item.stars}★</span>
-                                                        <Progress value={item.percentage} className="flex-1" />
-                                                        <span className="text-sm text-muted-foreground w-12">{item.count}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
-                                {/* Reviews List */}
-                                <div className="space-y-4">
-                                    {reviews.map((review) => (
-                                        <Card key={review.id}>
+                                {loadingReviews ? (
+                                    <div className="flex justify-center py-12">
+                                        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                                    </div>
+                                ) : reviewStats && reviewStats.total_reviews > 0 ? (
+                                    <>
+                                        {/* Rating Summary */}
+                                        <Card>
                                             <CardContent className="p-6">
-                                                <div className="flex items-start gap-4">
-                                                    <Avatar>
-                                                        <AvatarImage src={review.avatar} />
-                                                        <AvatarFallback><User className="w-4 h-4" /></AvatarFallback>
-                                                    </Avatar>
-
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <span className="font-medium">{review.user}</span>
-                                                            <div className="flex items-center gap-1">
-                                                                {renderStars(review.rating)}
-                                                            </div>
-                                                            <span className="text-sm text-muted-foreground">{review.date}</span>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                                    {/* Average Rating */}
+                                                    <div className="flex flex-col items-center justify-center text-center border-r">
+                                                        <div className="text-5xl font-bold text-primary mb-2">
+                                                            {reviewStats.avg_rating.toFixed(1)}
                                                         </div>
-
-                                                        <p className="text-muted-foreground mb-3">{review.comment}</p>
-
-                                                        {review.images.length > 0 && (
-                                                            <div className="flex gap-2 mb-3">
-                                                                {review.images.map((image, index) => (
-                                                                    <img
-                                                                        key={index}
-                                                                        src={image}
-                                                                        alt="Review"
-                                                                        className="w-16 h-16 rounded-lg object-cover"
-                                                                    />
-                                                                ))}
-                                                            </div>
-                                                        )}
-
-                                                        <div className="flex items-center gap-4">
-                                                            <Button variant="ghost" size="sm" className="text-muted-foreground">
-                                                                <ThumbsUp className="w-4 h-4 mr-1" />
-                                                                Hữu ích ({review.likes})
-                                                            </Button>
-                                                            <Button variant="ghost" size="sm" className="text-muted-foreground">
-                                                                <MessageCircle className="w-4 h-4 mr-1" />
-                                                                Trả lời
-                                                            </Button>
+                                                        <div className="flex items-center justify-center gap-1 mb-2">
+                                                            {renderStars(Math.round(reviewStats.avg_rating))}
                                                         </div>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            {reviewStats.total_reviews} đánh giá
+                                                        </p>
+                                                    </div>
+
+                                                    {/* Rating Distribution */}
+                                                    <div className="space-y-3">
+                                                        {reviewStats.rating_distribution.map((item) => (
+                                                            <div key={item.stars} className="flex items-center gap-3">
+                                                                <div className="flex items-center gap-1 w-16">
+                                                                    <span className="text-sm font-medium">{item.stars}</span>
+                                                                    <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                                                                </div>
+                                                                <Progress 
+                                                                    value={item.percentage} 
+                                                                    className="flex-1 h-2" 
+                                                                />
+                                                                <span className="text-sm text-muted-foreground w-16 text-right">
+                                                                    {item.count}
+                                                                </span>
+                                                            </div>
+                                                        ))}
                                                     </div>
                                                 </div>
                                             </CardContent>
                                         </Card>
-                                    ))}
-                                </div>
+
+                                        {/* Reviews List */}
+                                        <div className="space-y-4">
+                                            {reviews.map((review) => (
+                                                <Card key={review.id}>
+                                                    <CardContent className="p-6">
+                                                        <div className="flex items-start gap-4">
+                                                            {/* Avatar */}
+                                                            <Avatar className="w-12 h-12">
+                                                                <AvatarImage src={review.avatar_url} alt={review.user_name} />
+                                                                <AvatarFallback className="bg-primary/10">
+                                                                    <User className="w-6 h-6 text-primary" />
+                                                                </AvatarFallback>
+                                                            </Avatar>
+
+                                                            <div className="flex-1 space-y-3">
+                                                                {/* User Info */}
+                                                                <div className="flex items-center gap-3 flex-wrap">
+                                                                    <span className="font-semibold text-foreground">
+                                                                        {review.user_name}
+                                                                    </span>
+                                                                    <div className="flex items-center gap-1">
+                                                                        {renderStars(Math.round(review.rating))}
+                                                                    </div>
+                                                                    <span className="text-sm text-muted-foreground">
+                                                                        • {review.time_ago}
+                                                                    </span>
+                                                                </div>
+
+                                                                {/* Comment */}
+                                                                {review.comment && (
+                                                                    <p className="text-sm text-foreground leading-relaxed">
+                                                                        {review.comment}
+                                                                    </p>
+                                                                )}
+
+                                                                {/* Review Images */}
+                                                                {review.images && review.images.length > 0 && (
+                                                                    <div className="flex gap-2 flex-wrap">
+                                                                        {review.images.map((image, index) => (
+                                                                            <div
+                                                                                key={index}
+                                                                                className="relative group cursor-pointer overflow-hidden rounded-lg border-2 border-gray-200 hover:border-primary transition-colors"
+                                                                                onClick={() => setSelectedReviewImage(image)}
+                                                                            >
+                                                                                <img
+                                                                                    src={image}
+                                                                                    alt={`Review ${index + 1}`}
+                                                                                    className="w-24 h-24 object-cover transition-transform group-hover:scale-110"
+                                                                                    onError={(e) => {
+                                                                                        const target = e.target as HTMLImageElement;
+                                                                                        target.src = '/placeholder-image.jpg';
+                                                                                        console.error('Image load error:', image);
+                                                                                    }}
+                                                                                />
+                                                                                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                                                                    <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                                        <div className="w-8 h-8 rounded-full bg-white/90 flex items-center justify-center">
+                                                                                            <svg className="w-4 h-4 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m-3 0H7" />
+                                                                                            </svg>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                )}
+
+                                                                {/* Actions */}
+                                                                <div className="flex items-center gap-4 pt-2">
+                                                                    <Button 
+                                                                        variant="ghost" 
+                                                                        size="sm" 
+                                                                        className="text-muted-foreground hover:text-primary h-8 px-3"
+                                                                    >
+                                                                        <ThumbsUp className="w-4 h-4 mr-1.5" />
+                                                                        Hữu ích ({review.likes})
+                                                                    </Button>
+                                                                    <Button 
+                                                                        variant="ghost" 
+                                                                        size="sm" 
+                                                                        className="text-muted-foreground hover:text-primary h-8 px-3"
+                                                                    >
+                                                                        <MessageCircle className="w-4 h-4 mr-1.5" />
+                                                                        Trả lời
+                                                                    </Button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+                                            ))}
+                                        </div>
+                                    </>
+                                ) : (
+                                    <Card>
+                                        <CardContent className="p-12 text-center">
+                                            <div className="flex flex-col items-center">
+                                                <MessageCircle className="w-16 h-16 mb-4 text-muted-foreground opacity-50" />
+                                                <h3 className="text-lg font-semibold mb-2">
+                                                    Chưa có đánh giá nào
+                                                </h3>
+                                                <p className="text-muted-foreground">
+                                                    Hãy là người đầu tiên đánh giá sản phẩm này
+                                                </p>
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                )}
                             </div>
                         </TabsContent>
 
@@ -669,6 +976,30 @@ const ProductDetail = () => {
                         </TabsContent>
                     </Tabs>
                 </div>
+
+                {/* Image Preview Modal */}
+                {selectedReviewImage && (
+                    <div 
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
+                        onClick={() => setSelectedReviewImage(null)}
+                    >
+                        <div className="relative max-w-5xl w-full">
+                            <img
+                                src={selectedReviewImage}
+                                alt="Review"
+                                className="max-w-full max-h-[90vh] object-contain rounded-lg mx-auto shadow-2xl"
+                            />
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="absolute top-4 right-4 bg-black/50 text-white hover:bg-black/70 rounded-full w-12 h-12"
+                                onClick={() => setSelectedReviewImage(null)}
+                            >
+                                <X className="w-6 h-6" />
+                            </Button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Recommended Products */}
                 <div className="mt-12">

@@ -1,6 +1,20 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, BarChart3, PieChart, Activity, Package } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+    TrendingUp,
+    BarChart3,
+    PieChart,
+    Activity,
+    Package,
+    DollarSign,
+    ShoppingBag,
+    Users,
+    Loader2,
+    RefreshCw,
+    AlertCircle
+} from "lucide-react";
 import {
     LineChart,
     Line,
@@ -18,50 +32,155 @@ import {
     Cell,
     Legend
 } from "recharts";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
-const revenueData = [
-    { month: "T1", revenue: 32, orders: 234, customers: 89 },
-    { month: "T2", revenue: 28, orders: 198, customers: 76 },
-    { month: "T3", revenue: 45, orders: 312, customers: 125 },
-    { month: "T4", revenue: 38, orders: 267, customers: 98 },
-    { month: "T5", revenue: 52, orders: 378, customers: 142 },
-    { month: "T6", revenue: 48, orders: 356, customers: 138 },
-    { month: "T7", revenue: 61, orders: 423, customers: 167 },
-    { month: "T8", revenue: 55, orders: 389, customers: 154 },
-    { month: "T9", revenue: 67, orders: 467, customers: 189 },
-    { month: "T10", revenue: 58, orders: 412, customers: 176 },
-    { month: "T11", revenue: 72, orders: 498, customers: 203 },
-    { month: "T12", revenue: 78, orders: 534, customers: 221 }
-];
-
-const categoryData = [
-    { name: "Chăm sóc da", value: 35, color: "#FF6384" },
-    { name: "Trang điểm", value: 28, color: "#36A2EB" },
-    { name: "Nước hoa", value: 18, color: "#FFCE56" },
-    { name: "Chăm sóc tóc", value: 12, color: "#4BC0C0" },
-    { name: "Khác", value: 7, color: "#9966FF" }
-];
-
-
-const orderStatusData = [
-    { status: "Chờ xử lý", count: 42, color: "#f59e0b" },
-    { status: "Đang giao", count: 28, color: "#3b82f6" },
-    { status: "Đã giao", count: 64, color: "#10b981" },
-    { status: "Đã hủy", count: 10, color: "#ef4444" },
-];
-
-
-const weeklyTrends = [
-    { day: "T2", orders: 23, revenue: 5.2 },
-    { day: "T3", orders: 31, revenue: 7.1 },
-    { day: "T4", orders: 28, revenue: 6.3 },
-    { day: "T5", orders: 35, revenue: 8.4 },
-    { day: "T6", orders: 42, revenue: 9.8 },
-    { day: "T7", orders: 38, revenue: 8.9 },
-    { day: "CN", orders: 25, revenue: 5.7 }
-];
+interface AnalyticsData {
+    success: boolean;
+    year: number;
+    seller_id?: number;
+    overview: {
+        total_orders: number;
+        total_customers: number;
+        total_revenue: number;
+        avg_order_value: number;
+    };
+    revenue_data: Array<{
+        month: string;
+        revenue: number;
+        orders: number;
+        customers: number;
+    }>;
+    category_data: Array<{
+        name: string;
+        value: number;
+        color: string;
+    }>;
+    order_status_data: Array<{
+        status: string;
+        count: number;
+        color: string;
+    }>;
+    weekly_trends: Array<{
+        day: string;
+        orders: number;
+        revenue: number;
+    }>;
+}
 
 export function ShopAnalytics() {
+    const { user } = useAuth();
+    const { toast } = useToast();
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [year] = useState(new Date().getFullYear());
+    const [data, setData] = useState<AnalyticsData | null>(null);
+
+    useEffect(() => {
+        if (user?.id) {
+            fetchAnalyticsData();
+        }
+    }, [user, year]);
+
+    const fetchAnalyticsData = async () => {
+        if (!user?.id) return;
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            const url = `${import.meta.env.VITE_BACKEND_URL}/api/vendor/analytics_dashboard.php?user_id=${user.id}&year=${year}`;
+            console.log('Fetching analytics from:', url);
+
+            const response = await fetch(url, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                },
+            });
+
+            console.log('Response status:', response.status);
+            console.log('Response headers:', response.headers);
+
+            // Kiểm tra content-type
+            const contentType = response.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                const text = await response.text();
+                console.error('Non-JSON response:', text.substring(0, 500));
+                throw new Error('Server không trả về JSON. Vui lòng kiểm tra lại cấu hình.');
+            }
+
+            const result = await response.json();
+            console.log('Analytics data:', result);
+
+            if (result.success) {
+                setData(result);
+                setError(null);
+            } else {
+                const errorMsg = result.error || "Không thể tải dữ liệu thống kê";
+                setError(errorMsg);
+                toast({
+                    title: "Lỗi",
+                    description: errorMsg,
+                    variant: "destructive"
+                });
+            }
+        } catch (error) {
+            console.error("Error fetching analytics:", error);
+            const errorMessage = error instanceof Error ? error.message : "Không thể kết nối đến server";
+            setError(errorMessage);
+            toast({
+                title: "Lỗi kết nối",
+                description: errorMessage,
+                variant: "destructive"
+            });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="text-center">
+                    <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
+                    <p className="mt-4 text-muted-foreground">Đang tải dữ liệu thống kê...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (error) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="text-center max-w-md">
+                    <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold mb-2">Không thể tải dữ liệu</h3>
+                    <p className="text-muted-foreground mb-4">{error}</p>
+                    <Button onClick={fetchAnalyticsData} variant="outline">
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Thử lại
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
+    if (!data || !data.overview) {
+        return (
+            <div className="flex items-center justify-center min-h-[400px]">
+                <div className="text-center">
+                    <BarChart3 className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground mb-4">Chưa có dữ liệu thống kê năm {year}</p>
+                    <Button onClick={fetchAnalyticsData} variant="outline">
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Tải lại
+                    </Button>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="space-y-6">
             <motion.div
@@ -70,42 +189,105 @@ export function ShopAnalytics() {
                 transition={{ duration: 0.6, ease: "easeOut" }}
                 className="mb-6"
             >
-                <div className="flex items-center gap-3">
-                    {/* Icon nền gradient */}
-                    <div className="p-3 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 text-white shadow-md">
-                        <BarChart3 className="w-6 h-6" />
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="p-3 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 text-white shadow-md">
+                            <BarChart3 className="w-6 h-6" />
+                        </div>
+
+                        <div>
+                            <h1 className="text-3xl font-extrabold bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent tracking-tight">
+                                Báo cáo & Thống kê {year}
+                            </h1>
+                            <p className="text-sm text-muted-foreground mt-1">
+                                Phân tích chi tiết hiệu suất kinh doanh và xu hướng doanh thu
+                            </p>
+                        </div>
                     </div>
 
-                    <div>
-                        {/* Tiêu đề gradient bắt mắt */}
-                        <h1 className="text-3xl font-extrabold bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent tracking-tight">
-                            Báo cáo & Thống kê
-                        </h1>
-
-                        {/* Mô tả tinh tế */}
-                        <p className="text-sm text-muted-foreground mt-1">
-                            Phân tích chi tiết hiệu suất kinh doanh và xu hướng doanh thu
-                        </p>
-                    </div>
+                    <Button onClick={fetchAnalyticsData} variant="outline" size="sm">
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Làm mới
+                    </Button>
                 </div>
 
-                {/* Đường viền gradient nhẹ bên dưới */}
                 <div className="mt-4 h-[2px] w-full bg-gradient-to-r from-indigo-500 via-purple-400 to-pink-400 rounded-full opacity-60"></div>
             </motion.div>
 
+            {/* Overview Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Card>
+                    <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-muted-foreground">Tổng doanh thu</p>
+                                <p className="text-2xl font-bold">
+                                    {(data.overview.total_revenue / 1000000).toFixed(1)}M đ
+                                </p>
+                            </div>
+                            <div className="p-3 rounded-xl bg-green-100 text-green-600">
+                                <DollarSign className="w-6 h-6" />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-muted-foreground">Tổng đơn hàng</p>
+                                <p className="text-2xl font-bold">{data.overview.total_orders}</p>
+                            </div>
+                            <div className="p-3 rounded-xl bg-blue-100 text-blue-600">
+                                <ShoppingBag className="w-6 h-6" />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-muted-foreground">Khách hàng</p>
+                                <p className="text-2xl font-bold">{data.overview.total_customers}</p>
+                            </div>
+                            <div className="p-3 rounded-xl bg-purple-100 text-purple-600">
+                                <Users className="w-6 h-6" />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-muted-foreground">Giá trị TB/Đơn</p>
+                                <p className="text-2xl font-bold">
+                                    {(data.overview.avg_order_value / 1000).toFixed(0)}K đ
+                                </p>
+                            </div>
+                            <div className="p-3 rounded-xl bg-orange-100 text-orange-600">
+                                <TrendingUp className="w-6 h-6" />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Revenue Chart */}
                 <Card>
                     <CardHeader className="pb-2">
                         <div className="flex items-center gap-3">
-                            {/* Icon gradient */}
                             <div className="p-2 rounded-xl bg-gradient-to-tr from-green-500 to-emerald-400 text-white shadow-md">
                                 <TrendingUp className="w-5 h-5" />
                             </div>
                             <div>
                                 <CardTitle className="text-lg font-bold text-foreground">
-                                    Doanh thu theo tháng (2024)
+                                    Doanh thu theo tháng ({year})
                                 </CardTitle>
                                 <CardDescription className="text-sm text-muted-foreground">
                                     Biểu đồ thể hiện xu hướng doanh thu tăng trưởng qua từng tháng
@@ -117,29 +299,17 @@ export function ShopAnalytics() {
                     <CardContent>
                         <div className="w-full h-[320px]">
                             <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={revenueData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                <AreaChart data={data.revenue_data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                                     <defs>
                                         <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.4} />
                                             <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.05} />
                                         </linearGradient>
                                     </defs>
-                                    <CartesianGrid
-                                        strokeDasharray="3 3"
-                                        stroke="hsl(var(--border))"
-                                        opacity={0.3}
-                                    />
-                                    <XAxis
-                                        dataKey="month"
-                                        stroke="hsl(var(--muted-foreground))"
-                                        fontSize={12}
-                                    />
-                                    <YAxis
-                                        stroke="hsl(var(--muted-foreground))"
-                                        fontSize={12}
-                                    />
+                                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                                    <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
                                     <Tooltip
-                                        cursor={{ strokeDasharray: "3 3", stroke: "hsl(var(--primary))", opacity: 0.4 }}
                                         contentStyle={{
                                             background:
                                                 "black",
@@ -147,11 +317,6 @@ export function ShopAnalytics() {
                                             borderRadius: "12px",
                                             padding: "10px 14px",
                                             boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
-                                        }}
-                                        labelStyle={{
-                                            fontWeight: 600,
-                                            color: "hsl(var(--foreground))",
-                                            fontSize: 13,
                                         }}
                                         formatter={(value) => [`${value}M đ`, "Doanh thu"]}
                                     />
@@ -161,7 +326,6 @@ export function ShopAnalytics() {
                                         stroke="hsl(var(--primary))"
                                         strokeWidth={3}
                                         fill="url(#revenueGradient)"
-                                        animationDuration={800}
                                     />
                                 </AreaChart>
                             </ResponsiveContainer>
@@ -173,7 +337,6 @@ export function ShopAnalytics() {
                 <Card>
                     <CardHeader className="pb-2">
                         <div className="flex items-center gap-3">
-                            {/* Icon gradient */}
                             <div className="p-2 rounded-xl bg-gradient-to-tr from-blue-500 to-indigo-400 text-white shadow-md">
                                 <BarChart3 className="w-5 h-5" />
                             </div>
@@ -191,7 +354,7 @@ export function ShopAnalytics() {
                     <CardContent>
                         <div className="w-full h-[320px]">
                             <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={revenueData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                <BarChart data={data.revenue_data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                                     <defs>
                                         <linearGradient id="ordersGradient" x1="0" y1="0" x2="0" y2="1">
                                             <stop offset="0%" stopColor="hsl(var(--primary))" stopOpacity={0.9} />
@@ -202,36 +365,15 @@ export function ShopAnalytics() {
                                             <stop offset="100%" stopColor="hsl(var(--chart-2))" stopOpacity={0.4} />
                                         </linearGradient>
                                     </defs>
-
-                                    <CartesianGrid
-                                        strokeDasharray="3 3"
-                                        stroke="hsl(var(--border))"
-                                        opacity={0.3}
-                                    />
-                                    <XAxis
-                                        dataKey="month"
-                                        stroke="hsl(var(--muted-foreground))"
-                                        fontSize={12}
-                                    />
-                                    <YAxis
-                                        stroke="hsl(var(--muted-foreground))"
-                                        fontSize={12}
-                                    />
+                                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                                    <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                                    <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
                                     <Tooltip
-                                        cursor={{ fill: "hsl(var(--muted))", opacity: 0.05 }}
                                         contentStyle={{
-                                            background:
-                                                "black",
+                                            background: "black",
                                             border: "1px solid rgba(0,0,0,0.1)",
                                             borderRadius: "12px",
                                             padding: "10px 14px",
-                                            boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
-                                            backdropFilter: "blur(10px)",
-                                        }}
-                                        labelStyle={{
-                                            fontWeight: 600,
-                                            color: "hsl(var(--primary))",
-                                            fontSize: 13,
                                         }}
                                         formatter={(value, name) => [
                                             `${value} ${name === "Đơn hàng" ? "đơn" : "khách"}`,
@@ -244,7 +386,6 @@ export function ShopAnalytics() {
                                         fill="url(#ordersGradient)"
                                         radius={[8, 8, 0, 0]}
                                         barSize={20}
-                                        animationDuration={800}
                                     />
                                     <Bar
                                         dataKey="customers"
@@ -252,7 +393,6 @@ export function ShopAnalytics() {
                                         fill="url(#customersGradient)"
                                         radius={[8, 8, 0, 0]}
                                         barSize={20}
-                                        animationDuration={800}
                                     />
                                 </BarChart>
                             </ResponsiveContainer>
@@ -261,106 +401,69 @@ export function ShopAnalytics() {
                 </Card>
 
                 {/* Category Sales Pie Chart */}
-                <Card>
-                    <CardHeader>
-                        <div className="flex items-center gap-3">
-                            {/* Icon gradient */}
-                            <div className="p-2 rounded-xl bg-gradient-to-tr from-violet-500 to-indigo-400 text-white shadow-md">
-                                <PieChart className="w-5 h-5" />
+                {data.category_data && data.category_data.length > 0 && (
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 rounded-xl bg-gradient-to-tr from-violet-500 to-indigo-400 text-white shadow-md">
+                                    <PieChart className="w-5 h-5" />
+                                </div>
+                                <div>
+                                    <CardTitle className="text-lg font-bold text-foreground">
+                                        Doanh số theo danh mục
+                                    </CardTitle>
+                                    <CardDescription className="text-sm text-muted-foreground">
+                                        Phân bổ tỷ lệ doanh số giữa các danh mục sản phẩm
+                                    </CardDescription>
+                                </div>
                             </div>
+                        </CardHeader>
 
-                            <div>
-                                <CardTitle className="text-lg font-bold text-foreground">
-                                    Doanh số theo danh mục
-                                </CardTitle>
-                                <CardDescription className="text-sm text-muted-foreground">
-                                    Phân bổ tỷ lệ doanh số giữa các danh mục sản phẩm trong năm 2024.
-                                </CardDescription>
-                            </div>
-                        </div>
-                    </CardHeader>
-
-                    <CardContent>
-                        <ResponsiveContainer width="100%" height={320}>
-                            <RechartsPieChart>
-                                {/* Tooltip có màu chữ động và giao diện đẹp */}
-                                <Tooltip
-                                    cursor={{ fill: "hsl(var(--muted))", opacity: 0.05 }}
-                                    contentStyle={{
-                                        background: "linear-gradient(145deg, #fff, #f9fafb)",
-                                        border: "1px solid #e5e7eb",
-                                        borderRadius: "10px",
-                                        padding: "10px 14px",
-                                        boxShadow: "0 4px 14px rgba(0,0,0,0.08)",
-                                    }}
-                                    labelStyle={{
-                                        fontWeight: 600,
-                                        fontSize: 13,
-                                        color: "#4b5563",
-                                        marginBottom: 4,
-                                    }}
-                                    formatter={(value, name, entry) => {
-                                        return [
+                        <CardContent>
+                            <ResponsiveContainer width="100%" height={320}>
+                                <RechartsPieChart>
+                                    <Tooltip
+                                        contentStyle={{
+                                            background: "linear-gradient(145deg, #fff, #f9fafb)",
+                                            border: "1px solid #e5e7eb",
+                                            borderRadius: "10px",
+                                            padding: "10px 14px",
+                                        }}
+                                        formatter={(value, name, entry) => [
                                             <span style={{ color: entry.payload.color, fontWeight: 600 }}>
                                                 {value}%
                                             </span>,
                                             name,
-                                        ];
-                                    }}
-                                />
-
-                                <Pie
-                                    data={categoryData}
-                                    cx="50%"
-                                    cy="50%"
-                                    outerRadius={110}
-                                    innerRadius={55}
-                                    paddingAngle={4}
-                                    dataKey="value"
-                                    labelLine={false}
-                                    isAnimationActive
-                                    label={({ value }) => `${value}%`}
-                                >
-                                    {categoryData.map((entry, index) => (
-                                        <Cell
-                                            key={`cell-${index}`}
-                                            fill={entry.color}
-                                            stroke="#fff"
-                                            strokeWidth={2}
-                                            style={{
-                                                transition: "transform 0.3s ease",
-                                            }}
-                                            onMouseEnter={(e) => {
-                                                e.target.style.transform = "scale(1.05)";
-                                            }}
-                                            onMouseLeave={(e) => {
-                                                e.target.style.transform = "scale(1)";
-                                            }}
-                                        />
-                                    ))}
-                                </Pie>
-
-                                <Legend
-                                    layout="horizontal"
-                                    verticalAlign="bottom"
-                                    align="center"
-                                    iconType="circle"
-                                />
-                            </RechartsPieChart>
-                        </ResponsiveContainer>
-                    </CardContent>
-                </Card>
-
+                                        ]}
+                                    />
+                                    <Pie
+                                        data={data.category_data}
+                                        cx="50%"
+                                        cy="50%"
+                                        outerRadius={110}
+                                        innerRadius={55}
+                                        paddingAngle={4}
+                                        dataKey="value"
+                                        label={({ value }) => `${value}%`}
+                                    >
+                                        {data.category_data.map((entry, index) => (
+                                            <Cell key={`cell-${index}`} fill={entry.color} stroke="#fff" strokeWidth={2} />
+                                        ))}
+                                    </Pie>
+                                    <Legend layout="horizontal" verticalAlign="bottom" align="center" iconType="circle" />
+                                </RechartsPieChart>
+                            </ResponsiveContainer>
+                        </CardContent>
+                    </Card>
+                )}
 
                 {/* Weekly Trends */}
                 <Card>
                     <CardHeader>
                         <div className="flex items-center gap-3">
-                            {/* Icon gradient tròn bo góc, nổi bật */}
                             <div className="p-2 rounded-xl bg-gradient-to-tr from-orange-400 to-amber-500 text-white shadow-md">
                                 <Activity className="w-5 h-5" />
                             </div>
-
                             <div>
                                 <CardTitle className="text-lg font-bold text-foreground">
                                     Xu hướng tuần này
@@ -374,49 +477,21 @@ export function ShopAnalytics() {
 
                     <CardContent>
                         <ResponsiveContainer width="100%" height={320}>
-                            <LineChart data={weeklyTrends}>
-                                {/* Lưới nền */}
-                                <CartesianGrid
-                                    strokeDasharray="4 4"
-                                    stroke="#E5E7EB"
-                                    opacity={0.6}
-                                />
-
-                                {/* Trục X */}
-                                <XAxis
-                                    dataKey="day"
-                                    stroke="#6B7280"
-                                    fontSize={12}
-                                    tickLine={false}
-                                    axisLine={{ stroke: "#D1D5DB" }}
-                                />
-
-                                {/* Trục Y */}
-                                <YAxis
-                                    stroke="#6B7280"
-                                    fontSize={12}
-                                    tickLine={false}
-                                    axisLine={{ stroke: "#D1D5DB" }}
-                                />
-
-                                {/* Tooltip */}
+                            <LineChart data={data.weekly_trends}>
+                                <CartesianGrid strokeDasharray="4 4" stroke="#E5E7EB" opacity={0.6} />
+                                <XAxis dataKey="day" stroke="#6B7280" fontSize={12} />
+                                <YAxis stroke="#6B7280" fontSize={12} />
                                 <Tooltip
                                     contentStyle={{
                                         backgroundColor: "black",
-                                        border: "0px solid #E5E7EB",
                                         borderRadius: "12px",
                                         color: "#fff",
-                                        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
                                     }}
                                     formatter={(value, name) => [
-                                        name === "orders"
-                                            ? `${value} đơn`
-                                            : `${value.toLocaleString()}₫`,
+                                        name === "orders" ? `${value} đơn` : `${value}M đ`,
                                         name === "orders" ? "Đơn hàng" : "Doanh thu",
                                     ]}
                                 />
-
-                                {/* Line: Orders */}
                                 <Line
                                     type="monotone"
                                     dataKey="orders"
@@ -424,10 +499,7 @@ export function ShopAnalytics() {
                                     stroke="#3B82F6"
                                     strokeWidth={3}
                                     dot={{ fill: "#3B82F6", r: 4 }}
-                                    activeDot={{ r: 6, stroke: "#fff", strokeWidth: 2 }}
                                 />
-
-                                {/* Line: Revenue */}
                                 <Line
                                     type="monotone"
                                     dataKey="revenue"
@@ -435,122 +507,92 @@ export function ShopAnalytics() {
                                     stroke="#F97316"
                                     strokeWidth={3}
                                     dot={{ fill: "#F97316", r: 4 }}
-                                    activeDot={{ r: 6, stroke: "#fff", strokeWidth: 2 }}
                                 />
-
-                                {/* Legend */}
-                                <Legend
-                                    verticalAlign="top"
-                                    align="right"
-                                    iconType="circle"
-                                    wrapperStyle={{ fontSize: "13px", paddingBottom: "8px" }}
-                                />
+                                <Legend verticalAlign="top" align="right" iconType="circle" />
                             </LineChart>
                         </ResponsiveContainer>
                     </CardContent>
                 </Card>
 
-
                 {/* Order Status Distribution */}
-                <Card className="lg:col-span-2">
-                    <CardHeader className="pb-2">
-                        <div className="flex items-center gap-2">
-                            <div className="p-2 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-xl text-white">
-                                <Package size={18} />
+                {data.order_status_data && data.order_status_data.length > 0 && (
+                    <Card className="lg:col-span-2">
+                        <CardHeader className="pb-2">
+                            <div className="flex items-center gap-2">
+                                <div className="p-2 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-xl text-white">
+                                    <Package size={18} />
+                                </div>
+                                <div>
+                                    <CardTitle className="text-lg font-bold text-foreground">
+                                        Phân bổ trạng thái đơn hàng
+                                    </CardTitle>
+                                    <CardDescription className="text-sm text-muted-foreground">
+                                        Tình hình xử lý và hoàn thành đơn hàng năm {year}
+                                    </CardDescription>
+                                </div>
                             </div>
-                            <div>
-                                <CardTitle className="text-lg font-bold text-foreground">
-                                    Phân bổ trạng thái đơn hàng
-                                </CardTitle>
-                                <CardDescription className="text-sm text-muted-foreground">
-                                    Tình hình xử lý và hoàn thành đơn hàng gần đây
-                                </CardDescription>
+                        </CardHeader>
+
+                        <CardContent>
+                            <div className="relative w-full h-[340px]">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <BarChart data={data.order_status_data} layout="vertical" margin={{ top: 10, right: 30, left: 10, bottom: 10 }}>
+                                        <defs>
+                                            {data.order_status_data.map((entry, i) => (
+                                                <linearGradient key={`grad-${i}`} id={`grad-${i}`} x1="0" y1="0" x2="100%" y2="0">
+                                                    <stop offset="0%" stopColor={entry.color} stopOpacity={0.8} />
+                                                    <stop offset="100%" stopColor={entry.color} stopOpacity={0.4} />
+                                                </linearGradient>
+                                            ))}
+                                        </defs>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+                                        <XAxis type="number" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                                        <YAxis dataKey="status" type="category" stroke="hsl(var(--muted-foreground))" fontSize={13} width={120} />
+                                        <Tooltip
+                                            contentStyle={{
+                                                background: "rgba(0, 0, 0, 0.9)",
+                                                backdropFilter: "blur(10px)",
+                                                border: "1px solid rgba(255, 255, 255, 0.1)",
+                                                borderRadius: "12px",
+                                                padding: "12px 16px",
+                                                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+                                            }}
+                                            labelStyle={{
+                                                color: "#fff",
+                                                fontWeight: "600",
+                                                fontSize: "14px",
+                                                marginBottom: "4px",
+                                            }}
+                                            itemStyle={{
+                                                color: "#fff",
+                                                fontSize: "13px",
+                                            }}
+                                            formatter={(value, name, props) => {
+                                                const entry = props.payload;
+                                                return [
+                                                    <span style={{
+                                                        color: entry.color,
+                                                        fontWeight: "700",
+                                                        fontSize: "15px"
+                                                    }}>
+                                                        {value} đơn
+                                                    </span>,
+                                                    <span style={{ color: "#e5e7eb" }}>Số lượng</span>
+                                                ];
+                                            }}
+                                            cursor={{ fill: "rgba(255, 255, 255, 0.05)" }}
+                                        />
+                                        <Bar dataKey="count" radius={[12, 12, 12, 12]} barSize={22}>
+                                            {data.order_status_data.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={`url(#grad-${index})`} />
+                                            ))}
+                                        </Bar>
+                                    </BarChart>
+                                </ResponsiveContainer>
                             </div>
-                        </div>
-                    </CardHeader>
-
-                    <CardContent>
-                        <div className="relative w-full h-[340px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart
-                                    data={orderStatusData}
-                                    layout="vertical"
-                                    margin={{ top: 10, right: 30, left: 10, bottom: 10 }}
-                                >
-                                    <defs>
-                                        {orderStatusData.map((entry, i) => (
-                                            <linearGradient
-                                                key={`grad-${i}`}
-                                                id={`grad-${i}`}
-                                                x1="0"
-                                                y1="0"
-                                                x2="100%"
-                                                y2="0"
-                                            >
-                                                <stop offset="0%" stopColor={entry.color} stopOpacity={0.8} />
-                                                <stop offset="100%" stopColor={entry.color} stopOpacity={0.4} />
-                                            </linearGradient>
-                                        ))}
-                                    </defs>
-
-                                    <CartesianGrid
-                                        strokeDasharray="3 3"
-                                        stroke="hsl(var(--border))"
-                                        opacity={0.3}
-                                    />
-                                    <XAxis
-                                        type="number"
-                                        stroke="hsl(var(--muted-foreground))"
-                                        fontSize={12}
-                                    />
-                                    <YAxis
-                                        dataKey="status"
-                                        type="category"
-                                        stroke="hsl(var(--muted-foreground))"
-                                        fontSize={13}
-                                        width={120}
-                                    />
-                                    <Tooltip
-                                        cursor={{ fill: "hsl(var(--muted))", opacity: 0.05 }}
-                                        contentStyle={{
-                                            background:
-                                                "linear-gradient(145deg, rgba(255,255,255,0.95), rgba(245,245,245,0.9))",
-                                            border: "1px solid rgba(0,0,0,0.1)",
-                                            borderRadius: "12px",
-                                            backdropFilter: "blur(10px)",
-                                            padding: "10px 14px",
-                                            boxShadow: "0 4px 15px rgba(0,0,0,0.08)",
-                                        }}
-                                        labelStyle={{
-                                            fontWeight: 600,
-                                            color: "hsl(var(--primary))",
-                                            fontSize: 13,
-                                        }}
-                                        formatter={(value) => [`${value} đơn`, "Số lượng"]}
-                                    />
-                                    <Bar
-                                        dataKey="count"
-                                        radius={[12, 12, 12, 12]}
-                                        barSize={22}
-                                        animationDuration={800}
-                                    >
-                                        {orderStatusData.map((entry, index) => (
-                                            <Cell
-                                                key={`cell-${index}`}
-                                                fill={`url(#grad-${index})`}
-                                                style={{
-                                                    filter: "drop-shadow(0 3px 6px rgba(0,0,0,0.15))",
-                                                    transition: "all 0.3s ease",
-                                                }}
-                                                className="hover:scale-[1.03] hover:opacity-90"
-                                            />
-                                        ))}
-                                    </Bar>
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
         </div>
     );
