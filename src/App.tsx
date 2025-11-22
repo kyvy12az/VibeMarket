@@ -49,6 +49,7 @@ import { Toaster as HotToaster } from "react-hot-toast";
 import CallClient from "./pages/CallClient";
 import {EditProduct} from "./components/dashboard-Seller/EditProduct";
 import ReviewOrder from "./pages/ReviewOrder";
+import PostDetail from "./pages/PostDetail"
 
 const queryClient = new QueryClient();
 
@@ -76,6 +77,7 @@ function App() {
                   <Route path="/register" element={<Register />} />
                   <Route path="/shop" element={<Shopping />} />
                   <Route path="/community" element={<Community />} />
+                  <Route path="/community/:id" element={<PostDetail />} />
                   <Route path="/discover" element={<Discover />} />
                   <Route path="/flash-sale" element={<FlashSale />} />
                   <Route path="/local-brand" element={<LocalBrand />} />
@@ -92,6 +94,7 @@ function App() {
                   <Route path="/orders/:code" element={<OrderDetail />} />
                   <Route path="/orders/:orderId/review" element={<ReviewOrder />} />
                   <Route path="/vendor-registration" element={<VendorRegistration />} />
+                  
                   <Route path="/about" element={<About />} />
                   {/* <Route path="/vendor-management" element={<ShopManagement />} /> */}
 
