@@ -24,6 +24,9 @@ import {
   Bookmark,
   ShoppingCart,
   Tag,
+  ChevronLeft,
+  ChevronRight,
+  X,
 } from "lucide-react";
 
 import CreatePostModal from "@/components/CreatePostModal";
@@ -50,7 +53,7 @@ interface Post {
   user: PostUser;
   title?: string;
   content: string;
-  image?: string;
+  images?: string[];
   likes: number;
   comments: number;
   shares: number;
@@ -77,7 +80,8 @@ const randomType = (): PostType => {
 const Community = () => {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
-
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
   const [token, setToken] = useState<string | null>(null);
 
   const { user } = useAuth();
@@ -158,7 +162,7 @@ const Community = () => {
         const token = localStorage.getItem("vibeventure_token");
 
         const res = await fetch(
-          `${BACKEND_URL}/api/community/list.php?page=1&limit=20`,
+          `${BACKEND_URL}/api/community/posts/list.php?page=1&limit=20`,
           {
             cache: "no-store",
             headers: {
@@ -187,29 +191,32 @@ const Community = () => {
             id: Number(p.id),
             type,
             user: {
-              name: p.author_name || "Người dùng ẩn danh",
-              avatar: p.author_avatar || undefined,
+              name: p.author?.name || "Người dùng ẩn danh",
+              avatar: p.author?.avatar || null,
               verified: false,
               followers: 0,
             },
             title: p.title || "",
             content: p.content || "",
-            image: p.thumbnail || undefined,
+
+            // ✔ LẤY MẢNG ẢNH ĐÚNG
+            images: Array.isArray(p.images) ? p.images : [],
+
             likes: Number(p.likes || 0),
             comments: Number(p.comments || 0),
             shares: Number(p.shares || 0),
             saves: Number(p.saves || 0),
             views: Number(p.views || 0),
             time: formatTime(p.created_at),
-            tags: [],
+            tags: p.tags || [],
             featuredProduct: null,
             isLive: type === "livestream",
             answers:
               type === "question"
                 ? Number(p.answers || p.comments || 0)
                 : undefined,
-            liked: Number(p.is_liked) === 1,
-            isSaved: Number(p.is_saved) === 1,
+            liked: Boolean(p.is_liked),
+            isSaved: Boolean(p.is_saved),
           };
         });
 
@@ -235,7 +242,7 @@ const Community = () => {
     try {
       setLikeLoadingId(postId);
 
-      const res = await fetch(`${BACKEND_URL}/api/community/like.php`, {
+      const res = await fetch(`${BACKEND_URL}/api/community/actions/like.php`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -277,7 +284,7 @@ const Community = () => {
     try {
       setSaveLoadingId(postId);
 
-      const res = await fetch(`${BACKEND_URL}/api/community/save.php`, {
+      const res = await fetch(`${BACKEND_URL}/api/community/actions/save.php`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -315,7 +322,7 @@ const Community = () => {
   const handleShare = async (post: Post) => {
     try {
       setShareLoadingId(post.id);
-      await fetch(`${BACKEND_URL}/api/community/share.php`, {
+      await fetch(`${BACKEND_URL}/api/community/actions/share.php`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -518,11 +525,15 @@ const Community = () => {
                     transition={{ delay: index * 0.05 }}
                   >
                     <Card className="p-6 bg-gradient-card border-border  group">
-                     
                       <div className="flex items-center gap-3 mb-4">
                         <div className="relative">
                           <Avatar className="w-12 h-12">
-                            <AvatarImage src={post.user.avatar} />
+                            <AvatarImage
+                              src={
+                                post.user.avatar || "/images/default-avatar.png"
+                              }
+                            />
+
                             <AvatarFallback>
                               {post.user.name?.[0] || "U"}
                             </AvatarFallback>
@@ -548,11 +559,7 @@ const Community = () => {
                           </div>
                           <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                             {post.time && <span>{post.time}</span>}
-                            <span>•</span>
-                            <span>
-                              {post.user.followers.toLocaleString("vi-VN")}{" "}
-                              người theo dõi
-                            </span>
+                           
                           </div>
                         </div>
                       </div>
@@ -568,27 +575,82 @@ const Community = () => {
                           {post.content}
                         </p>
 
-                        {post.image && (
-                          <div
-                            className="relative rounded-lg bg-white flex items-center justify-center cursor-pointer group max-h-[260px] sm:max-h-[420px] overflow-hidden"
-                            onClick={() => {
-                              setLightboxImage(post.image);
-                              setLightboxOpen(true);
-                            }}
-                          >
-                            <img
-                              src={post.image}
-                              alt="Post content"
-                              className="max-h-[260px] sm:max-h-[420px] w-auto object-contain transition-transform duration-300 group-hover:scale-[1.03]"
-                            />
-                            {post.type === "livestream" && post.isLive && (
-                              <div className="absolute top-4 left-4 bg-red-500 text-white px-2 py-1 rounded text-xs font-medium animate-pulse">
-                                🔴 LIVE
+                        {post.images && post.images.length > 0 && (
+                          <div className="mt-3 select-none">
+                            {post.images.length === 1 && (
+                              <div className="rounded-lg overflow-hidden">
+                                <img
+                                  src={post.images[0]}
+                                  alt="post-img"
+                                  className="w-full h-auto max-h-[600px] object-contain cursor-pointer hover:opacity-95 transition-opacity bg-black/5"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setLightboxImages(post.images || []);
+                                    setLightboxIndex(0);
+                                    setLightboxOpen(true);
+                                  }}
+                                />
+                              </div>
+                            )}
+
+                            {post.images.length === 2 && (
+                              <div className="grid grid-cols-2 gap-2 items-start">
+                                {post.images.map((img, i) => (
+                                  <div
+                                    key={i}
+                                    className="rounded-lg overflow-hidden"
+                                  >
+                                    <img
+                                      src={img}
+                                      alt={`post-img-${i}`}
+                                      className="w-full h-auto max-h-[500px] object-contain cursor-pointer hover:opacity-95 transition-opacity bg-black/5"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setLightboxImages(post.images || []);
+                                        setLightboxIndex(i);
+                                        setLightboxOpen(true);
+                                      }}
+                                    />
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {post.images.length >= 3 && (
+                              <div className="grid grid-cols-3 gap-2 items-start">
+                                {post.images.slice(0, 3).map((img, i) => (
+                                  <div
+                                    key={i}
+                                    className="relative rounded-lg overflow-hidden cursor-pointer hover:opacity-95 group"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setLightboxImages(post.images || []);
+                                      setLightboxIndex(i);
+                                      setLightboxOpen(true);
+                                    }}
+                                  >
+                                    <img
+                                      src={img}
+                                      className="w-full h-auto max-h-[400px] object-contain bg-black/5"
+                                      alt={`post-img-${i}`}
+                                    />
+
+                                    {i === 2 && post.images.length > 3 && (
+                                      <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center cursor-pointer hover:bg-black/70 transition-colors backdrop-blur-[2px]">
+                                        <span className="text-white text-2xl md:text-3xl font-bold">
+                                          +{post.images.length - 3}
+                                        </span>
+                                        <span className="text-white/90 text-xs md:text-sm font-medium">
+                                          Xem thêm
+                                        </span>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
                               </div>
                             )}
                           </div>
                         )}
-
                         {post.tags && post.tags.length > 0 && (
                           <div className="flex flex-wrap gap-2">
                             {post.tags.map((tag) => (
@@ -661,12 +723,11 @@ const Community = () => {
                             </Button>
 
                             <Button
-                             onClick={() => openDetail(post.id)}
+                              onClick={() => openDetail(post.id)}
                               variant="ghost"
                               size="sm"
                               className="gap-2 text-muted-foreground hover:text-accent hover:bg-accent/10 transition-smooth flex-1 sm:flex-none justify-center"
                             >
-                     
                               <MessageCircle className="w-4 h-4" />
                               {post.type === "question"
                                 ? `${post.answers ?? post.comments} trả lời`
@@ -751,7 +812,6 @@ const Community = () => {
             </Card>
           </div>
         </motion.div>
-        
       </main>
       <CreatePostModal
         isOpen={isCreatePostOpen}
@@ -766,21 +826,50 @@ const Community = () => {
       />
       {lightboxOpen && (
         <div
-          className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center"
+          className="fixed inset-0 bg-black/95 z-[9999] flex items-center justify-center animate-in fade-in duration-200"
           onClick={() => setLightboxOpen(false)}
         >
+          <button
+            className="absolute top-4 right-4 text-white/70 hover:text-white p-2 rounded-full hover:bg-white/10 transition-all z-50"
+            onClick={() => setLightboxOpen(false)}
+          >
+            <X className="w-8 h-8" />
+          </button>
+
+          <button
+            className="absolute left-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-3 rounded-full hover:bg-white/10 transition-all z-50 hidden md:block"
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightboxIndex((prev) =>
+                prev === 0 ? lightboxImages.length - 1 : prev - 1
+              );
+            }}
+          >
+            <ChevronLeft className="w-10 h-10" />
+          </button>
+
           <img
-            src={lightboxImage!}
+            src={lightboxImages[lightboxIndex]}
             alt="Fullscreen"
-            className="max-w-[95%] max-h-[95%] object-contain rounded-lg"
+            className="max-w-[95vw] max-h-[90vh] object-contain select-none"
+            onClick={(e) => e.stopPropagation()}
           />
 
           <button
-            className="absolute top-6 right-6 text-white text-3xl"
-            onClick={() => setLightboxOpen(false)}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-white/70 hover:text-white p-3 rounded-full hover:bg-white/10 transition-all z-50 hidden md:block"
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightboxIndex((prev) =>
+                prev === lightboxImages.length - 1 ? 0 : prev + 1
+              );
+            }}
           >
-            ✕
+            <ChevronRight className="w-10 h-10" />
           </button>
+
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/50 px-4 py-2 rounded-full text-white text-sm font-medium backdrop-blur-sm">
+            {lightboxIndex + 1} / {lightboxImages.length}
+          </div>
         </div>
       )}
     </div>
