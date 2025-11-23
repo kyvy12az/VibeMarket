@@ -200,7 +200,7 @@ const PostDetailPage = () => {
           shares: 0,
           saves: Number(p.saves_count),
           views: 0,
-          time: formatTimeAgo(p.created_at),
+          time: p.created_at,
           tags: p.tags || [],
           liked: !!p.is_liked,
           isSaved: !!p.is_saved,
