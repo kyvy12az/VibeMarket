@@ -1,15 +1,30 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
-import { X, ImageIcon, Hash, Smile, Tag } from "lucide-react";
+import { X, ImageIcon, Hash, Tag } from "lucide-react";
 import ProductSelectionModal from "@/components/modals/ProductSelectionModal";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+
+interface Product {
+  id: number;
+  name: string;
+  price: number;
+  image: string | null;
+  rating: number;
+  category: string;
+  description?: string;
+}
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -17,86 +32,169 @@ interface CreatePostModalProps {
   onPostCreated: (post: any) => void;
 }
 
-const CreatePostModal = ({ isOpen, onClose, onPostCreated }: CreatePostModalProps) => {
+const BACKEND_URL =
+  import.meta.env.VITE_BACKEND_URL ||
+  "http://localhost/VIBE_MARKET_BACKEND/VibeMarket-BE";
+
+const CreatePostModal = ({
+  isOpen,
+  onClose,
+  onPostCreated,
+}: CreatePostModalProps) => {
   const [content, setContent] = useState("");
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isPreview, setIsPreview] = useState(false);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const vibUser = JSON.parse(localStorage.getItem("vibeventure_user") || "{}");
+  const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
+
   const { toast } = useToast();
-  // Sản phẩm nổi bật sẽ lấy từ ProductSelectionModal
 
   const availableTags = [
-    "#ReviewSảnPhẩm", "#TipsMuaSắm", "#LocalBrand", "#FlashSale",
-    "#ThoiTrang", "#CongNghe", "#LamDep", "#AnUong", "#DuLich"
+    "#ReviewSảnPhẩm",
+    "#TipsMuaSắm",
+    "#LocalBrand",
+    "#FlashSale",
+    "#ThoiTrang",
+    "#CongNghe",
+    "#LamDep",
+    "#AnUong",
+    "#DuLich",
   ];
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
+
     if (files.length > 0) {
-      const newImages = files.slice(0, 3 - selectedImages.length).map(file => URL.createObjectURL(file));
-      setSelectedImages(prev => [...prev, ...newImages].slice(0, 3));
+      const newImages = files
+        .slice(0, 20 - selectedImages.length)
+        .map((file) => URL.createObjectURL(file));
+
+      setSelectedImages((prev) => [...prev, ...newImages].slice(0, 20));
     }
   };
 
   const toggleTag = (tag: string) => {
-    setSelectedTags(prev =>
-      prev.includes(tag)
-        ? prev.filter(t => t !== tag)
-        : [...prev, tag]
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
     );
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!content.trim()) {
       toast({
         title: "Lỗi",
         description: "Vui lòng nhập nội dung bài viết",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
-    const newPost = {
-      id: Date.now(),
-      user: {
-        name: "Kỳ Vỹ",
-        avatar: "/images/avatars/Avt-Vy.jpg",
-        verified: false,
-      },
-      content: content.trim(),
-      images: selectedImages,
-      likes: 0,
-      comments: 0,
-      shares: 0,
-      time: "Vừa xong",
-      tags: selectedTags,
-      featuredProduct: selectedProduct || undefined
-    };
+    const token = localStorage.getItem("vibeventure_token");
+    if (!token) {
+      toast({ title: "Lỗi", description: "Bạn chưa đăng nhập!" });
+      return;
+    }
 
-    onPostCreated(newPost);
-    // Reset form
-    resetForm();
-    toast({
-      title: "Thành công!",
-      description: "Bài viết đã được đăng thành công",
-    });
-    onClose();
+    const form = new FormData();
+    form.append("content", content.trim());
+    form.append("tags", JSON.stringify(selectedTags));
+
+    if (selectedProducts.length > 0) {
+      form.append("featured_products", JSON.stringify(selectedProducts));
+    }
+
+    const imageInputs = document.getElementById(
+      "image-upload"
+    ) as HTMLInputElement;
+    if (imageInputs?.files) {
+      Array.from(imageInputs.files).forEach((file) => {
+        form.append("images[]", file);
+      });
+    }
+
+    try {
+      const res = await fetch(
+        `${BACKEND_URL}/api/community/posts/post_add.php`,
+        {
+          method: "POST",
+          headers: { Authorization: "Bearer " + token },
+          body: form,
+        }
+      );
+
+      const data = await res.json();
+
+      if (!data.success) {
+        toast({
+          title: "Lỗi",
+          description: data.message || "Không thể đăng bài",
+        });
+        return;
+      }
+
+      const detailRes = await fetch(
+        `${BACKEND_URL}/api/community/posts/post_detail.php?id=${data.post_id}`,
+        { headers: { Authorization: "Bearer " + token } }
+      );
+
+      const detailData = await detailRes.json();
+      console.log(detailData);
+
+      if (detailData.success) {
+        const p = detailData.post;
+
+        const newPost = {
+          id: p.id,
+          type: "sharing",
+          user: {
+            name: p.author?.name || "Người dùng",
+            avatar: p.author?.avatar || "/images/default-avatar.png",
+            verified: false,
+            followers: 0,
+          },
+          title: "",
+          content: p.content,
+          images: p.images || [],
+          likes: p.likes_count || 0,
+          comments: p.comments_count || 0,
+          shares: 0,
+          saves: p.saves_count || 0,
+          views: 0,
+          tags: p.tags || [],
+          featuredProduct: null,
+          isLive: false,
+          liked: p.is_liked || false,
+          isSaved: p.is_saved || false,
+          time: new Date(p.created_at).toLocaleString("vi-VN"),
+        };
+
+        onPostCreated(newPost);
+      }
+
+      toast({ title: "Thành công!", description: "Bài viết đã được đăng" });
+
+      resetForm();
+      onClose();
+    } catch (err) {
+      console.error(err);
+      toast({ title: "Lỗi mạng", description: "Hãy thử lại sau!" });
+    }
   };
 
   const resetForm = () => {
     setContent("");
     setSelectedImages([]);
     setSelectedTags([]);
-    setSelectedProduct(null);
+    setSelectedProducts([]);
     setIsPreview(false);
   };
 
   const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
     }).format(price);
   };
 
@@ -104,29 +202,32 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }: CreatePostModalProp
     <Card className="p-6 bg-gradient-card border-border">
       <div className="flex items-center gap-3 mb-4">
         <Avatar>
-          <AvatarImage src="/placeholder.svg" />
-          <AvatarFallback>B</AvatarFallback>
+          <AvatarImage src={vibUser?.avatar || "/placeholder.svg"} />
+          <AvatarFallback>{vibUser?.name?.charAt(0) || "U"}</AvatarFallback>
         </Avatar>
         <div className="flex-1">
-          <h4 className="font-semibold text-card-foreground">Bạn</h4>
+          <h4 className="font-semibold text-card-foreground">
+            {vibUser?.name || "Bạn"}
+          </h4>
           <p className="text-sm text-muted-foreground">Vừa xong</p>
         </div>
       </div>
 
       <div className="space-y-4">
         <p className="text-card-foreground leading-relaxed">{content}</p>
+
         {selectedImages.length > 0 && (
-          <div className={`grid gap-2 ${selectedImages.length === 1 ? '' : 'grid-cols-2'} ${selectedImages.length === 3 ? 'md:grid-cols-3' : ''}`}>
+          <div className="grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {selectedImages.map((img, idx) => (
               <img
                 key={idx}
                 src={img}
-                alt={`Preview ${idx + 1}`}
                 className="w-full h-48 object-cover rounded-lg"
               />
             ))}
           </div>
         )}
+
         {selectedTags.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {selectedTags.map((tag) => (
@@ -136,29 +237,45 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }: CreatePostModalProp
             ))}
           </div>
         )}
-        {/* Sản phẩm nổi bật preview */}
-        {selectedProduct && (
-          <div className="bg-neutral-900 rounded-lg p-4 mb-4">
-            <div className="flex items-center mb-3">
-              <Tag className="h-4 w-4 text-primary mr-2" />
-              <span className="text-sm font-medium text-white">Sản phẩm nổi bật</span>
-            </div>
-            <div className="flex flex-col sm:flex-row items-center sm:justify-between bg-neutral-900 rounded-lg p-3 gap-3">
-              <div className="flex items-center w-full sm:w-auto justify-center sm:justify-start">
-                <img
-                  src={selectedProduct.image}
-                  alt={selectedProduct.name}
-                  className="w-16 h-16 sm:w-12 sm:h-12 rounded-lg object-cover mr-0 sm:mr-3 border border-white/10"
-                />
-                <div className="text-center sm:text-left">
-                  <p className="text-sm font-medium text-white line-clamp-1">
-                    {selectedProduct.name}
-                  </p>
-                  <p className="text-lg font-bold text-primary">
-                    {formatPrice(selectedProduct.price)}
-                  </p>
+
+        {selectedProducts.length > 0 && (
+          <div className="w-full mt-3">
+            <label className="text-sm font-medium text-card-foreground mb-2 block">
+              Sản phẩm đã chọn
+            </label>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {selectedProducts.map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-black/30 border border-white/10 hover:bg-black/40 transition-all group"
+                >
+                  <img
+                    src={p.image || "/placeholder.png"}
+                    className="w-10 h-10 rounded-lg object-cover"
+                  />
+
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-primary truncate">
+                      {p.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {formatPrice(p.price)}
+                    </p>
+                  </div>
+
+                  <button
+                    className="opacity-70 group-hover:opacity-100 transition-all"
+                    onClick={() =>
+                      setSelectedProducts((prev) =>
+                        prev.filter((sp) => sp.id !== p.id)
+                      )
+                    }
+                  >
+                    <X className="w-5 h-5 text-white hover:text-red-400" />
+                  </button>
                 </div>
-              </div>
+              ))}
             </div>
           </div>
         )}
@@ -167,10 +284,18 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }: CreatePostModalProp
   );
 
   return (
-    <Dialog open={isOpen} onOpenChange={() => {onClose() ; resetForm()}}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) {
+          resetForm();
+          onClose();
+        }
+      }}
+    >
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-card border-border">
         <DialogHeader>
-          <DialogTitle className="text-card-foreground flex items-center justify-between">
+          <DialogTitle className="text-card-foreground">
             {isPreview ? "Xem trước bài viết" : "Tạo bài viết mới"}
           </DialogTitle>
         </DialogHeader>
@@ -191,14 +316,16 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }: CreatePostModalProp
                 >
                   Chỉnh sửa
                 </Button>
-                <Button onClick={handleSubmit} className="flex-1 bg-gradient-primary">
+                <Button
+                  onClick={handleSubmit}
+                  className="flex-1 bg-gradient-primary"
+                >
                   Đăng bài
                 </Button>
               </div>
             </>
           ) : (
             <>
-              {/* Content Input */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-card-foreground">
                   Nội dung bài viết
@@ -215,11 +342,11 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }: CreatePostModalProp
                 </div>
               </div>
 
-              {/* Image Upload */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-card-foreground">
-                  Hình ảnh (tối đa 3)
+                  Hình ảnh (tối đa 20)
                 </label>
+
                 <div className="flex gap-3">
                   <input
                     type="file"
@@ -228,35 +355,42 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }: CreatePostModalProp
                     onChange={handleImageUpload}
                     className="hidden"
                     id="image-upload"
-                    disabled={selectedImages.length >= 3}
+                    disabled={selectedImages.length >= 20}
                   />
                   <label
                     htmlFor="image-upload"
-                    className={`flex-1 cursor-pointer ${selectedImages.length >= 3 ? 'opacity-50 pointer-events-none' : ''}`}
+                    className={`flex-1 cursor-pointer ${
+                      selectedImages.length >= 20
+                        ? "opacity-50 pointer-events-none"
+                        : ""
+                    }`}
                   >
                     <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-accent transition-smooth">
                       <ImageIcon className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
                       <p className="text-sm text-muted-foreground">
-                        {selectedImages.length < 3 ? 'Nhấn để tải ảnh lên' : 'Đã đủ 3 ảnh'}
+                        {selectedImages.length < 20
+                          ? "Nhấn để tải ảnh lên"
+                          : "Đã đủ 20 ảnh"}
                       </p>
                     </div>
                   </label>
                 </div>
 
                 {selectedImages.length > 0 && (
-                  <div className={`grid gap-2 ${selectedImages.length === 1 ? '' : 'grid-cols-2'} ${selectedImages.length === 3 ? 'md:grid-cols-3' : ''}`}>
+                  <div className="grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                     {selectedImages.map((img, idx) => (
                       <div key={idx} className="relative">
                         <img
                           src={img}
-                          alt={`Selected ${idx + 1}`}
                           className="w-full h-48 object-cover rounded-lg"
                         />
                         <button
-                          type="button"
-                          onClick={() => setSelectedImages(selectedImages.filter((_, i) => i !== idx))}
-                          className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-full bg-black/60 border-2 border-white/70 shadow-lg transition-all hover:bg-red-600 hover:border-red-400 hover:scale-110"
-                          aria-label="Xoá ảnh"
+                          onClick={() =>
+                            setSelectedImages((prev) =>
+                              prev.filter((_, i) => i !== idx)
+                            )
+                          }
+                          className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-full bg-black/60 border-2 border-white/70 hover:bg-red-600 hover:border-red-400 hover:scale-110 transition-all"
                         >
                           <X className="w-5 h-5 text-white" />
                         </button>
@@ -266,54 +400,57 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }: CreatePostModalProp
                 )}
               </div>
 
-              {/* Tags Selection */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-card-foreground flex items-center gap-2">
                   <Hash className="w-4 h-4" />
                   Thẻ (chọn tối đa 3)
                 </label>
+
                 <div className="flex flex-wrap gap-2">
                   {availableTags.map((tag) => (
                     <Badge
                       key={tag}
-                      variant={selectedTags.includes(tag) ? "default" : "outline"}
-                      className={`cursor-pointer transition-smooth ${selectedTags.includes(tag)
-                        ? "bg-gradient-primary"
-                        : "hover:bg-accent/20"
-                        }`}
-                      onClick={() => selectedTags.length < 3 || selectedTags.includes(tag) ? toggleTag(tag) : null}
+                      variant={
+                        selectedTags.includes(tag) ? "default" : "outline"
+                      }
+                      className={`cursor-pointer transition-smooth ${
+                        selectedTags.includes(tag)
+                          ? "bg-gradient-primary text-white"
+                          : "hover:bg-accent/20"
+                      }`}
+                      onClick={() =>
+                        selectedTags.length < 3 || selectedTags.includes(tag)
+                          ? toggleTag(tag)
+                          : null
+                      }
                     >
                       {tag}
                     </Badge>
                   ))}
                 </div>
-                {selectedTags.length > 0 && (
-                  <div className="text-xs text-muted-foreground">
-                    Đã chọn: {selectedTags.length}/3
-                  </div>
-                )}
               </div>
 
-              {/* Action Buttons & Chọn sản phẩm nổi bật */}
               <div className="flex gap-3 flex-wrap">
                 <Button
-                  onClick={() => {
-                    onClose;
-                    resetForm();
-                  }}
                   variant="outline"
                   className="flex-1"
+                  onClick={() => {
+                    resetForm();
+                    onClose();
+                  }}
                 >
                   Hủy
                 </Button>
+
                 <Button
-                  onClick={() => setIsPreview(true)}
                   variant="outline"
                   className="flex-1"
                   disabled={!content.trim()}
+                  onClick={() => setIsPreview(true)}
                 >
                   Xem trước
                 </Button>
+
                 <Button
                   type="button"
                   variant="outline"
@@ -323,6 +460,7 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }: CreatePostModalProp
                   <Tag className="w-4 h-4 mr-1" />
                   Chọn sản phẩm nổi bật
                 </Button>
+
                 <Button
                   onClick={handleSubmit}
                   className="flex-1 bg-gradient-primary"
@@ -330,32 +468,45 @@ const CreatePostModal = ({ isOpen, onClose, onPostCreated }: CreatePostModalProp
                 >
                   Đăng ngay
                 </Button>
-                {selectedProduct && (
-                  <div className="flex items-center gap-2 mt-2 w-full">
-                    <img src={selectedProduct.image} alt={selectedProduct.name} className="w-8 h-8 rounded-lg object-cover" />
-                    <span className="text-xs text-primary font-semibold">{selectedProduct.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => setSelectedProduct(null)}
-                      className="w-7 h-7 flex items-center justify-center rounded-full bg-black/60 border-2 border-white/70 shadow-lg transition-all hover:bg-red-600 hover:border-red-400 hover:scale-110"
-                      aria-label="Xoá sản phẩm nổi bật"
-                    >
-                      <X className="w-4 h-4 text-white" />
-                    </button>
+
+                {selectedProducts.length > 0 && (
+                  <div className="mt-2 w-full flex flex-wrap gap-2">
+                    {selectedProducts.map((p) => (
+                      <div
+                        key={p.id}
+                        className="flex items-center gap-2 px-2 py-1 rounded-full bg-black/40 border border-white/10"
+                      >
+                        <img
+                          src={p.image || "/placeholder.png"}
+                          className="w-6 h-6 rounded-full object-cover"
+                        />
+                        <span className="text-xs text-primary font-semibold line-clamp-1 max-w-[120px]">
+                          {p.name}
+                        </span>
+                        <button
+                          onClick={() =>
+                            setSelectedProducts((prev) =>
+                              prev.filter((sp) => sp.id !== p.id)
+                            )
+                          }
+                          className="w-5 h-5 flex items-center justify-center rounded-full bg-black/60 hover:bg-red-600 transition-all"
+                        >
+                          <X className="w-3 h-3 text-white" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
-              {/* Modal chọn sản phẩm nổi bật */}
+
               <ProductSelectionModal
                 open={isProductModalOpen}
                 onOpenChange={setIsProductModalOpen}
                 onProductSelect={(products) => {
-                  if (products.length > 0) setSelectedProduct(products[0]);
-                  else setSelectedProduct(null);
+                  setSelectedProducts(products);
                 }}
-                selectedProducts={selectedProduct ? [selectedProduct] : []}
+                selectedProducts={selectedProducts}
               />
-
             </>
           )}
         </motion.div>

@@ -1,539 +1,271 @@
-import { motion, AnimatePresence } from "framer-motion";
+import { color, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Play, Zap, Users, ShoppingBag, ChevronLeft, ChevronRight, Sparkles, TrendingUp, Gift } from "lucide-react";
+import { ArrowRight, Play, Zap, Users, ShoppingBag, ChevronLeft, ChevronRight } from "lucide-react";
 import heroBanner1 from "@/assets/hero-banner-1.png";
 import heroBanner2 from "@/assets/hero-banner-2.png";
 import heroBanner3 from "@/assets/hero-banner-3.png";
 import heroBanner4 from "@/assets/hero-banner-4.png";
-import { useState, useEffect } from "react";
+
+
+import { useState } from "react";
 
 const heroSlides = [
   {
-    id: 1,
     bg: heroBanner1,
-    overlay: "from-[#2a174d]/95 via-[#1e2a6d]/70 to-transparent",
-    accentColor: "#b983ff",
-    subtitle: {
-      icon: "🔥",
-      text: "Trending Now",
-      bgColor: "bg-gradient-to-r from-[#b983ff] to-[#8b5cf6]",
-    },
-    title: {
-      line1: "Mua sắm thông minh,",
-      line2: "Kết nối cộng đồng",
-      gradient: "from-[#b983ff] via-[#5f8fff] to-[#3be8b0]",
-    },
+    overlay: "bg-gradient-to-r from-[#2a174d]/90 via-[#1e2a6d]/60 to-transparent",
+    subtitle: (
+      <span className="inline-flex items-center px-4 py-1 rounded-full text-base font-semibold bg-[#b983ff] text-white mb-4">
+        <span className="mr-2">🔥</span> Trending Now
+      </span>
+    ),
+    title: (
+      <>
+        <span className="block text-4xl md:text-6xl font-extrabold text-white leading-tight mb-2 font-dancing">Mua sắm thông minh,</span>
+        <span className="block text-4xl md:text-6xl font-extrabold bg-gradient-to-r from-[#b983ff] via-[#5f8fff] to-[#3be8b0] bg-clip-text text-transparent leading-tight font-dancing">Kết nối cộng đồng</span>
+      </>
+    ),
     desc: "Khám phá hàng ngàn sản phẩm độc đáo, tham gia cộng đồng sôi động và trải nghiệm mua sắm livestream đầy thú vị.",
+    highlight: null,
     tags: [],
-    cta: [
-      { label: "Khám phá ngay", variant: "primary", icon: <ArrowRight className="w-4 h-4" />, color: "from-[#b983ff] to-[#8b5cf6]" },
-      { label: "Xem Livestream", variant: "outline", icon: <Play className="w-4 h-4" />, borderColor: "border-[#b983ff]" },
-    ],
+    cta1: { label: "Khám phá ngay", color: "bg-[#b983ff] text-white", icon: <ArrowRight className="ml-2 w-4 h-4" /> },
+    cta2: { label: "Xem Livestream", color: "border-[#b983ff] text-[#b983ff]", icon: <Play className="ml-2 w-4 h-4" /> },
     stats: [
-      { icon: <Users className="w-6 h-6" />, label: "Thành viên", value: "50K+", color: "text-[#b983ff]" },
-      { icon: <ShoppingBag className="w-6 h-6" />, label: "Sản phẩm", value: "10K+", color: "text-[#5f8fff]" },
-      { icon: <Zap className="w-6 h-6" />, label: "Flash Sale", value: "24/7", color: "text-[#3be8b0]" },
+      { icon: <Users className="w-6 h-6" />, label: "Thành viên", value: "50K+" },
+      { icon: <ShoppingBag className="w-6 h-6" />, label: "Sản phẩm", value: "10K+" },
+      { icon: <Zap className="w-6 h-6" />, label: "Flash Sale", value: "24/7" },
     ],
   },
   {
-    id: 2,
     bg: heroBanner2,
-    overlay: "from-black/90 via-black/50 to-transparent",
-    accentColor: "#f97316",
-    subtitle: {
-      icon: "🛒",
-      text: "VibeMarket - Mua sắm thông minh",
-      bgColor: "bg-gradient-to-r from-orange-500 to-orange-600",
-    },
-    title: {
-      line1: "Khám phá xu hướng mới",
-      line2: "Sản phẩm mới 2025",
-      gradient: "from-orange-400 via-orange-600 to-yellow-500",
-    },
+    overlay: "bg-gradient-to-r from-black/70 via-black/40 to-transparent",
+    subtitle: (
+      <span className="inline-flex items-center px-4 py-1 rounded-full text-base font-bold bg-orange-500 text-white mb-4 shadow-lg">
+        <span className="mr-2">🛒</span> VibeMarket - Mua sắm thông minh
+      </span>
+    ),
+    title: (
+      <>
+        <span className="block text-4xl md:text-6xl font-extrabold text-white leading-tight mb-2 drop-shadow-lg font-dancing">Khám phá xu hướng mới</span>
+        <span className="block text-4xl md:text-6xl font-extrabold bg-gradient-to-r from-orange-400 via-orange-600 to-yellow-500 bg-clip-text text-transparent leading-tight drop-shadow-lg font-dancing">Sản phẩm mới 2025</span>
+      </>
+    ),
     desc: "Nền tảng thương mại điện tử hiện đại, kết nối cộng đồng, săn deal hot và trải nghiệm mua sắm tiện lợi mọi lúc mọi nơi.",
-    tags: ["Thời trang", "Điện tử", "Gia dụng", "Làm đẹp"],
-    cta: [
-      { label: "Khám phá ngay", variant: "primary", icon: <ArrowRight className="w-4 h-4" />, color: "from-orange-500 to-orange-600" },
-      { label: "Xem ưu đãi", variant: "outline", icon: <Gift className="w-4 h-4" />, borderColor: "border-orange-500" },
+    highlight: <span className="text-orange-500 font-semibold">Sản phẩm mới 2025</span>,
+    tags: [
+      <span key="fashion" className="border border-orange-500 text-orange-500 px-4 py-2 rounded-full text-sm font-medium shadow-sm bg-transparent">Thời trang</span>,
+      <span key="electronic" className="border border-orange-500 text-orange-500 px-4 py-2 rounded-full text-sm font-medium shadow-sm bg-transparent">Điện tử</span>,
+      <span key="household" className="border border-orange-500 text-orange-500 px-4 py-2 rounded-full text-sm font-medium shadow-sm bg-transparent">Gia dụng</span>,
+      <span key="beautify" className="border border-orange-500 text-orange-500 px-4 py-2 rounded-full text-sm font-medium shadow-sm bg-transparent">Làm đẹp</span>,
     ],
-    stats: [],
+    cta1: { label: "Khám phá ngay", color: "bg-orange-500 text-white hover:bg-orange-600", icon: <ArrowRight className="ml-2 w-4 h-4" /> },
+    cta2: { label: "Xem ưu đãi", color: "border-orange-500 text-orange-500", icon: null },
   },
   {
-    id: 3,
     bg: heroBanner3,
-    overlay: "from-[#1e2a6d]/90 via-[#5f8fff]/70 to-transparent",
-    accentColor: "#3b82f6",
-    subtitle: {
-      icon: "🎥",
-      text: "Livestream mua sắm",
-      bgColor: "bg-gradient-to-r from-blue-600 to-blue-700",
-    },
-    title: {
-      line1: "Flash Sale 24/7",
-      line2: "Ưu đãi livestream",
-      gradient: "from-[#5f8fff] via-[#3be8b0] to-[#b983ff]",
-    },
+    overlay: "bg-gradient-to-r from-[#1e2a6d]/90 via-[#5f8fff]/60 to-transparent",
+    subtitle: (
+      <span className="inline-flex items-center px-4 py-1 rounded-full text-base font-bold bg-blue-600 text-white mb-4 shadow-lg">
+        <span className="mr-2">🎥</span> Livestream mua sắm
+      </span>
+    ),
+    title: (
+      <>
+        <span className="block text-4xl md:text-6xl font-extrabold text-white leading-tight mb-2 drop-shadow-lg font-dancing">Flash Sale 24/7</span>
+        <span className="block text-4xl md:text-6xl font-extrabold bg-gradient-to-r from-[#5f8fff] via-[#3be8b0] to-[#b983ff] bg-clip-text text-transparent leading-tight drop-shadow-lg font-dancing">Ưu đãi livestream</span>
+      </>
+    ),
     desc: "Tham gia các phiên livestream, săn deal sốc và nhận quà tặng hấp dẫn mỗi ngày.",
-    tags: ["Flash Sale", "Livestream", "Quà tặng"],
-    cta: [
-      { label: "Xem Livestream", variant: "primary", icon: <Play className="w-4 h-4" />, color: "from-blue-600 to-blue-700" },
-      { label: "Nhận ưu đãi", variant: "outline", icon: <Sparkles className="w-4 h-4" />, borderColor: "border-blue-500" },
+    highlight: <span className="text-blue-500 font-semibold">Livestream đặc biệt hôm nay</span>,
+    tags: [
+      <span key="flash" className="border border-blue-500 text-blue-500 px-4 py-2 rounded-full text-sm font-medium shadow-sm bg-transparent">Flash Sale</span>,
+      <span key="live" className="border border-blue-500 text-blue-500 px-4 py-2 rounded-full text-sm font-medium shadow-sm bg-transparent">Livestream</span>,
+      <span key="gift" className="border border-blue-500 text-blue-500 px-4 py-2 rounded-full text-sm font-medium shadow-sm bg-transparent">Quà tặng</span>,
     ],
-    stats: [],
+    cta1: { label: "Xem Livestream", color: "bg-blue-600 hover:bg-blue-700 text-white", icon: <Play className="ml-2 w-4 h-4" /> },
+    cta2: { label: "Nhận ưu đãi", color: "border-blue-500 text-blue-500", icon: null },
   },
   {
-    id: 4,
     bg: heroBanner4,
-    overlay: "from-green-900/85 via-green-700/50 to-transparent",
-    accentColor: "#16a34a",
-    subtitle: {
-      icon: "🤝",
-      text: "Cộng đồng mua sắm",
-      bgColor: "bg-gradient-to-r from-green-600 to-green-700",
-    },
-    title: {
-      line1: "Kết nối & Tiết kiệm",
-      line2: "Chương trình thành viên",
-      gradient: "from-green-400 via-green-600 to-green-400",
-    },
+    overlay: "bg-gradient-to-r from-green-900/80 via-green-700/40 to-transparent",
+    subtitle: (
+      <span className="inline-flex items-center px-4 py-1 rounded-full text-base font-bold bg-green-600 text-white mb-4 shadow-lg">
+        <span className="mr-2">🤝</span> Cộng đồng mua sắm
+      </span>
+    ),
+    title: (
+      <>
+        <span className="block text-4xl md:text-6xl font-extrabold text-white leading-tight mb-2 drop-shadow-lg font-dancing">Kết nối & Tiết kiệm</span>
+        <span className="block text-4xl md:text-6xl font-extrabold bg-gradient-to-r from-green-400 via-green-600 to-green-400 bg-clip-text text-transparent leading-tight drop-shadow-lg font-dancing">Chương trình thành viên</span>
+      </>
+    ),
     desc: "Tham gia cộng đồng, tích điểm đổi quà, nhận badge và xếp hạng thành viên.",
-    tags: ["Tích điểm", "Đổi quà", "Badge"],
-    cta: [
-      { label: "Tham gia ngay", variant: "primary", icon: <Users className="w-4 h-4" />, color: "from-green-600 to-green-700" },
-      { label: "Xem quyền lợi", variant: "outline", icon: <TrendingUp className="w-4 h-4" />, borderColor: "border-green-600" },
+    highlight: <span className="text-green-600 font-semibold">Chương trình thành viên</span>,
+    tags: [
+      <span key="points" className="border border-green-600 text-green-600 px-4 py-2 rounded-full text-sm font-medium shadow-sm bg-transparent">Tích điểm</span>,
+      <span key="exchange gift" className="border border-green-600 text-green-600 px-4 py-2 rounded-full text-sm font-medium shadow-sm bg-transparent">Đổi quà</span>,
+      <span key="badge" className="border border-green-600 text-green-600 px-4 py-2 rounded-full text-sm font-medium shadow-sm bg-transparent">Badge</span>,
     ],
-    stats: [],
+    cta1: { label: "Tham gia ngay", color: "bg-green-600 text-white hover:bg-green-700", icon: <Users className="ml-2 w-4 h-4" /> },
+    cta2: { label: "Xem quyền lợi", color: "border-green-600 text-green-600", icon: null },
   },
 ];
 
 const HeroSection = () => {
   const [current, setCurrent] = useState(0);
-  const [isAutoPlay, setIsAutoPlay] = useState(true);
   const slide = heroSlides[current];
 
-  // Auto-play functionality
-  useEffect(() => {
-    if (!isAutoPlay) return;
-    const timer = setInterval(() => {
-      setCurrent((prev) => (prev === heroSlides.length - 1 ? 0 : prev + 1));
-    }, 5000);
-    return () => clearInterval(timer);
-  }, [isAutoPlay]);
-
-  const goTo = (idx: number) => {
-    setCurrent(idx);
-    setIsAutoPlay(false);
-  };
-
-  const prev = () => {
-    setCurrent((c) => (c === 0 ? heroSlides.length - 1 : c - 1));
-    setIsAutoPlay(false);
-  };
-
-  const next = () => {
-    setCurrent((c) => (c === heroSlides.length - 1 ? 0 : c + 1));
-    setIsAutoPlay(false);
-  };
+  const goTo = (idx: number) => setCurrent(idx);
+  const prev = () => setCurrent((c) => (c === 0 ? heroSlides.length - 1 : c - 1));
+  const next = () => setCurrent((c) => (c === heroSlides.length - 1 ? 0 : c + 1));
 
   return (
-    <section className="relative overflow-hidden h-screen w-full group">
-      {/* Animated Background with Parallax Effect */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={slide.id}
-          initial={{ scale: 1.1, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-          transition={{ duration: 0.8, ease: [0.43, 0.13, 0.23, 0.96] }}
-          className="absolute inset-0"
-        >
-          {/* Background Image */}
-          <motion.img
-            src={slide.bg}
-            alt="Hero background"
-            className="w-full h-full object-cover object-center"
-            animate={{ scale: [1, 1.05] }}
-            transition={{ duration: 20, repeat: Infinity, repeatType: "reverse" }}
-          />
-          
-          {/* Gradient Overlay */}
-          <div className={`absolute inset-0 bg-gradient-to-r ${slide.overlay}`} />
-          
-          {/* Animated Mesh Gradient */}
-          <motion.div
-            className="absolute inset-0"
-            style={{
-              background: `radial-gradient(circle at 20% 50%, ${slide.accentColor}15 0%, transparent 50%),
-                           radial-gradient(circle at 80% 50%, ${slide.accentColor}10 0%, transparent 50%)`,
-            }}
-            animate={{
-              opacity: [0.3, 0.6, 0.3],
-            }}
-            transition={{
-              duration: 4,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          />
-
-          {/* Floating Particles */}
-          {[...Array(15)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-2 h-2 rounded-full hidden md:block"
-              style={{
-                background: slide.accentColor,
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-              }}
-              animate={{
-                y: [0, -30, 0],
-                opacity: [0, 0.6, 0],
-                scale: [0, 1.5, 0],
-              }}
-              transition={{
-                duration: 3 + Math.random() * 2,
-                repeat: Infinity,
-                delay: Math.random() * 2,
-                ease: "easeInOut",
-              }}
-            />
-          ))}
-        </motion.div>
-      </AnimatePresence>
-
-      {/* Main Content */}
-      <div className="relative h-full flex items-center">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row w-full gap-8 lg:gap-12 items-center justify-between">
-            {/* Left Content */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={slide.id}
-                initial="initial"
-                animate="animate"
-                exit="exit"
-                variants={{
-                  initial: { opacity: 0 },
-                  animate: {
-                    opacity: 1,
-                    transition: {
-                      staggerChildren: 0.1,
-                      delayChildren: 0.2,
-                    },
-                  },
-                  exit: { opacity: 0 },
-                }}
-                className="flex-1 flex flex-col justify-center z-10 w-full lg:max-w-2xl"
-              >
-                {/* Subtitle Badge */}
-                <motion.div
-                  variants={{
-                    initial: { opacity: 0, y: 20, scale: 0.9 },
-                    animate: { opacity: 1, y: 0, scale: 1 },
-                    exit: { opacity: 0, y: -20, scale: 0.9 },
-                  }}
-                  className="mb-4 md:mb-6"
-                >
-                  <Badge
-                    className={`${slide.subtitle.bgColor} text-white border-0 shadow-2xl px-4 md:px-5 py-2 md:py-2.5 text-sm md:text-base font-bold hover:scale-105 transition-transform`}
-                  >
-                    <span className="mr-2 text-lg md:text-xl">{slide.subtitle.icon}</span>
-                    <span className="hidden sm:inline">{slide.subtitle.text}</span>
-                    <span className="sm:hidden">{slide.subtitle.text.split(' ')[0]}</span>
-                  </Badge>
-                </motion.div>
-
-                {/* Title */}
-                <motion.div
-                  variants={{
-                    initial: { opacity: 0, y: 30 },
-                    animate: { opacity: 1, y: 0 },
-                    exit: { opacity: 0, y: -30 },
-                  }}
-                  className="mb-4 md:mb-6"
-                >
-                  <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-extrabold leading-tight">
-                    <span className="block text-white drop-shadow-2xl font-dancing mb-1 md:mb-2">
-                      {slide.title.line1}
-                    </span>
-                    <span
-                      className={`block bg-gradient-to-r ${slide.title.gradient} bg-clip-text text-transparent drop-shadow-2xl font-dancing`}
-                    >
-                      {slide.title.line2}
-                    </span>
-                  </h1>
-                </motion.div>
-
-                {/* Description */}
-                <motion.p
-                  variants={{
-                    initial: { opacity: 0, y: 20 },
-                    animate: { opacity: 1, y: 0 },
-                    exit: { opacity: 0, y: -20 },
-                  }}
-                  className="text-white/90 text-base sm:text-lg md:text-xl max-w-xl mb-6 md:mb-8 leading-relaxed"
-                >
-                  {slide.desc}
-                </motion.p>
-
-                {/* Tags */}
-                {slide.tags && slide.tags.length > 0 && (
-                  <motion.div
-                    variants={{
-                      initial: { opacity: 0, y: 20 },
-                      animate: { opacity: 1, y: 0 },
-                      exit: { opacity: 0, y: -20 },
-                    }}
-                    className="flex gap-2 md:gap-3 mb-6 md:mb-8 flex-wrap"
-                  >
-                    {slide.tags.map((tag, i) => (
-                      <motion.span
-                        key={tag}
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.5 + i * 0.1 }}
-                        whileHover={{ scale: 1.1, y: -2 }}
-                        className="px-3 md:px-5 py-1.5 md:py-2.5 rounded-full text-xs md:text-sm font-semibold bg-white/10 backdrop-blur-md border-2"
-                        style={{ borderColor: slide.accentColor, color: "white" }}
-                      >
-                        {tag}
-                      </motion.span>
-                    ))}
-                  </motion.div>
-                )}
-
-                {/* CTA Buttons */}
-                <motion.div
-                  variants={{
-                    initial: { opacity: 0, y: 20 },
-                    animate: { opacity: 1, y: 0 },
-                    exit: { opacity: 0, y: -20 },
-                  }}
-                  className="flex gap-3 md:gap-4 mb-6 md:mb-10 flex-wrap"
-                >
-                  {slide.cta.map((btn, i) => (
-                    <motion.div
-                      key={i}
-                      whileHover={{ scale: 1.05, y: -2 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      {btn.variant === "primary" ? (
-                        <Button
-                          size="lg"
-                          className={`bg-gradient-to-r ${btn.color} text-white px-5 sm:px-6 md:px-8 py-4 md:py-6 text-sm sm:text-base md:text-lg font-bold rounded-full shadow-2xl border-0 hover:opacity-90 transition-all`}
-                        >
-                          <span className="hidden sm:inline">{btn.label}</span>
-                          <span className="sm:hidden">{btn.label.split(' ')[0]}</span>
-                          {btn.icon && <span className="ml-2">{btn.icon}</span>}
-                        </Button>
-                      ) : (
-                        <Button
-                          size="lg"
-                          variant="outline"
-                          className={`${btn.borderColor} text-white px-5 sm:px-6 md:px-8 py-4 md:py-6 text-sm sm:text-base md:text-lg font-bold rounded-full border-3 bg-white/10 backdrop-blur-md hover:bg-white/20 transition-all`}
-                        >
-                          <span className="hidden sm:inline">{btn.label}</span>
-                          <span className="sm:hidden">{btn.label.split(' ')[0]}</span>
-                          {btn.icon && <span className="ml-2">{btn.icon}</span>}
-                        </Button>
-                      )}
-                    </motion.div>
-                  ))}
-                </motion.div>
-
-                {/* Stats */}
-                {slide.stats && slide.stats.length > 0 && (
-                  <motion.div
-                    variants={{
-                      initial: { opacity: 0, y: 20 },
-                      animate: { opacity: 1, y: 0 },
-                      exit: { opacity: 0, y: -20 },
-                    }}
-                    className="flex gap-6 md:gap-10 flex-wrap"
-                  >
-                    {slide.stats.map((stat, i) => (
-                      <motion.div
-                        key={i}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.7 + i * 0.1 }}
-                        whileHover={{ scale: 1.1, y: -5 }}
-                        className="flex flex-col items-center group cursor-pointer"
-                      >
-                        <motion.div
-                          className="w-12 h-12 md:w-16 md:h-16 flex items-center justify-center rounded-2xl bg-white/10 backdrop-blur-md mb-2 md:mb-3 shadow-xl group-hover:shadow-2xl transition-all"
-                          whileHover={{ rotate: [0, -10, 10, 0] }}
-                          transition={{ duration: 0.5 }}
-                        >
-                          <span className={stat.color}>{stat.icon}</span>
-                        </motion.div>
-                        <div className="text-xl md:text-3xl font-bold text-white mb-1">
-                          {stat.value}
-                        </div>
-                        <div className="text-xs md:text-sm text-white/70 font-medium">
-                          {stat.label}
-                        </div>
-                      </motion.div>
-                    ))}
-                  </motion.div>
-                )}
-              </motion.div>
-            </AnimatePresence>
-
-            {/* Right Image - Enhanced */}
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={`right-${slide.id}`}
-                initial={{ opacity: 0, scale: 0.9, x: 100 }}
-                animate={{ opacity: 1, scale: 1, x: 0 }}
-                exit={{ opacity: 0, scale: 0.9, x: -100 }}
-                transition={{ duration: 0.8, ease: [0.43, 0.13, 0.23, 0.96] }}
-                className="hidden lg:block flex-1 relative z-10 max-w-xl xl:max-w-2xl"
-              >
-                <div className="relative">
-                  {/* Glow Effect */}
-                  <motion.div
-                    className="absolute -inset-4 rounded-[56px] blur-3xl opacity-40"
-                    style={{ background: slide.accentColor }}
-                    animate={{
-                      scale: [1, 1.1, 1],
-                      opacity: [0.3, 0.5, 0.3],
-                    }}
-                    transition={{
-                      duration: 3,
-                      repeat: Infinity,
-                      ease: "easeInOut",
-                    }}
-                  />
-
-                  {/* Image Container */}
-                  <motion.div
-                    className="relative overflow-hidden rounded-[48px] shadow-2xl"
-                    whileHover={{ scale: 1.02, rotate: 1 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <img
-                      src={slide.bg}
-                      alt="Hero visual"
-                      className="w-full h-[400px] lg:h-[500px] xl:h-[600px] object-cover"
-                    />
-                    
-                    {/* Overlay Gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-
-                    {/* Decorative Frame */}
-                    <div className="absolute inset-0 rounded-[48px] border-4 border-white/10" />
-                  </motion.div>
-
-                  {/* Floating Badge */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 1 }}
-                    className="absolute -bottom-6 -right-6 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl p-4 lg:p-6"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className="w-10 h-10 lg:w-12 lg:h-12 rounded-xl flex items-center justify-center text-white"
-                        style={{ background: slide.accentColor }}
-                      >
-                        <Sparkles className="w-5 h-5 lg:w-6 lg:h-6" />
-                      </div>
-                      <div>
-                        <div className="text-xl lg:text-2xl font-bold text-gray-900">99%</div>
-                        <div className="text-xs text-gray-600 font-medium">Hài lòng</div>
-                      </div>
-                    </div>
-                  </motion.div>
-                </div>
-              </motion.div>
-            </AnimatePresence>
-          </div>
-        </div>
-      </div>
-
-      {/* Enhanced Navigation Controls */}
-      <div className="absolute bottom-6 md:bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 md:gap-4 z-20">
-        {/* Previous Button */}
-        <motion.button
-          onClick={prev}
-          whileHover={{ scale: 1.1, x: -2 }}
-          whileTap={{ scale: 0.9 }}
-          className="p-2 md:p-3 rounded-full bg-white/20 backdrop-blur-md hover:bg-white/30 transition-all shadow-lg"
-        >
-          <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 text-white" />
-        </motion.button>
-
-        {/* Indicators */}
-        <div className="flex gap-2 md:gap-3 px-4 md:px-6 py-2 md:py-3 rounded-full bg-white/10 backdrop-blur-md shadow-lg">
-          {heroSlides.map((s, index) => (
-            <motion.button
-              key={s.id}
-              onClick={() => goTo(index)}
-              whileHover={{ scale: 1.2 }}
-              whileTap={{ scale: 0.9 }}
-              className={`relative h-2 md:h-2.5 rounded-full transition-all duration-500 ${
-                current === index ? "w-8 md:w-10" : "w-2 md:w-2.5"
-              }`}
-              style={{
-                background: current === index ? s.accentColor : "rgba(255,255,255,0.3)",
-              }}
-            >
-              {current === index && (
-                <motion.div
-                  className="absolute inset-0 rounded-full"
-                  style={{ background: s.accentColor }}
-                  animate={{ opacity: [0.5, 1, 0.5] }}
-                  transition={{ duration: 1.5, repeat: Infinity }}
-                />
-              )}
-            </motion.button>
-          ))}
-        </div>
-
-        {/* Next Button */}
-        <motion.button
-          onClick={next}
-          whileHover={{ scale: 1.1, x: 2 }}
-          whileTap={{ scale: 0.9 }}
-          className="p-2 md:p-3 rounded-full bg-white/20 backdrop-blur-md hover:bg-white/30 transition-all shadow-lg"
-        >
-          <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-white" />
-        </motion.button>
-      </div>
-
-      {/* Auto-play Indicator */}
+    <section className="relative overflow-hidden min-h-screen md:min-h-[700px] group">
+      {/* Background Image with Overlay - dùng framer-motion để animate khi chuyển slide */}
       <motion.div
-        className="absolute top-6 md:top-8 right-4 md:right-8 z-20"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1 }}
+        key={current}
+        initial={{ scale: 1.08, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 1.08, opacity: 0 }}
+        transition={{ duration: 1.2, ease: "easeInOut" }}
+        className="absolute inset-0"
       >
-        <motion.button
-          onClick={() => setIsAutoPlay(!isAutoPlay)}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          className="flex items-center gap-2 px-3 md:px-4 py-1.5 md:py-2 rounded-full bg-white/10 backdrop-blur-md text-white text-xs md:text-sm font-medium hover:bg-white/20 transition-all shadow-lg"
-        >
-          {isAutoPlay ? (
-            <>
-              <motion.div
-                className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-green-400"
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-              />
-              <span className="hidden sm:inline">Auto</span>
-            </>
-          ) : (
-            <>
-              <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-gray-400" />
-              <span className="hidden sm:inline">Manual</span>
-            </>
-          )}
-        </motion.button>
+        <img
+          src={slide.bg}
+          alt="Hero background"
+          className="w-full h-full object-cover object-center"
+        />
+        <div className={`absolute inset-0 ${slide.overlay}`} />
       </motion.div>
+
+      <div className="relative container mx-auto px-4 py-16 md:py-24 flex items-center min-h-screen md:min-h-[700px]">
+        <div className="flex flex-col md:flex-row w-full gap-0 md:gap-8 items-stretch">
+          {/* Left Content */}
+          <motion.div
+            key={current}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            variants={{
+              initial: { opacity: 0, y: 60 },
+              animate: { opacity: 1, y: 0, transition: { staggerChildren: 0.13, delayChildren: 0.1 } },
+              exit: { opacity: 0, y: 60 }
+            }}
+            className="flex-1 flex flex-col justify-center z-10"
+          >
+            {/* Subtitle badge or text */}
+            {slide.subtitle && (
+              <motion.div variants={{ initial: { opacity: 0, y: 40 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: 40 } }} className="mb-2">{slide.subtitle}</motion.div>
+            )}
+            {/* Title (can be string or JSX) */}
+            <motion.div variants={{ initial: { opacity: 0, y: 40 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: 40 } }} className="mb-4">
+              {slide.title}
+            </motion.div>
+            <motion.p variants={{ initial: { opacity: 0, y: 40 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: 40 } }} className="text-white/90 text-base md:text-lg max-w-2xl mb-4">
+              {slide.desc}
+            </motion.p>
+            {slide.highlight && (
+              <motion.div variants={{ initial: { opacity: 0, y: 40 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: 40 } }} className="mb-4">
+                <span className="text-orange-300 font-semibold text-base md:text-lg">{slide.highlight}</span>
+              </motion.div>
+            )}
+            {slide.tags && slide.tags.length > 0 && (
+              <motion.div variants={{ initial: { opacity: 0, y: 40 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: 40 } }} className="flex gap-2 mb-6 flex-wrap">
+                {slide.tags.map((tag) => (
+                  <span key={tag} className="py-2 rounded-full text-sm font-medium shadow-sm">
+                    {tag}
+                  </span>
+                ))}
+              </motion.div>
+            )}
+            <motion.div variants={{ initial: { opacity: 0, y: 40 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: 40 } }} className="flex gap-4 mb-8 flex-wrap">
+              <Button className={slide.cta1.color + " px-6 py-3 text-base font-semibold rounded-full flex items-center gap-2 shadow-lg hover:opacity-90 transition-smooth"}>
+                {slide.cta1.label} {slide.cta1.icon}
+              </Button>
+              <Button variant="outline" className={slide.cta2.color + " px-6 py-3 text-base font-semibold rounded-full flex items-center gap-2 border-2 bg-transparent hover:bg-white/10 transition-smooth"}>
+                {slide.cta2.label} {slide.cta2.icon}
+              </Button>
+            </motion.div>
+            {/* Stats row for first slide */}
+            {slide.stats && (
+              <motion.div variants={{ initial: { opacity: 0, y: 40 }, animate: { opacity: 1, y: 0 }, exit: { opacity: 0, y: 40 } }} className="flex gap-8 mt-6 mb-2">
+                {slide.stats.map((stat, i) => (
+                  <div key={i} className="flex flex-col items-center">
+                    <div className="w-10 h-10 flex items-center justify-center rounded-xl bg-black/30 mb-1 text-[#b983ff]">
+                      {stat.icon}
+                    </div>
+                    <div className="text-xl font-bold text-white">{stat.value}</div>
+                    <div className="text-xs text-white/70">{stat.label}</div>
+                  </div>
+                ))}
+              </motion.div>
+            )}
+          </motion.div>
+          {/* Custom Slider Navigation (fixed outside motion.div) */}
+          <div className="absolute bottom-4 md:left-0 left-4 flex items-center gap-3 z-10">
+            {/* Prev button */}
+            <button
+              onClick={prev}
+              aria-label="Previous Slide"
+              className="p-1.5 md:p-2 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 text-white" />
+            </button>
+
+            {/* Indicators */}
+            <div className="flex gap-1.5 md:gap-2">
+              {heroSlides.map((slide, index) => {
+                // Define per-tab indicator color
+                let indicatorColor = "";
+                if (index === 0) indicatorColor = "bg-[#b983ff] hover:bg-[#a16ae8]";
+                else if (index === 1) indicatorColor = "bg-orange-500 hover:bg-orange-600";
+                else if (index === 2) indicatorColor = "bg-blue-600 hover:bg-blue-700";
+                else if (index === 3) indicatorColor = "bg-green-600 hover:bg-green-700";
+                return (
+                  <button
+                    key={index}
+                    onClick={() => goTo(index)}
+                    aria-label={`Slide ${index + 1}`}
+                    aria-current={current === index}
+                    className={`h-1.5 md:h-2 rounded-full transition-all duration-300 ${current === index
+                      ? `w-6 md:w-8 ${indicatorColor}`
+                      : "w-1.5 md:w-2 bg-white/30 hover:bg-white/50"}`}
+                  />
+                );
+              })}
+            </div>
+
+            {/* Next button */}
+            <button
+              onClick={next}
+              aria-label="Next Slide"
+              className="p-1.5 md:p-2 rounded-full bg-white/10 backdrop-blur-sm hover:bg-white/20 transition-colors"
+            >
+              <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-white" />
+            </button>
+          </div>
+
+          {/* Right Image (animate khi chuyển slide) */}
+          <motion.div
+            key={"right-" + current}
+            initial={{ scale: 1.08, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 1.08, opacity: 0 }}
+            transition={{ duration: 1.2, ease: "easeInOut" }}
+            className="hidden lg:block absolute right-0 top-6 bottom-6 h-[90%] w-1/2 z-0"
+          >
+            <div
+              className="h-full w-full overflow-hidden shadow-2xl lg:p-10 xl:p-0 lg:rounded-tl-[48px] lg:rounded-br-[48px] lg:rounded-tr-[6px] lg:rounded-bl-[6px]"
+            >
+              <img
+                src={slide.bg}
+                alt="Hero visual"
+                className="w-full h-full object-cover object-center lg:scale-90 xl:scale-100 lg:rounded-tl-[48px] lg:rounded-br-[48px] lg:rounded-tr-[6px] lg:rounded-bl-[6px]"
+              />
+            </div>
+          </motion.div>
+        </div>
+      </div>
     </section>
   );
 };
