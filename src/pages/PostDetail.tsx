@@ -68,8 +68,7 @@ interface Comment {
 }
 
 const BACKEND_URL =
-  import.meta.env.VITE_BACKEND_URL ||
-  "http://localhost/VIBE_MARKET_BACKEND/VibeMarket-BE";
+  import.meta.env.VITE_BACKEND_URL;
 
 const PostDetailPage = () => {
   const { id } = useParams();
@@ -873,7 +872,7 @@ const PostDetailPage = () => {
                     <span className="text-muted-foreground text-xs">Posts</span>
                   </div>
                 </div>
-                <Button className="w-full bg-accent text-white hover:bg-accent/80">
+                <Button className="w-full bg-gradient-to-r from-primary to-purple-600 text-white hover:from-primary/90 hover:to-purple-600/90">
                   Theo dõi
                 </Button>
               </Card>
@@ -1010,7 +1009,7 @@ const PostDetailPage = () => {
                   </Avatar>
                   <div className="flex-1 space-y-2">
                     <textarea
-                      className="w-full bg-secondary/30 border border-border rounded-xl p-4 min-h-[10px] focus:outline-none focus:ring-2 focus:ring-accent/50 resize-none text-sm transition-all"
+                      className="w-full bg-secondary/30 border border-border rounded-xl p-4 min-h-[10px] focus:outline-none focus:ring-2 focus:ring-primary/60 resize-none text-sm transition-all"
                       placeholder="Chia sẻ suy nghĩ của bạn về bài viết này..."
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
@@ -1023,7 +1022,7 @@ const PostDetailPage = () => {
                     />
                     <div className="flex justify-end">
                       <Button
-                        className="gap-2 bg-accent hover:bg-accent/90 text-white"
+                        className="gap-2 bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white"
                         onClick={handleSubmitComment}
                         disabled={!newComment.trim()}
                       >

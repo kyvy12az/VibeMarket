@@ -33,8 +33,7 @@ interface CreatePostModalProps {
 }
 
 const BACKEND_URL =
-  import.meta.env.VITE_BACKEND_URL ||
-  "http://localhost/VIBE_MARKET_BACKEND/VibeMarket-BE";
+  import.meta.env.VITE_BACKEND_URL ;
 
 const CreatePostModal = ({
   isOpen,
@@ -43,6 +42,7 @@ const CreatePostModal = ({
 }: CreatePostModalProps) => {
   const [content, setContent] = useState("");
   const [selectedImages, setSelectedImages] = useState<string[]>([]);
+  const [selectedImageFiles, setSelectedImageFiles] = useState<File[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isPreview, setIsPreview] = useState(false);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -67,12 +67,17 @@ const CreatePostModal = ({
     const files = Array.from(e.target.files || []);
 
     if (files.length > 0) {
-      const newImages = files
-        .slice(0, 20 - selectedImages.length)
-        .map((file) => URL.createObjectURL(file));
+      const availableSlots = 20 - selectedImages.length;
+      const filesToAdd = files.slice(0, availableSlots);
+      
+      const newImageUrls = filesToAdd.map((file) => URL.createObjectURL(file));
 
-      setSelectedImages((prev) => [...prev, ...newImages].slice(0, 20));
+      setSelectedImages((prev) => [...prev, ...newImageUrls]);
+      setSelectedImageFiles((prev) => [...prev, ...filesToAdd]);
     }
+    
+    // Reset input để có thể chọn lại cùng file
+    e.target.value = '';
   };
 
   const toggleTag = (tag: string) => {
@@ -105,11 +110,9 @@ const CreatePostModal = ({
       form.append("featured_products", JSON.stringify(selectedProducts));
     }
 
-    const imageInputs = document.getElementById(
-      "image-upload"
-    ) as HTMLInputElement;
-    if (imageInputs?.files) {
-      Array.from(imageInputs.files).forEach((file) => {
+    // Upload các file ảnh đã chọn
+    if (selectedImageFiles.length > 0) {
+      selectedImageFiles.forEach((file) => {
         form.append("images[]", file);
       });
     }
@@ -163,7 +166,7 @@ const CreatePostModal = ({
           saves: p.saves_count || 0,
           views: 0,
           tags: p.tags || [],
-          featuredProduct: null,
+          featuredProducts: p.featured_products || [],
           isLive: false,
           liked: p.is_liked || false,
           isSaved: p.is_saved || false,
@@ -185,7 +188,12 @@ const CreatePostModal = ({
 
   const resetForm = () => {
     setContent("");
+    
+    // Revoke object URLs để tránh memory leak
+    selectedImages.forEach(url => URL.revokeObjectURL(url));
+    
     setSelectedImages([]);
+    setSelectedImageFiles([]);
     setSelectedTags([]);
     setSelectedProducts([]);
     setIsPreview(false);
@@ -293,11 +301,16 @@ const CreatePostModal = ({
         }
       }}
     >
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-card border-border">
-        <DialogHeader>
-          <DialogTitle className="text-card-foreground">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-gradient-card border-border">
+        <DialogHeader className="border-b border-border pb-4">
+          <DialogTitle className="text-xl font-bold bg-gradient-hero bg-clip-text text-transparent">
             {isPreview ? "Xem trước bài viết" : "Tạo bài viết mới"}
           </DialogTitle>
+          {!isPreview && (
+            <p className="text-sm text-muted-foreground mt-1">
+              Chia sẻ khoảnh khắc, suy nghĩ của bạn với cộng đồng
+            </p>
+          )}
         </DialogHeader>
 
         <motion.div
@@ -318,7 +331,7 @@ const CreatePostModal = ({
                 </Button>
                 <Button
                   onClick={handleSubmit}
-                  className="flex-1 bg-gradient-primary"
+                  className="flex-1 bg-gradient-to-r from-primary to-purple-600"
                 >
                   Đăng bài
                 </Button>
@@ -327,24 +340,34 @@ const CreatePostModal = ({
           ) : (
             <>
               <div className="space-y-2">
-                <label className="text-sm font-medium text-card-foreground">
+                <label className="text-sm font-semibold text-card-foreground flex items-center gap-2">
+                  <div className="w-1 h-5 bg-gradient-primary rounded-full"></div>
                   Nội dung bài viết
                 </label>
                 <Textarea
-                  placeholder="Chia sẻ suy nghĩ của bạn..."
+                  placeholder="Bạn đang nghĩ gì? Chia sẻ với mọi người nhé..."
                   value={content}
                   onChange={(e) => setContent(e.target.value)}
-                  className="min-h-[120px] resize-none bg-background/50 border-border text-card-foreground"
+                  className="min-h-[140px] resize-none bg-background/50 border-border text-card-foreground focus:ring-2 focus:ring-accent rounded-xl"
                   maxLength={1000}
                 />
-                <div className="text-right text-xs text-muted-foreground">
-                  {content.length}/1000
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Tối đa 1000 ký tự</span>
+                  <span className={`font-medium ${
+                    content.length > 900 ? 'text-red-500' : 'text-muted-foreground'
+                  }`}>
+                    {content.length}/1000
+                  </span>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-card-foreground">
-                  Hình ảnh (tối đa 20)
+              <div className="space-y-3">
+                <label className="text-sm font-semibold text-card-foreground flex items-center gap-2">
+                  <div className="w-1 h-5 bg-gradient-primary rounded-full"></div>
+                  Hình ảnh
+                  <Badge variant="secondary" className="text-xs">
+                    {selectedImages.length}/20
+                  </Badge>
                 </label>
 
                 <div className="flex gap-3">
@@ -365,109 +388,137 @@ const CreatePostModal = ({
                         : ""
                     }`}
                   >
-                    <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-accent transition-smooth">
-                      <ImageIcon className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                      <p className="text-sm text-muted-foreground">
+                    <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-accent hover:bg-accent/5 transition-all group">
+                      <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-accent/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <ImageIcon className="w-6 h-6 text-accent" />
+                      </div>
+                      <p className="text-sm font-medium text-card-foreground mb-1">
                         {selectedImages.length < 20
                           ? "Nhấn để tải ảnh lên"
                           : "Đã đủ 20 ảnh"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Hỗ trợ JPG, PNG, GIF
                       </p>
                     </div>
                   </label>
                 </div>
 
                 {selectedImages.length > 0 && (
-                  <div className="grid gap-2 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                  <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
                     {selectedImages.map((img, idx) => (
-                      <div key={idx} className="relative">
+                      <div key={idx} className="relative group">
                         <img
                           src={img}
-                          className="w-full h-48 object-cover rounded-lg"
+                          className="w-full h-40 object-cover rounded-xl border border-border"
+                          alt={`Preview ${idx + 1}`}
                         />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors rounded-xl" />
                         <button
-                          onClick={() =>
+                          onClick={() => {
                             setSelectedImages((prev) =>
                               prev.filter((_, i) => i !== idx)
-                            )
-                          }
-                          className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-full bg-black/60 border-2 border-white/70 hover:bg-red-600 hover:border-red-400 hover:scale-110 transition-all"
+                            );
+                            setSelectedImageFiles((prev) =>
+                              prev.filter((_, i) => i !== idx)
+                            );
+                          }}
+                          className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-full bg-black/70 backdrop-blur-sm opacity-0 group-hover:opacity-100 hover:bg-red-600 hover:scale-110 transition-all"
                         >
-                          <X className="w-5 h-5 text-white" />
+                          <X className="w-4 h-4 text-white" />
                         </button>
+                        <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/70 backdrop-blur-sm rounded-full text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                          #{idx + 1}
+                        </div>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-card-foreground flex items-center gap-2">
-                  <Hash className="w-4 h-4" />
-                  Thẻ (chọn tối đa 3)
+              <div className="space-y-3">
+                <label className="text-sm font-semibold text-card-foreground flex items-center gap-2">
+                  <div className="w-1 h-5 bg-gradient-primary rounded-full"></div>
+                  <Hash className="w-4 h-4 text-accent" />
+                  Thẻ hashtag
+                  <Badge variant="secondary" className="text-xs">
+                    {selectedTags.length}/3
+                  </Badge>
                 </label>
 
                 <div className="flex flex-wrap gap-2">
-                  {availableTags.map((tag) => (
-                    <Badge
-                      key={tag}
-                      variant={
-                        selectedTags.includes(tag) ? "default" : "outline"
-                      }
-                      className={`cursor-pointer transition-smooth ${
-                        selectedTags.includes(tag)
-                          ? "bg-gradient-primary text-white"
-                          : "hover:bg-accent/20"
-                      }`}
-                      onClick={() =>
-                        selectedTags.length < 3 || selectedTags.includes(tag)
-                          ? toggleTag(tag)
-                          : null
-                      }
-                    >
-                      {tag}
-                    </Badge>
-                  ))}
+                  {availableTags.map((tag) => {
+                    const isSelected = selectedTags.includes(tag);
+                    const isDisabled = !isSelected && selectedTags.length >= 3;
+                    
+                    return (
+                      <Badge
+                        key={tag}
+                        variant={isSelected ? "default" : "outline"}
+                        className={`cursor-pointer transition-all px-3 py-1.5 ${
+                          isSelected
+                            ? "bg-gradient-primary text-white shadow-md scale-105"
+                            : isDisabled
+                            ? "opacity-40 cursor-not-allowed"
+                            : "hover:bg-accent/20 hover:scale-105 hover:shadow-sm"
+                        }`}
+                        onClick={() =>
+                          !isDisabled ? toggleTag(tag) : null
+                        }
+                      >
+                        {tag}
+                      </Badge>
+                    );
+                  })}
                 </div>
               </div>
 
-              <div className="flex gap-3 flex-wrap">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => {
-                    resetForm();
-                    onClose();
-                  }}
-                >
-                  Hủy
-                </Button>
-
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  disabled={!content.trim()}
-                  onClick={() => setIsPreview(true)}
-                >
-                  Xem trước
-                </Button>
-
+              <div className="space-y-3">
                 <Button
                   type="button"
                   variant="outline"
-                  className="flex-1"
+                  className="w-full h-11 border-dashed"
                   onClick={() => setIsProductModalOpen(true)}
                 >
-                  <Tag className="w-4 h-4 mr-1" />
-                  Chọn sản phẩm nổi bật
+                  <Tag className="w-4 h-4 mr-2" />
+                  Gắn thẻ sản phẩm nổi bật
+                  {selectedProducts.length > 0 && (
+                    <Badge className="ml-2 bg-accent">
+                      {selectedProducts.length}
+                    </Badge>
+                  )}
                 </Button>
 
-                <Button
-                  onClick={handleSubmit}
-                  className="flex-1 bg-gradient-primary"
-                  disabled={!content.trim()}
-                >
-                  Đăng ngay
-                </Button>
+                <div className="grid grid-cols-3 gap-3">
+                  <Button
+                    variant="outline"
+                    className="h-11"
+                    onClick={() => {
+                      resetForm();
+                      onClose();
+                    }}
+                  >
+                    Hủy
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    className="h-11"
+                    disabled={!content.trim()}
+                    onClick={() => setIsPreview(true)}
+                  >
+                    Xem trước
+                  </Button>
+
+                  <Button
+                    onClick={handleSubmit}
+                    className="h-11 bg-gradient-to-r from-primary to-purple-600 hover:opacity-90"
+                    disabled={!content.trim()}
+                  >
+                    Đăng bài
+                  </Button>
+                </div>
+              </div>
 
                 {selectedProducts.length > 0 && (
                   <div className="mt-2 w-full flex flex-wrap gap-2">
@@ -497,7 +548,6 @@ const CreatePostModal = ({
                     ))}
                   </div>
                 )}
-              </div>
 
               <ProductSelectionModal
                 open={isProductModalOpen}

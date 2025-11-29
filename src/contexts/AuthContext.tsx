@@ -30,6 +30,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  // Hàm cập nhật status (online/offline)
+  const updateUserStatus = async (status: 'online' | 'offline') => {
+    const token = localStorage.getItem('vibeventure_token');
+    if (!token) return;
+    
+    try {
+      await fetch(`${BACKEND_URL}/api/community/users/update_status.php`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ status })
+      });
+    } catch (err) {
+      console.error('Failed to update user status:', err);
+    }
+  };
+
+  // Hàm ping activity (cập nhật last_seen)
+  const pingActivity = async () => {
+    const token = localStorage.getItem('vibeventure_token');
+    if (!token) return;
+    
+    try {
+      await fetch(`${BACKEND_URL}/api/community/users/update_activity.php`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+    } catch (err) {
+      console.error('Failed to ping activity:', err);
+    }
+  };
+
   // Lấy lại user và token khi load lại trang
   useEffect(() => {
     const savedUser = localStorage.getItem('vibeventure_user');
@@ -37,11 +74,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (savedUser && savedToken) {
       try {
         setUser(JSON.parse(savedUser));
+        // Set status = online khi load lại trang
+        updateUserStatus('online');
       } catch (error) {
         localStorage.removeItem('vibeventure_user');
         localStorage.removeItem('vibeventure_token');
       }
     }
+  }, []);
+
+  // Ping activity mỗi 30 giây khi user đang đăng nhập
+  useEffect(() => {
+    if (!user) return;
+    
+    // Ping ngay lập tức
+    pingActivity();
+    
+    // Ping mỗi 30 giây
+    const interval = setInterval(pingActivity, 30000);
+    
+    // Cleanup
+    return () => clearInterval(interval);
+  }, [user]);
+
+  // Set offline khi đóng tab/browser
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      updateUserStatus('offline');
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
   }, []);
 
   const login = async (email: string, password: string, rememberMe = false): Promise<boolean> => {
@@ -57,6 +123,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(data.user);
         localStorage.setItem('vibeventure_user', JSON.stringify(data.user));
         localStorage.setItem('vibeventure_token', data.token);
+        
+        // Set status = online
+        await updateUserStatus('online');
+        
         toast({
           title: "Đăng nhập thành công!",
           description: `Chào mừng ${data.user.name}`,
@@ -262,10 +332,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    // Set status = offline trước khi logout
+    await updateUserStatus('offline');
+    
     setUser(null);
     localStorage.removeItem('vibeventure_user');
     localStorage.removeItem('vibeventure_token');
+    
     toast({
       title: "Đã đăng xuất",
       description: "Hẹn gặp lại bạn!",

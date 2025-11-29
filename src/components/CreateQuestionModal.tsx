@@ -187,7 +187,7 @@ const CreateQuestionModal = ({ isOpen, onClose, onQuestionCreated }: CreateQuest
                 >
                   Chỉnh sửa
                 </Button>
-                <Button onClick={handleSubmit} className="flex-1 bg-gradient-accent">
+                <Button onClick={handleSubmit} className="flex-1 bg-gradient-to-r from-primary to-purple-600">
                   Đăng câu hỏi
                 </Button>
               </div>
@@ -348,7 +348,7 @@ const CreateQuestionModal = ({ isOpen, onClose, onQuestionCreated }: CreateQuest
                 </Button>
                 <Button
                   onClick={handleSubmit}
-                  className="flex-1 bg-gradient-accent"
+                  className="flex-1 bg-gradient-to-r from-primary to-purple-600"
                   disabled={!title.trim() || !description.trim() || !category}
                 >
                   Đăng câu hỏi
