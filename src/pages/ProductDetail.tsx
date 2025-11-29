@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useParams, useNavigate } from "react-router-dom";
 import {
     ArrowLeft,
@@ -17,9 +17,17 @@ import {
     ChevronRight,
     Plus,
     Minus,
-    AlertTriangle, 
+    AlertTriangle,
     X,
-    Loader2
+    Loader2,
+    Package,
+    Medal,
+    TrendingUp,
+    Clock,
+    CheckCircle2,
+    Store,
+    Award,
+    Sparkles
 } from "lucide-react";
 import hotToast from "react-hot-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -167,14 +175,14 @@ const ProductDetail = () => {
     // Fetch reviews
     const fetchReviews = async () => {
         if (!id) return;
-        
+
         setLoadingReviews(true);
         try {
             const response = await fetch(
                 `${import.meta.env.VITE_BACKEND_URL}/api/review/get_product_reviews.php?product_id=${id}`
             );
             const data = await response.json();
-            
+
             if (data.success) {
                 setReviews(data.reviews);
                 setReviewStats(data.stats);
@@ -208,11 +216,10 @@ const ProductDetail = () => {
         return Array.from({ length: 5 }, (_, index) => (
             <Star
                 key={index}
-                className={`w-4 h-4 ${
-                    index < rating
+                className={`w-4 h-4 ${index < rating
                         ? "fill-yellow-400 text-yellow-400"
                         : "text-gray-300"
-                }`}
+                    }`}
             />
         ));
     };
@@ -253,53 +260,70 @@ const ProductDetail = () => {
     };
 
     if (loading) return (
-        <div className="flex min-h-[100vh] items-center justify-center">
-            {loading && (
-                <div className="flex items-center justify-center min-h-screen">
-                    <div className="flex flex-col items-center">
-                        <div className="relative w-20 h-20">
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <img src="/logo.png" alt="Logo" className="w-10 h-10" />
-                            </div>
-                            <div className="absolute inset-0 rounded-full border-4 border-gray-300 border-t-transparent animate-spin"></div>
-                        </div>
-                        <span className="mt-4 text-sm text-gray-500 animate-pulse">
-                            Đang tải dữ liệu....
-                        </span>
+        <div className="flex min-h-[100vh] items-center justify-center bg-gradient-to-br from-background via-primary/5 to-background">
+            <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center"
+            >
+                <div className="relative w-24 h-24 mb-6">
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <motion.img
+                            src="/logo.png"
+                            alt="Logo"
+                            className="w-14 h-14"
+                            animate={{ scale: [1, 1.1, 1] }}
+                            transition={{ repeat: Infinity, duration: 2 }}
+                        />
                     </div>
+                    <motion.div
+                        className="absolute inset-0 rounded-full border-4 border-primary/30 border-t-primary"
+                        animate={{ rotate: 360 }}
+                        transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                    />
                 </div>
-            )}
-            {!loading && (
-                <div className='flex flex-col items-center'>
-                    {/* <div className="mb-4 p-4 bg-error-50 text-error-700 rounded-lg text-sm">
-                        {error}
-                    </div> */}
-                    <button onClick={() => (navigate('/login', { replace: true }))} className='mt-4 px-4 py-2 bg-primary-600 text-white rounded-lg'>
-                        Thử lại
-                    </button>
-                </div>
-            )}
+                <motion.span
+                    className="text-lg font-medium text-primary animate-pulse"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                >
+                    Đang tải sản phẩm...
+                </motion.span>
+            </motion.div>
         </div>
     )
+
     if (!product) return (
-        <div className="flex flex-col items-center justify-center min-h-[60vh] text-muted-foreground">
-            <AlertTriangle className="w-16 h-16 mb-4 text-destructive" />
-            <h2 className="text-2xl font-bold mb-2">Không tìm thấy sản phẩm</h2>
-            <p className="mb-6">Sản phẩm này không tồn tại hoặc đã bị xóa khỏi hệ thống.</p>
-            <Button
-                variant="outline"
-                onClick={() => navigate(-1)}
-                className="flex items-center gap-2"
-            >
-                <ArrowLeft className="w-4 h-4" />
-                Quay về trang trước
-            </Button>
-        </div>
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center justify-center min-h-[60vh]"
+        >
+            <div className="text-center max-w-md mx-auto p-8">
+                <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", duration: 0.5 }}
+                >
+                    <AlertTriangle className="w-20 h-20 mb-6 text-destructive mx-auto" />
+                </motion.div>
+                <h2 className="text-3xl font-bold mb-3">Không tìm thấy sản phẩm</h2>
+                <p className="text-muted-foreground mb-8">Sản phẩm này không tồn tại hoặc đã bị xóa khỏi hệ thống.</p>
+                <Button
+                    onClick={() => navigate(-1)}
+                    className="bg-gradient-primary hover:opacity-90"
+                    size="lg"
+                >
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Quay về trang trước
+                </Button>
+            </div>
+        </motion.div>
     );
 
     return (
         <div className="min-h-screen bg-background">
-            {/* Header */}
+            {/* Premium Header */}
             <div className="z-50 bg-background/95">
                 <div className="container mx-auto px-4 py-3">
                     <div className="flex items-center justify-between">
@@ -329,49 +353,89 @@ const ProductDetail = () => {
                 </div>
             </div>
 
-            <div className="container mx-auto px-4 py-6">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Image Gallery */}
-                    <div className="space-y-4">
-                        <div className="relative bg-muted rounded-lg overflow-hidden aspect-square">
-                            <img
-                                src={product.images[currentImageIndex]}
-                                alt={product.name}
-                                className="w-full h-full object-cover"
-                            />
+
+            <div className="container mx-auto px-4 py-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+                    {/* Enhanced Image Gallery */}
+                    <motion.div
+                        initial={{ opacity: 0, x: -50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="space-y-4"
+                    >
+                        <div className="relative bg-white rounded-2xl overflow-hidden shadow-2xl aspect-square group">
+                            <AnimatePresence mode="wait">
+                                <motion.img
+                                    key={currentImageIndex}
+                                    src={product.images[currentImageIndex]}
+                                    alt={product.name}
+                                    className="w-full h-full object-cover"
+                                    initial={{ opacity: 0, scale: 1.1 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    exit={{ opacity: 0, scale: 0.9 }}
+                                    transition={{ duration: 0.3 }}
+                                />
+                            </AnimatePresence>
 
                             {product.discount > 0 && (
-                                <Badge className="absolute top-4 left-4 bg-destructive text-white">
-                                    -{product.discount}%
-                                </Badge>
+                                <motion.div
+                                    initial={{ scale: 0, rotate: -180 }}
+                                    animate={{ scale: 1, rotate: 0 }}
+                                    className="absolute top-4 left-4"
+                                >
+                                    <Badge className="bg-gradient-to-r from-red-500 to-pink-500 text-white text-lg px-4 py-2 shadow-lg">
+                                        <Sparkles className="w-4 h-4 mr-1" />
+                                        -{product.discount}%
+                                    </Badge>
+                                </motion.div>
+                            )}
+
+                            {product.flash_sale === 1 && (
+                                <motion.div
+                                    animate={{ scale: [1, 1.05, 1] }}
+                                    transition={{ repeat: Infinity, duration: 1.5 }}
+                                    className="absolute top-4 right-4"
+                                >
+                                    <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white text-sm px-3 py-1.5 shadow-lg">
+                                        🔥 Flash Sale
+                                    </Badge>
+                                </motion.div>
                             )}
 
                             <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={prevImage}
-                                className="absolute left-4 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background"
+                                className="absolute left-4 top-1/2 -translate-y-1/2 bg-background hover:bg-background/90 shadow-lg opacity-0 group-hover:opacity-100 transition-all rounded-full"
                             >
-                                <ChevronLeft className="w-5 h-5" />
+                                <ChevronLeft className="w-6 h-6" />
                             </Button>
 
                             <Button
                                 variant="ghost"
                                 size="icon"
                                 onClick={nextImage}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 bg-background hover:bg-background/90 shadow-lg opacity-0 group-hover:opacity-100 transition-all rounded-full"
                             >
-                                <ChevronRight className="w-5 h-5" />
+                                <ChevronRight className="w-6 h-6" />
                             </Button>
+
+                            {/* Image Counter */}
+                            <div className="absolute bottom-4 right-4 bg-black/70 text-white px-3 py-1.5 rounded-full text-sm backdrop-blur-sm">
+                                {currentImageIndex + 1} / {product.images.length}
+                            </div>
                         </div>
 
-                        {/* Thumbnail Gallery */}
-                        <div className="flex gap-2 overflow-x-auto">
+                        {/* Enhanced Thumbnail Gallery */}
+                        <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                             {product.images.map((image, index) => (
-                                <button
+                                <motion.button
                                     key={index}
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
                                     onClick={() => setCurrentImageIndex(index)}
-                                    className={`flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-colors ${currentImageIndex === index ? "border-primary" : "border-transparent"
+                                    className={`flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-3 transition-all shadow-md ${currentImageIndex === index
+                                            ? "border-primary ring-2 ring-primary/50"
+                                            : "border-transparent hover:border-primary/30"
                                         }`}
                                 >
                                     <img
@@ -379,190 +443,285 @@ const ProductDetail = () => {
                                         alt={`${product.name} ${index + 1}`}
                                         className="w-full h-full object-cover"
                                     />
-                                </button>
+                                </motion.button>
                             ))}
                         </div>
-                    </div>
+                    </motion.div>
 
-                    {/* Product Info */}
-                    <div className="space-y-6">
-                        <div>
-                            <p className="text-sm text-muted-foreground mb-2">{product.brand}</p>
-                            <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-4">
+                    {/* Enhanced Product Info */}
+                    <motion.div
+                        initial={{ opacity: 0, x: 50 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className="space-y-6"
+                    >
+                        {/* Brand & Rating */}
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-3">
+                                {product.brand && (
+                                    <Badge variant="outline" className="text-sm px-3 py-1">
+                                        <Store className="w-3 h-3 mr-1" />
+                                        {product.brand}
+                                    </Badge>
+                                )}
+                                {product.flash_sale === 1 && (
+                                    <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white">
+                                        <TrendingUp className="w-3 h-3 mr-1" />
+                                        Best Seller
+                                    </Badge>
+                                )}
+                            </div>
+
+                            <h1 className="text-3xl lg:text-4xl font-bold text-foreground leading-tight">
                                 {product.name}
                             </h1>
 
-                            <div className="flex items-center gap-4 mb-4">
-                                <div className="flex items-center gap-1">
-                                    {renderStars(Math.floor(product.rating))}
-                                    <span className="font-medium ml-1">{product.rating}</span>
+                            <div className="flex flex-wrap items-center gap-4">
+                                <div className="flex items-center gap-2 bg-yellow-50 dark:bg-yellow-900/20 px-3 py-1.5 rounded-lg">
+                                    <div className="flex items-center gap-1">
+                                        {renderStars(Math.floor(product.rating))}
+                                    </div>
+                                    <span className="font-bold text-lg">{product.rating}</span>
                                 </div>
-                                <span className="text-muted-foreground">({reviewStats && reviewStats.total_reviews} đánh giá)</span>
-                                <span className="text-muted-foreground">•</span>
-                                <span className="text-muted-foreground">Đã bán {product.sold}</span>
-                            </div>
 
-                            <div className="flex items-baseline gap-3 mb-6">
-                                <span className="text-3xl font-bold text-primary">{formatPrice(product.price)}</span>
-                                {product.originalPrice && (
-                                    <span className="text-lg text-muted-foreground line-through">
-                                        {formatPrice(product.originalPrice)}
-                                    </span>
-                                )}
+                                <Separator orientation="vertical" className="h-6" />
+
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <MessageCircle className="w-4 h-4" />
+                                    <span className="font-medium">{reviewStats?.total_reviews || 0} đánh giá</span>
+                                </div>
+
+                                <Separator orientation="vertical" className="h-6" />
+
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <Package className="w-4 h-4" />
+                                    <span className="font-medium">Đã bán {product.sold}</span>
+                                </div>
                             </div>
                         </div>
 
+                        {/* Premium Price Display */}
+                        <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+                            <CardContent className="p-6">
+                                <div className="flex items-baseline gap-4 mb-2">
+                                    <span className="text-4xl font-bold text-primary bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                                        {formatPrice(product.price)}
+                                    </span>
+                                    {product.originalPrice && (
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-xl text-muted-foreground line-through">
+                                                {formatPrice(product.originalPrice)}
+                                            </span>
+                                            <Badge variant="destructive" className="animate-pulse">
+                                                Tiết kiệm {formatPrice(product.originalPrice - product.price)}
+                                            </Badge>
+                                        </div>
+                                    )}
+                                </div>
+                                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                    <Clock className="w-4 h-4" />
+                                    Giá đã bao gồm VAT
+                                </p>
+                            </CardContent>
+                        </Card>
+
                         {/* Size Selection */}
                         {product.sizes && product.sizes.filter(s => s.trim() !== "").length > 0 && (
-                            <div>
-                                <h3 className="font-semibold mb-3">Kích thước</h3>
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                                <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                                    <Award className="w-5 h-5 text-primary" />
+                                    Kích thước
+                                </h3>
                                 <div className="flex gap-2 flex-wrap">
                                     {product.sizes.filter(s => s.trim() !== "").map((size) => (
-                                        <Button
+                                        <motion.div
                                             key={size}
-                                            variant={selectedSize === size ? "default" : "outline"}
-                                            size="sm"
-                                            onClick={() => setSelectedSize(size)}
-                                            className="min-w-[48px]"
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
                                         >
-                                            {size}
-                                        </Button>
+                                            <Button
+                                                variant={selectedSize === size ? "default" : "outline"}
+                                                size="lg"
+                                                onClick={() => setSelectedSize(size)}
+                                                className={`min-w-[60px] font-semibold ${selectedSize === size
+                                                        ? "bg-gradient-primary shadow-lg"
+                                                        : "hover:border-primary"
+                                                    }`}
+                                            >
+                                                {size}
+                                            </Button>
+                                        </motion.div>
                                     ))}
                                 </div>
-                            </div>
+                            </motion.div>
                         )}
 
                         {/* Color Selection */}
                         {product.colors && product.colors.filter(c => c.trim() !== "").length > 0 && (
-                            <div>
-                                <h3 className="font-semibold mb-3">Màu sắc</h3>
+                            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+                                <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                                    <Sparkles className="w-5 h-5 text-primary" />
+                                    Màu sắc
+                                </h3>
                                 <div className="flex gap-2 flex-wrap">
                                     {product.colors.filter(c => c.trim() !== "").map((color) => (
-                                        <Button
+                                        <motion.div
                                             key={color}
-                                            variant={selectedColor === color ? "default" : "outline"}
-                                            size="sm"
-                                            onClick={() => setSelectedColor(color)}
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
                                         >
-                                            {color}
-                                        </Button>
+                                            <Button
+                                                variant={selectedColor === color ? "default" : "outline"}
+                                                size="lg"
+                                                onClick={() => setSelectedColor(color)}
+                                                className={`font-semibold ${selectedColor === color
+                                                        ? "bg-gradient-primary shadow-lg"
+                                                        : "hover:border-primary"
+                                                    }`}
+                                            >
+                                                {color}
+                                            </Button>
+                                        </motion.div>
                                     ))}
                                 </div>
-                            </div>
+                            </motion.div>
                         )}
 
                         {/* Quantity */}
                         <div>
-                            <h3 className="font-semibold mb-3">Số lượng</h3>
-                            <div className="flex items-center gap-3">
-                                <div className="flex items-center border rounded-lg">
+                            <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+                                <Package className="w-5 h-5 text-primary" />
+                                Số lượng
+                            </h3>
+                            <div className="flex items-center gap-4">
+                                <div className="flex items-center border-2 border-primary/20 rounded-xl overflow-hidden bg-background shadow-sm">
                                     <Button
                                         variant="ghost"
                                         size="icon"
                                         onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                                        className="h-10 w-10"
+                                        className="h-12 w-12 hover:bg-primary/10 hover:text-primary rounded-none"
                                     >
-                                        <Minus className="w-4 h-4" />
+                                        <Minus className="w-5 h-5" />
                                     </Button>
-                                    <span className="px-4 py-2 min-w-[60px] text-center">{quantity}</span>
+                                    <span className="px-6 py-3 min-w-[80px] text-center font-bold text-lg">{quantity}</span>
                                     <Button
                                         variant="ghost"
                                         size="icon"
                                         onClick={() => setQuantity(quantity + 1)}
-                                        className="h-10 w-10"
+                                        className="h-12 w-12 hover:bg-primary/10 hover:text-primary rounded-none"
                                     >
-                                        <Plus className="w-4 h-4" />
+                                        <Plus className="w-5 h-5" />
                                     </Button>
                                 </div>
-                                <span className="text-muted-foreground">
-                                    Còn lại {product.inStock} sản phẩm
-                                </span>
+                                <div className="flex items-center gap-2 text-muted-foreground bg-muted/50 px-4 py-2 rounded-lg">
+                                    <CheckCircle2 className="w-4 h-4 text-green-500" />
+                                    <span className="font-medium">Còn lại {product.inStock} sản phẩm</span>
+                                </div>
                             </div>
                         </div>
 
                         {/* Action Buttons */}
                         <div className="space-y-3">
-                            <Button
-                                size="lg"
-                                className="w-full bg-gradient-primary hover:opacity-90"
-                                onClick={() => handleAddToCart()}
-                            >
-                                <ShoppingCart className="w-5 h-5 mr-2" />
-                                Thêm vào giỏ hàng
-                            </Button>
-                            <Button
-                                variant="outline"
-                                size="lg"
-                                className="w-full"
-                                onClick={() => {
-                                    hotToast.loading("Đang chuyển đến trang thanh toán...", {
-                                        duration: 1500,
-                                        position: "top-center",
-                                    });
-
-                                    setTimeout(() => {
-                                        navigate("/checkout", {
-                                            state: {
-                                                products: [{
-                                                    ...product,
-                                                    seller_id: product.seller_id,
-                                                    image: product.images?.[0] || product.image || "",
-                                                    selectedSize,
-                                                    selectedColor,
-                                                    quantity,
-                                                    shipping_fee: product.shipping_fee
-                                                }]
-                                            }
-                                        })
-                                    }, 1000);
-
-                                }}
-                            >
-                                Mua ngay
-                            </Button>
+                            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                                <Button
+                                    size="lg"
+                                    className="w-full bg-gradient-primary hover:opacity-90 shadow-lg text-lg h-14"
+                                    onClick={() => handleAddToCart()}
+                                >
+                                    <ShoppingCart className="w-5 h-5 mr-2" />
+                                    Thêm vào giỏ hàng
+                                </Button>
+                            </motion.div>
+                            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                                <Button
+                                    variant="outline"
+                                    size="lg"
+                                    className="w-full border-2 border-primary text-primary hover:bg-primary hover:text-white text-lg h-14 font-semibold"
+                                    onClick={() => {
+                                        hotToast.loading("Đang chuyển đến trang thanh toán...", {
+                                            duration: 1500,
+                                            position: "top-center",
+                                        });
+                                        setTimeout(() => {
+                                            navigate("/checkout", {
+                                                state: {
+                                                    products: [{
+                                                        ...product,
+                                                        seller_id: product.seller_id,
+                                                        image: product.images?.[0] || product.image || "",
+                                                        selectedSize,
+                                                        selectedColor,
+                                                        quantity,
+                                                        shipping_fee: product.shipping_fee
+                                                    }]
+                                                }
+                                            })
+                                        }, 1000);
+                                    }}
+                                >
+                                    <Medal className="w-5 h-5 mr-2" />
+                                    Mua ngay
+                                </Button>
+                            </motion.div>
                         </div>
 
-                        {/* Shipping Info */}
-                        <Card>
-                            <CardContent className="p-4">
-                                <div className="space-y-3">
-                                    <div className="flex items-center gap-3">
-                                        <Truck className="w-5 h-5 text-green-500" />
-                                        <div>
-                                            <p className="font-medium">Miễn phí vận chuyển</p>
-                                            <p className="text-sm text-muted-foreground">Đơn hàng từ 200.000đ</p>
+                        {/* Premium Shipping Info */}
+                        <Card className="border-2 border-primary/20 shadow-lg">
+                            <CardContent className="p-5">
+                                <div className="space-y-4">
+                                    <div className="flex items-start gap-4 group hover:bg-green-50 dark:hover:bg-green-900/10 p-3 rounded-lg transition-all">
+                                        <div className="p-2 bg-green-100 dark:bg-green-900/20 rounded-lg">
+                                            <Truck className="w-6 h-6 text-green-600 dark:text-green-400" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="font-semibold text-foreground mb-1">Miễn phí vận chuyển</p>
+                                            <p className="text-sm text-muted-foreground">Đơn hàng từ 200.000đ • Giao hàng trong 2-3 ngày</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                        <RotateCcw className="w-5 h-5 text-blue-500" />
-                                        <div>
-                                            <p className="font-medium">Đổi trả trong 7 ngày</p>
-                                            <p className="text-sm text-muted-foreground">Miễn phí đổi trả</p>
+                                    <div className="flex items-start gap-4 group hover:bg-blue-50 dark:hover:bg-blue-900/10 p-3 rounded-lg transition-all">
+                                        <div className="p-2 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+                                            <RotateCcw className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="font-semibold text-foreground mb-1">Đổi trả trong 7 ngày</p>
+                                            <p className="text-sm text-muted-foreground">Miễn phí đổi trả • Hoàn tiền 100%</p>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                        <Shield className="w-5 h-5 text-purple-500" />
-                                        <div>
-                                            <p className="font-medium">Bảo hành chất lượng</p>
-                                            <p className="text-sm text-muted-foreground">Cam kết chính hãng</p>
+                                    <div className="flex items-start gap-4 group hover:bg-purple-50 dark:hover:bg-purple-900/10 p-3 rounded-lg transition-all">
+                                        <div className="p-2 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
+                                            <Shield className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="font-semibold text-foreground mb-1">Bảo hành chất lượng</p>
+                                            <p className="text-sm text-muted-foreground">Cam kết chính hãng 100%</p>
                                         </div>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
-                    </div>
+                    </motion.div>
                 </div>
 
-                {/* Product Details Tabs */}
-                <div className="mt-12">
+                {/* Enhanced Tabs */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="mt-12"
+                >
                     <Tabs defaultValue="description" className="w-full">
-                        <TabsList className="grid w-full grid-cols-4">
-                            <TabsTrigger value="description">Mô tả</TabsTrigger>
-                            <TabsTrigger value="specifications">Thông số</TabsTrigger>
-                            <TabsTrigger value="reviews">
+                        <TabsList className="grid w-full grid-cols-4 h-14 bg-muted/50 p-1 rounded-xl">
+                            <TabsTrigger value="description" className="text-base font-semibold data-[state=active]:bg-gradient-primary data-[state=active]:text-white rounded-lg">
+                                Mô tả
+                            </TabsTrigger>
+                            <TabsTrigger value="specifications" className="text-base font-semibold data-[state=active]:bg-gradient-primary data-[state=active]:text-white rounded-lg">
+                                Thông số
+                            </TabsTrigger>
+                            <TabsTrigger value="reviews" className="text-base font-semibold data-[state=active]:bg-gradient-primary data-[state=active]:text-white rounded-lg">
                                 Đánh giá {reviewStats && reviewStats.total_reviews > 0 && `(${reviewStats.total_reviews})`}
                             </TabsTrigger>
-                            <TabsTrigger value="shipping">Vận chuyển</TabsTrigger>
+                            <TabsTrigger value="shipping" className="text-base font-semibold data-[state=active]:bg-gradient-primary data-[state=active]:text-white rounded-lg">
+                                Vận chuyển
+                            </TabsTrigger>
                         </TabsList>
 
                         {/* Description Tab */}
@@ -598,35 +757,35 @@ const ProductDetail = () => {
                                                 <h4 className="font-semibold text-lg mb-4 text-primary border-b pb-2">
                                                     Thông tin cơ bản
                                                 </h4>
-                                                
+
                                                 {product.sku && (
                                                     <div className="flex justify-between py-3 border-b border-border">
                                                         <span className="text-muted-foreground">Mã SKU</span>
                                                         <span className="font-medium text-right">{product.sku}</span>
                                                     </div>
                                                 )}
-                                                
+
                                                 {product.brand && (
                                                     <div className="flex justify-between py-3 border-b border-border">
                                                         <span className="text-muted-foreground">Thương hiệu</span>
                                                         <span className="font-medium text-right">{product.brand}</span>
                                                     </div>
                                                 )}
-                                                
+
                                                 {product.category && (
                                                     <div className="flex justify-between py-3 border-b border-border">
                                                         <span className="text-muted-foreground">Danh mục</span>
                                                         <span className="font-medium text-right">{product.category}</span>
                                                     </div>
                                                 )}
-                                                
+
                                                 {product.material && (
                                                     <div className="flex justify-between py-3 border-b border-border">
                                                         <span className="text-muted-foreground">Chất liệu</span>
                                                         <span className="font-medium text-right">{product.material}</span>
                                                     </div>
                                                 )}
-                                                
+
                                                 {product.origin && (
                                                     <div className="flex justify-between py-3 border-b border-border">
                                                         <span className="text-muted-foreground">Xuất xứ</span>
@@ -638,7 +797,7 @@ const ProductDetail = () => {
                                                     <div className="flex justify-between py-3 border-b border-border">
                                                         <span className="text-muted-foreground">Màu sắc</span>
                                                         <span className="font-medium text-right">
-                                                            {Array.isArray(product.colors) 
+                                                            {Array.isArray(product.colors)
                                                                 ? product.colors.join(", ")
                                                                 : product.colors}
                                                         </span>
@@ -649,7 +808,7 @@ const ProductDetail = () => {
                                                     <div className="flex justify-between py-3 border-b border-border">
                                                         <span className="text-muted-foreground">Kích cỡ</span>
                                                         <span className="font-medium text-right">
-                                                            {Array.isArray(product.sizes) 
+                                                            {Array.isArray(product.sizes)
                                                                 ? product.sizes.join(", ")
                                                                 : product.sizes}
                                                         </span>
@@ -662,14 +821,14 @@ const ProductDetail = () => {
                                                 <h4 className="font-semibold text-lg mb-4 text-primary border-b pb-2">
                                                     Kích thước & Vận chuyển
                                                 </h4>
-                                                
+
                                                 {product.weight && (
                                                     <div className="flex justify-between py-3 border-b border-border">
                                                         <span className="text-muted-foreground">Trọng lượng</span>
                                                         <span className="font-medium text-right">{product.weight}g</span>
                                                     </div>
                                                 )}
-                                                
+
                                                 {(product.length || product.width || product.height) && (
                                                     <div className="flex justify-between py-3 border-b border-border">
                                                         <span className="text-muted-foreground">Kích thước (D×R×C)</span>
@@ -678,12 +837,12 @@ const ProductDetail = () => {
                                                         </span>
                                                     </div>
                                                 )}
-                                                
+
                                                 {product.shipping_fee !== null && product.shipping_fee !== undefined && (
                                                     <div className="flex justify-between py-3 border-b border-border">
                                                         <span className="text-muted-foreground">Phí vận chuyển</span>
                                                         <span className="font-medium text-right">
-                                                            {product.shipping_fee === 0 
+                                                            {product.shipping_fee === 0
                                                                 ? <Badge variant="secondary">Miễn phí</Badge>
                                                                 : formatPrice(product.shipping_fee)}
                                                         </span>
@@ -703,8 +862,8 @@ const ProductDetail = () => {
                                                     <div className="flex justify-between py-3 border-b border-border">
                                                         <span className="text-muted-foreground">Trạng thái</span>
                                                         <Badge variant={product.status === 'active' ? 'default' : 'secondary'}>
-                                                            {product.status === 'active' ? '✓ Đang bán' : 
-                                                             product.status === 'inactive' ? 'Tạm ngưng' : 'Đã xóa'}
+                                                            {product.status === 'active' ? '✓ Đang bán' :
+                                                                product.status === 'inactive' ? 'Tạm ngưng' : 'Đã xóa'}
                                                         </Badge>
                                                     </div>
                                                 )}
@@ -725,13 +884,13 @@ const ProductDetail = () => {
                                                             {(() => {
                                                                 // Xử lý tags - có thể là array hoặc string
                                                                 let tagArray: string[] = [];
-                                                                
+
                                                                 if (Array.isArray(product.tags)) {
                                                                     tagArray = product.tags;
                                                                 } else if (typeof product.tags === 'string' && product.tags.trim()) {
                                                                     tagArray = product.tags.split(',');
                                                                 }
-                                                                
+
                                                                 return tagArray.map((tag: string, index: number) => (
                                                                     <Badge key={index} variant="outline" className="text-xs">
                                                                         {tag.trim()}
@@ -772,8 +931,8 @@ const ProductDetail = () => {
                                                         <p className="text-sm text-muted-foreground">ID: {product.seller_id}</p>
                                                     )}
                                                 </div>
-                                                <Button 
-                                                    variant="outline" 
+                                                <Button
+                                                    variant="outline"
                                                     size="sm"
                                                     onClick={() => navigate(`/seller/${product.seller_id}`)}
                                                 >
@@ -819,9 +978,9 @@ const ProductDetail = () => {
                                                                     <span className="text-sm font-medium">{item.stars}</span>
                                                                     <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
                                                                 </div>
-                                                                <Progress 
-                                                                    value={item.percentage} 
-                                                                    className="flex-1 h-2" 
+                                                                <Progress
+                                                                    value={item.percentage}
+                                                                    className="flex-1 h-2"
                                                                 />
                                                                 <span className="text-sm text-muted-foreground w-16 text-right">
                                                                     {item.count}
@@ -903,17 +1062,17 @@ const ProductDetail = () => {
 
                                                                 {/* Actions */}
                                                                 <div className="flex items-center gap-4 pt-2">
-                                                                    <Button 
-                                                                        variant="ghost" 
-                                                                        size="sm" 
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
                                                                         className="text-muted-foreground hover:text-primary h-8 px-3"
                                                                     >
                                                                         <ThumbsUp className="w-4 h-4 mr-1.5" />
                                                                         Hữu ích ({review.likes})
                                                                     </Button>
-                                                                    <Button 
-                                                                        variant="ghost" 
-                                                                        size="sm" 
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
                                                                         className="text-muted-foreground hover:text-primary h-8 px-3"
                                                                     >
                                                                         <MessageCircle className="w-4 h-4 mr-1.5" />
@@ -975,60 +1134,52 @@ const ProductDetail = () => {
                             </Card>
                         </TabsContent>
                     </Tabs>
-                </div>
+                </motion.div>
 
-                {/* Image Preview Modal */}
-                {selectedReviewImage && (
-                    <div 
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 backdrop-blur-sm"
-                        onClick={() => setSelectedReviewImage(null)}
-                    >
-                        <div className="relative max-w-5xl w-full">
-                            <img
-                                src={selectedReviewImage}
-                                alt="Review"
-                                className="max-w-full max-h-[90vh] object-contain rounded-lg mx-auto shadow-2xl"
-                            />
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                className="absolute top-4 right-4 bg-black/50 text-white hover:bg-black/70 rounded-full w-12 h-12"
-                                onClick={() => setSelectedReviewImage(null)}
-                            >
-                                <X className="w-6 h-6" />
-                            </Button>
-                        </div>
+                {/* Enhanced Recommended Products */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="mt-16"
+                >
+                    <div className="flex items-center justify-between mb-8">
+                        <h2 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+                            Sản phẩm tương tự
+                        </h2>
+                        <Button variant="link" className="text-primary font-semibold">
+                            Xem tất cả →
+                        </Button>
                     </div>
-                )}
-
-                {/* Recommended Products */}
-                <div className="mt-12">
-                    <h2 className="text-2xl font-bold mb-6">Sản phẩm tương tự</h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {recommendedProducts.map((item) => (
+                        {recommendedProducts.map((item, index) => (
                             <motion.div
                                 key={item.id}
-                                whileHover={{ y: -5 }}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.1 }}
+                                whileHover={{ y: -8 }}
                                 className="group cursor-pointer"
                                 onClick={() => navigate(`/product/${item.id}`)}
                             >
-                                <Card className="bg-gradient-card border-border hover-glow overflow-hidden">
-                                    <div className="relative">
+                                <Card className="bg-gradient-card border-border hover:shadow-2xl transition-all duration-300 overflow-hidden">
+                                    <div className="relative aspect-square overflow-hidden bg-muted">
                                         <img
                                             src={item.image}
                                             alt={item.name}
-                                            className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500"
+                                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                                         />
+                                        <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                                     </div>
-                                    <CardContent className="p-4">
-                                        <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors mb-2">
+                                    <CardContent className="p-5">
+                                        <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors mb-3 line-clamp-2">
                                             {item.name}
                                         </h3>
                                         <div className="flex items-center justify-between">
-                                            <span className="text-lg font-bold text-primary">{item.price}đ</span>
-                                            <div className="flex items-center gap-1">
-                                                <Star className="w-4 h-4 fill-warning text-warning" />
-                                                <span className="text-sm">{item.rating}</span>
+                                            <span className="text-xl font-bold text-primary">{item.price}đ</span>
+                                            <div className="flex items-center gap-1 bg-yellow-50 dark:bg-yellow-900/20 px-2 py-1 rounded-lg">
+                                                <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                                                <span className="text-sm font-semibold">{item.rating}</span>
                                             </div>
                                         </div>
                                     </CardContent>
@@ -1036,7 +1187,7 @@ const ProductDetail = () => {
                             </motion.div>
                         ))}
                     </div>
-                </div>
+                </motion.div>
             </div>
         </div>
     );

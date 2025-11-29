@@ -16,4 +16,31 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  build: {
+    // Tắt source map trong production để ẩn source code
+    sourcemap: mode === "development",
+    // Minify code để làm khó đọc
+    minify: "terser",
+    terserOptions: {
+      compress: {
+        // Xóa console.log trong production
+        drop_console: mode === "production",
+        drop_debugger: mode === "production",
+      },
+      mangle: {
+        // Làm rối tên biến
+        toplevel: true,
+      },
+      format: {
+        // Xóa comments
+        comments: false,
+      },
+    },
+    // Tối ưu chunk splitting
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
+  },
 }));

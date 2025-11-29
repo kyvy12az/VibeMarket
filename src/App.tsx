@@ -49,6 +49,8 @@ import { Toaster as HotToaster } from "react-hot-toast";
 import CallClient from "./pages/CallClient";
 import {EditProduct} from "./components/dashboard-Seller/EditProduct";
 import ReviewOrder from "./pages/ReviewOrder";
+import { StoreDetail } from "./components/store/StoreDetail";
+import AIShoppingAssistant from "./pages/AIShoppingAssistant";
 
 const queryClient = new QueryClient();
 
@@ -81,6 +83,7 @@ function App() {
                   <Route path="/local-brand" element={<LocalBrand />} />
                   <Route path="/brand/:brandId" element={<BrandProducts />} />
                   <Route path="/ai-stylist" element={<AIStylist />} />
+                  <Route path="/ai-shopping" element={<AIShoppingAssistant />} />
                   <Route path="/ai-recomment" element={<AIRecommendationsPage />} />
                   <Route path="/lucky-wheel" element={<LuckyWheel />} />
                   <Route path="/product/:id" element={<ProductDetail />} />
@@ -93,6 +96,7 @@ function App() {
                   <Route path="/orders/:orderId/review" element={<ReviewOrder />} />
                   <Route path="/vendor-registration" element={<VendorRegistration />} />
                   <Route path="/about" element={<About />} />
+                  <Route path="/store/:sellerId" element={<StoreDetail />} />
                   {/* <Route path="/vendor-management" element={<ShopManagement />} /> */}
 
                   {/* <Route path="/add-product" element={<AddProduct />} /> */}

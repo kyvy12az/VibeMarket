@@ -38,13 +38,18 @@ export interface Message {
 export interface Conversation {
   id: number;
   type: 'private' | 'group';
-  name?: string;
+  name: string;
   avatar?: string;
+  background_color?: string;
+  message_color?: string; // Add this
+  message_text_color?: string; // Add this
   participants: Participant[];
-  last_message?: string;
+  lastMessage?: Message;
+  unreadCount: number;
+  isGroup: boolean;
   last_message_at?: string;
   unread_count: number;
-  created_at?: string;
+  last_message?: any;
 }
 
 export interface ConversationsResponse {
@@ -74,4 +79,14 @@ export interface UploadResponse {
   total_count?: number;
   uploaded_count?: number;
   errors?: any[];
+}
+
+// Enhanced color theme interface
+export interface ColorTheme {
+  name: string;
+  value: string;
+  gradient: string;
+  preview: string;
+  messageColor?: string; // Add this
+  messageTextColor?: string; // Add this
 }

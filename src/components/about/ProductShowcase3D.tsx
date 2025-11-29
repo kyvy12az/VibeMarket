@@ -77,18 +77,20 @@ export function ProductShowcase3D() {
                     key={activeIndex}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 0.3 }}
-                    transition={{ duration: 0.8 }}
+                    transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                    style={{ willChange: 'opacity' }}
                 />
             </div>
 
             <div className="container mx-auto max-w-7xl">
                 {/* Header */}
                 <motion.div
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 15 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ duration: 0.6 }}
+                    viewport={{ once: true, margin: "-100px" }}
+                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                     className="text-center mb-12"
+                    style={{ willChange: 'transform, opacity' }}
                 >
                     <Badge variant="outline" className="mb-4 text-sm px-4 py-1">
                         🎯 Featured Products

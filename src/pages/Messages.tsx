@@ -106,8 +106,12 @@ const Chat: React.FC = () => {
     const shouldAutoScroll = useRef(true);
     const lastSendAtRef = useRef<Map<number, number>>(new Map());
 
+    // **FIX: Add ref to track current conversation ID being fetched**
+    const currentConversationIdRef = useRef<number | null>(null);
+
     const incomingCallAudioRef = useRef<HTMLAudioElement | null>(null);
 
+    // helper lấy token (hỗ trợ key cũ 'vibeventure_token' để tương thích)
     // helper lấy token (hỗ trợ key cũ 'vibeventure_token' để tương thích)
     const getToken = () => {
         const candidates = [
@@ -116,23 +120,56 @@ const Chat: React.FC = () => {
             sessionStorage.getItem("vibeventure_token"),
             sessionStorage.getItem("token"),
         ];
-        for (const c of candidates) if (c) {
-            return c.startsWith("Bearer ") ? c.slice(7) : c;
+        for (const c of candidates) {
+            if (c) {
+                // **FIX: Remove "Bearer " prefix if exists**
+                return c.startsWith("Bearer ") ? c.slice(7) : c;
+            }
         }
         const m = document.cookie.match(/(?:^|; )(?:vibeventure_token|token)=([^;]+)/);
-        if (m) return decodeURIComponent(m[1]).startsWith("Bearer ") ? decodeURIComponent(m[1]).slice(7) : decodeURIComponent(m[1]);
+        if (m) {
+            const token = decodeURIComponent(m[1]);
+            return token.startsWith("Bearer ") ? token.slice(7) : token;
+        }
         return null;
+    };
+
+    const handleConversationUpdate = (updatedConversation: Conversation) => {
+        setSelectedConversation(updatedConversation);
+        setConversations(prev =>
+            prev.map(conv =>
+                conv.id === updatedConversation.id
+                    ? { ...conv, ...updatedConversation }
+                    : conv
+            )
+        );
     };
 
     // Fetch conversations
     const fetchConversations = async () => {
         try {
             const token = getToken();
-            if (!token) return;
+            if (!token) {
+                console.error("No token found");
+                return;
+            }
+
             const response = await fetch(
                 `${import.meta.env.VITE_BACKEND_URL}/api/chat/conversations.php`,
-                { headers: { Authorization: `Bearer ${token}` } }
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
             );
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error("Fetch conversations error:", errorData);
+                throw new Error(errorData.message || 'Failed to fetch conversations');
+            }
+
             const data: ConversationsResponse = await response.json();
             if (data.success) setConversations(data.data);
         } catch (error) {
@@ -190,6 +227,13 @@ const Chat: React.FC = () => {
         fetchUsers();
         return () => ac.abort();
     }, [showNewChatModal, user]);
+
+    // Thêm vào đầu component
+    useEffect(() => {
+        console.log("Messages updated:", messages);
+        console.log("Selected conversation:", selectedConversation?.id);
+        console.log("Current conversation ref:", currentConversationIdRef.current);
+    }, [messages, selectedConversation]);
 
     // Socket
     const initializeSocket = useCallback(() => {
@@ -280,6 +324,18 @@ const Chat: React.FC = () => {
                     tempId: (message as any).tempId || (message as any).temp_id || null,
                 };
 
+                // **FIX: Check conversation ID properly**
+                const messageConvId = (message as any).conversationId || (message as any).conversation_id;
+
+                // **FIX: Only filter if we have both IDs to compare**
+                if (messageConvId && selectedConversation?.id) {
+                    if (messageConvId !== selectedConversation.id && messageConvId !== currentConversationIdRef.current) {
+                        console.log(`Ignoring message from conversation ${messageConvId} - currently viewing ${selectedConversation.id}`);
+                        fetchConversations();
+                        return;
+                    }
+                }
+
                 // if this is the confirmation for a pending temp message -> replace it
                 if (processed.tempId && pendingMessages.current.has(processed.tempId)) {
                     setMessages((prev) =>
@@ -294,26 +350,21 @@ const Chat: React.FC = () => {
                     return;
                 }
 
-                // ignore messages we sent (avoid duplicate from socket) — if sender is self and we already handled via HTTP, skip
-                if (processed.senderId === Number(user?.id)) {
-                    // ensure not duplicated: if already exists by tempId or id, skip
-                    const existsSelf = messages.some(
-                        (m) =>
-                            (m.id && processed.id && m.id === processed.id) ||
-                            (m.tempId && processed.tempId && m.tempId === processed.tempId)
-                    );
-                    if (existsSelf) return;
-                }
+                // **FIX: Don't skip messages from self if not already in messages array**
+                const existsById = (msgs: Message[]) =>
+                    msgs.some(m => (m.id && processed.id && m.id === processed.id));
+                const existsByTempId = (msgs: Message[]) =>
+                    msgs.some(m => (m.tempId && processed.tempId && m.tempId === processed.tempId));
 
-                // final dedupe and append
                 setMessages((prev) => {
-                    const exists = prev.some(
-                        (m) =>
-                            (m.id && processed.id && m.id === processed.id) ||
-                            (m.tempId && processed.tempId && m.tempId === processed.tempId)
-                    );
-                    return !exists ? [...prev, { ...processed, id: processed.id || Date.now() }] : prev;
+                    // Only skip if message already exists
+                    if (existsById(prev) || existsByTempId(prev)) {
+                        return prev;
+                    }
+
+                    return [...prev, { ...processed, id: processed.id || Date.now() }];
                 });
+
                 fetchConversations();
             } catch (err) {
                 console.error("new_message handler error:", err);
@@ -479,29 +530,94 @@ const Chat: React.FC = () => {
         setCurrentCallData(null);
     }, []);
 
-    // Fetch messages
+    // **FIX: Add ref to track ongoing fetch**
+    const isFetchingMessagesRef = useRef<boolean>(false);
+    const fetchMessagesAbortControllerRef = useRef<AbortController | null>(null);
+
+    // **FIX: Update fetchMessages with abort and debounce**
     const fetchMessages = async (conversationId: number, page = 1) => {
+        // Cancel previous fetch if still running
+        if (fetchMessagesAbortControllerRef.current) {
+            fetchMessagesAbortControllerRef.current.abort();
+        }
+
+        // Prevent duplicate calls
+        if (isFetchingMessagesRef.current) {
+            console.log("Already fetching messages, skipping...");
+            return;
+        }
+
         try {
+            isFetchingMessagesRef.current = true;
+            setMessages([]);
             setIsLoadingMessages(true);
+            currentConversationIdRef.current = conversationId;
+
             const token = getToken();
-            if (!token) return;
-            const response = await fetch(
-                `${import.meta.env.VITE_BACKEND_URL
-                }/api/chat/messages.php?conversation_id=${conversationId}&page=${page}&limit=50`,
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            const data: MessagesResponse = await response.json();
-            if (data.success) {
-                setMessages(data.data);
-                await markMessagesAsRead(
-                    data.data.map((msg) => msg.id).filter(Boolean) as number[]
-                );
-                setTimeout(() => scrollToBottom(true), 100);
+            if (!token) {
+                console.error("No token found");
+                setIsLoadingMessages(false);
+                isFetchingMessagesRef.current = false;
+                return;
             }
-        } catch (error) {
-            toast.error("Không thể tải tin nhắn: " + error);
+
+            // Create new abort controller
+            fetchMessagesAbortControllerRef.current = new AbortController();
+
+            const response = await fetch(
+                `${import.meta.env.VITE_BACKEND_URL}/api/chat/messages.php?conversation_id=${conversationId}&page=${page}&limit=50`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    signal: fetchMessagesAbortControllerRef.current.signal
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                console.error("Fetch messages error:", errorData);
+
+                // Handle rate limiting with retry
+                if (response.status === 429) {
+                    const retryAfter = parseInt(response.headers.get('Retry-After') || errorData.retry_after || '5');
+                    throw new Error(`Quá nhiều yêu cầu, thử lại sau: ${retryAfter} giây`);
+                }
+
+                throw new Error(errorData.message || 'Failed to fetch messages');
+            }
+
+            const data: MessagesResponse = await response.json();
+
+            if (currentConversationIdRef.current === conversationId) {
+                if (data.success) {
+                    setMessages(data.data || []);
+
+                    const messageIds = data.data
+                        .map((msg) => msg.id)
+                        .filter((id): id is number => id !== null && id !== undefined);
+
+                    if (messageIds.length > 0) {
+                        await markMessagesAsRead(messageIds);
+                    }
+
+                    setTimeout(() => scrollToBottom(true), 100);
+                }
+            }
+        } catch (error: any) {
+            if (error.name === 'AbortError') {
+                console.log('Fetch aborted');
+                return;
+            }
+            console.error("Fetch messages error:", error);
+            toast.error("Không thể tải tin nhắn: " + (error.message || error));
         } finally {
-            setIsLoadingMessages(false);
+            if (currentConversationIdRef.current === conversationId) {
+                setIsLoadingMessages(false);
+            }
+            isFetchingMessagesRef.current = false;
+            fetchMessagesAbortControllerRef.current = null;
         }
     };
 
@@ -512,11 +628,14 @@ const Chat: React.FC = () => {
         fileData?: UploadedFile
     ) => {
         if (!selectedConversation || !user || !socketRef.current) return;
+
         const convId = selectedConversation.id;
         const tempId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
         const tempMessage: Message = {
             tempId,
             senderId: Number(user.id),
+            conversationId: convId,
             content,
             type,
             file_url: fileData?.file_url,
@@ -535,13 +654,13 @@ const Chat: React.FC = () => {
             },
         };
 
-        // add temp message once
-        setMessages((prev) => [...prev, tempMessage]);
-        pendingMessages.current.set(tempId, tempMessage);
+        if (currentConversationIdRef.current === convId) {
+            setMessages((prev) => [...prev, tempMessage]);
+            pendingMessages.current.set(tempId, tempMessage);
+        }
 
-        // emit socket immediately (optimistic)
         socketRef.current.emit("send_message", {
-            conversationId: selectedConversation.id,
+            conversationId: convId,
             content,
             type,
             fileData,
@@ -550,7 +669,6 @@ const Chat: React.FC = () => {
 
         const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
-        // client-side minimum interval between HTTP sends per conversation to avoid hitting rate limit
         const MIN_INTERVAL_MS = 700;
         const now = Date.now();
         const last = lastSendAtRef.current.get(convId) || 0;
@@ -559,7 +677,6 @@ const Chat: React.FC = () => {
             await sleep(wait);
         }
 
-        // retry logic
         const maxRetries = 3;
         let attempt = 0;
 
@@ -578,7 +695,7 @@ const Chat: React.FC = () => {
                             Authorization: `Bearer ${token}`,
                         },
                         body: JSON.stringify({
-                            conversation_id: selectedConversation.id,
+                            conversation_id: convId,
                             content,
                             type,
                             file_url: fileData?.file_url,
@@ -588,9 +705,7 @@ const Chat: React.FC = () => {
                 );
 
                 const ct = response.headers.get("content-type") || "";
-                // read body once as text, then try parse JSON from text
                 const bodyText = await response.text();
-                console.debug?.("[Debug] POST /api/chat/messages.php", response.status, bodyText);
 
                 let data: any = null;
                 if (ct.includes("application/json") && bodyText) {
@@ -602,73 +717,69 @@ const Chat: React.FC = () => {
                     }
                 }
 
-                // handle non-OK responses (rate limit, errors)
                 if (!response.ok) {
-                    // prefer server-provided retry_after, fallback to Retry-After header, then client backoff
                     let retryAfter = Number(data?.retry_after || data?.retry_after_seconds || 0);
                     if (!retryAfter) {
                         const hdr = response.headers.get("Retry-After");
                         retryAfter = hdr ? Number(hdr) || 0 : 0;
                     }
                     if (retryAfter <= 0) {
-                        // server returned 0 — use client-side exponential backoff + jitter
                         retryAfter = Math.min(1 + attempt * 0.8, 4) + Math.random() * 0.6;
                     }
                     if (attempt < maxRetries) {
                         toast(`Quá nhiều yêu cầu, thử lại sau ${Math.ceil(retryAfter)}s...`, { icon: '⏳', duration: 1500 });
                         await sleep(Math.ceil(retryAfter) * 1000);
-                        continue; // retry
+                        continue;
                     }
                     throw new Error(data?.message || bodyText || `HTTP ${response.status}`);
                 }
 
-                // handle rate limit returned in JSON
                 if (data && data.success === false) {
                     let retryAfter = Number(data.retry_after || data.retry_after_seconds || 0);
                     if (retryAfter <= 0) retryAfter = Math.min(1 + attempt * 0.8, 4) + Math.random() * 0.6;
                     if (attempt < maxRetries) {
                         toast(`Quá nhiều yêu cầu, thử lại sau ${Math.ceil(retryAfter)}s...`, { icon: '⏳', duration: 1500 });
                         await sleep(Math.ceil(retryAfter) * 1000);
-                        continue; // retry
+                        continue;
                     }
                     throw new Error(data.message || "Gửi tin nhắn thất bại");
                 }
 
                 lastSendAtRef.current.set(convId, Date.now());
 
-                // success: replace temp message with real message if returned
-                if (data && data.data) {
-                    setMessages((prev) =>
-                        prev.map((msg) =>
-                            msg.tempId === tempId
-                                ? {
-                                    ...data.data,
-                                    isPending: false,
-                                    tempId: undefined,
-                                    fileUrl: data.data.file_url || data.data.fileUrl,
-                                } as Message
-                                : msg
-                        )
-                    );
-                } else {
-                    // if server didn't return full message, mark pending false
-                    setMessages((prev) =>
-                        prev.map((msg) => (msg.tempId === tempId ? { ...msg, isPending: false } : msg))
-                    );
+                if (currentConversationIdRef.current === convId) {
+                    if (data && data.data) {
+                        setMessages((prev) =>
+                            prev.map((msg) =>
+                                msg.tempId === tempId
+                                    ? {
+                                        ...data.data,
+                                        isPending: false,
+                                        tempId: undefined,
+                                        fileUrl: data.data.file_url || data.data.fileUrl,
+                                    } as Message
+                                    : msg
+                            )
+                        );
+                    } else {
+                        setMessages((prev) =>
+                            prev.map((msg) => (msg.tempId === tempId ? { ...msg, isPending: false } : msg))
+                        );
+                    }
                 }
                 pendingMessages.current.delete(tempId);
-                return; // done
+                return;
             } catch (err: any) {
                 const isLast = attempt >= maxRetries;
                 console.error("Send message attempt", attempt, "error:", err);
                 if (isLast) {
-                    // remove temp message and notify user
-                    setMessages((prev) => prev.filter((msg) => msg.tempId !== tempId));
+                    if (currentConversationIdRef.current === convId) {
+                        setMessages((prev) => prev.filter((msg) => msg.tempId !== tempId));
+                    }
                     pendingMessages.current.delete(tempId);
                     toast.error("Không thể gửi tin nhắn: " + (err?.message || err));
                     return;
                 }
-                // small client-side backoff before retry
                 const backoffMs = Math.min(800 * attempt, 3000) + Math.floor(Math.random() * 200);
                 await sleep(backoffMs);
             }
@@ -680,6 +791,7 @@ const Chat: React.FC = () => {
         try {
             const token = getToken();
             if (!token || messageIds.length === 0) return;
+
             await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/chat/read.php`, {
                 method: "POST",
                 headers: {
@@ -688,6 +800,7 @@ const Chat: React.FC = () => {
                 },
                 body: JSON.stringify({ message_ids: messageIds }),
             });
+
             if (socketRef.current && selectedConversation) {
                 messageIds.forEach((messageId) => {
                     socketRef.current?.emit("mark_read", {
@@ -706,8 +819,10 @@ const Chat: React.FC = () => {
         try {
             const token = getToken();
             if (!token) throw new Error("No auth token");
+
             const formData = new FormData();
             Array.from(files).forEach((file) => formData.append(`files[]`, file));
+
             const response = await fetch(
                 `${import.meta.env.VITE_BACKEND_URL}/api/chat/upload.php`,
                 {
@@ -716,6 +831,7 @@ const Chat: React.FC = () => {
                     body: formData,
                 }
             );
+
             const data: UploadResponse = await response.json();
             if (data.success && data.data) {
                 if (data.errors && data.errors.length > 0) {
@@ -740,6 +856,7 @@ const Chat: React.FC = () => {
         try {
             const token = getToken();
             if (!token) return;
+
             await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/chat/status.php`, {
                 method: "POST",
                 headers: {
@@ -984,6 +1101,31 @@ const Chat: React.FC = () => {
         }
     };
 
+    // Add helper function to get message colors
+    const getMessageColors = (conversation?: Conversation) => {
+        if (!conversation) {
+            return {
+                messageColor: '#667eea',
+                messageTextColor: '#ffffff',
+                secondaryMessageColor: '#f1f5f9',
+                backgroundStyle: undefined
+            };
+        }
+
+        const messageColor = conversation.message_color || '#667eea';
+        const messageTextColor = conversation.message_text_color || '#ffffff';
+        const backgroundColor = conversation.background_color;
+
+        return {
+            messageColor,
+            messageTextColor,
+            secondaryMessageColor: '#f1f5f9',
+            backgroundStyle: backgroundColor 
+                ? `linear-gradient(135deg, ${backgroundColor} 0%, ${backgroundColor}80 100%)`
+                : undefined
+        };
+    };
+
     // Effects
     useEffect(() => {
         const checkMobile = () => {
@@ -1032,12 +1174,26 @@ const Chat: React.FC = () => {
         });
 
         document.title = "VibeMarket - Trò chuyện";
-        if (user) {
+        const token = getToken();
+        console.log("Current token:", token ? `${token.substring(0, 20)}...` : "NO TOKEN");
+        console.log("User:", user);
+
+        if (user && token) {
             fetchConversations();
             initializeSocket();
             updateOnlineStatus("online");
+        } else {
+            console.error("Missing user or token - cannot initialize chat");
         }
+
         return () => {
+            // **FIX: Cleanup on unmount**
+            if (conversationSelectTimeoutRef.current) {
+                clearTimeout(conversationSelectTimeoutRef.current);
+            }
+            if (fetchMessagesAbortControllerRef.current) {
+                fetchMessagesAbortControllerRef.current.abort();
+            }
             if (socketRef.current) socketRef.current.disconnect();
             updateOnlineStatus("offline");
             Fancybox.unbind("[data-fancybox]");
@@ -1097,16 +1253,65 @@ const Chat: React.FC = () => {
         if (isMobile && !selectedConversation) setShowSidebar(true);
     }, [selectedConversation, isMobile]);
 
+    const conversationSelectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+    // **FIX: Update conversation selection handler**
+    const handleConversationSelect = async (conversation: Conversation) => {
+        // Clear any pending conversation switch
+        if (conversationSelectTimeoutRef.current) {
+            clearTimeout(conversationSelectTimeoutRef.current);
+        }
+
+        // Immediate UI update
+        setMessages([]);
+        setIsLoadingMessages(true);
+
+        // Leave previous conversation room
+        if (selectedConversation && socketRef.current) {
+            leaveConversation(selectedConversation.id);
+        }
+
+        // Update selected conversation
+        setSelectedConversation(conversation);
+        currentConversationIdRef.current = conversation.id;
+
+        if (isMobile) {
+            setShowSidebar(false);
+        }
+
+        // Debounce the actual fetch
+        conversationSelectTimeoutRef.current = setTimeout(async () => {
+            try {
+                // Fetch messages for new conversation
+                await fetchMessages(conversation.id);
+
+                // Join new conversation room
+                if (socketRef.current) {
+                    joinConversation(conversation.id);
+                }
+            } catch (error) {
+                console.error("Error selecting conversation:", error);
+                toast.error("Không thể chuyển cuộc trò chuyện");
+            }
+        }, 300); // 300ms debounce
+    };
+
     useEffect(() => {
         if (selectedConversation) {
-            fetchMessages(selectedConversation.id);
-            joinConversation(selectedConversation.id);
+            // Don't fetch here if already fetched in handleConversationSelect
+            // Only join conversation room
+            if (socketRef.current) {
+                joinConversation(selectedConversation.id);
+            }
             shouldAutoScroll.current = true;
         }
+
         return () => {
-            if (selectedConversation) leaveConversation(selectedConversation.id);
+            if (selectedConversation && socketRef.current) {
+                leaveConversation(selectedConversation.id);
+            }
         };
-    }, [selectedConversation, joinConversation, leaveConversation]);
+    }, [selectedConversation?.id, joinConversation, leaveConversation]);
 
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -1154,15 +1359,15 @@ const Chat: React.FC = () => {
         e.target.value = "";
     };
 
-    const handleConversationSelect = (conversation: Conversation) => {
-        if (selectedConversation) {
-            leaveConversation(selectedConversation.id);
-        }
-        setSelectedConversation(conversation);
-        if (isMobile) {
-            setShowSidebar(false);
-        }
-    };
+    // const handleConversationSelect = (conversation: Conversation) => {
+    //     if (selectedConversation) {
+    //         leaveConversation(selectedConversation.id);
+    //     }
+    //     setSelectedConversation(conversation);
+    //     if (isMobile) {
+    //         setShowSidebar(false);
+    //     }
+    // };
 
     const handleBackToSidebar = () => {
         if (isMobile) {
@@ -1280,7 +1485,7 @@ const Chat: React.FC = () => {
             );
         }
         return (
-            <p className="text-sm lg:text-base leading-relaxed break-words">{message.content}</p>
+            <p className="text-sm lg:text-base leading-relaxed break-words whitespace-pre-wrap">{message.content}</p>
         );
     };
 
@@ -1402,6 +1607,7 @@ const Chat: React.FC = () => {
                                     const otherUser = conv.participants.find((p) => p.id !== user?.id);
                                     const isOnline = onlineUsers.includes(otherUser?.id || 0);
                                     const isSelected = selectedConversation?.id === conv.id;
+                                    const { messageColor } = getMessageColors(conv);
 
                                     return (
                                         <motion.div
@@ -1413,8 +1619,11 @@ const Chat: React.FC = () => {
                                                 : "hover:bg-[hsl(var(--chat-hover))]"
                                                 }`}
                                             onClick={() => handleConversationSelect(conv)}
+                                            style={{
+                                                borderLeftColor: isSelected ? messageColor : undefined
+                                            }}
                                         >
-                                            {/* Avatar */}
+                                            {/* Avatar with color indicator */}
                                             <div className="relative flex-shrink-0">
                                                 <img
                                                     src={conv.type === 'group'
@@ -1424,22 +1633,27 @@ const Chat: React.FC = () => {
                                                     alt={conv.type === 'group' ? conv.name : otherUser?.name}
                                                     className="w-12 h-12 rounded-full object-cover ring-2 ring-border"
                                                 />
+                                                {/* Color theme indicator */}
+                                                {conv.background_color && (
+                                                    <div 
+                                                        className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-white"
+                                                        style={{ backgroundColor: messageColor }}
+                                                    />
+                                                )}
                                                 {conv.type === 'private' && isOnline && (
-                                                    <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-card shadow-glow"></span>
+                                                    <span className="absolute bottom-0 right-0 w-3 h-3 bg-green-400 rounded-full border-2 border-card"></span>
                                                 )}
                                             </div>
 
-                                            {/* Content */}
+                                            {/* Rest of conversation item */}
                                             <div className="flex-1 min-w-0">
                                                 <div className="flex items-center justify-between mb-1">
-                                                    <h3 className="font-semibold truncate text-foreground">
+                                                    <h3 className="font-semibold text-foreground truncate">
                                                         {conv.type === 'group' ? conv.name : otherUser?.name}
                                                     </h3>
-                                                    {conv.last_message_at && (
-                                                        <span className="text-xs text-muted-foreground">
-                                                            {formatTime(conv.last_message_at)}
-                                                        </span>
-                                                    )}
+                                                    <span className="text-xs text-muted-foreground flex-shrink-0">
+                                                        {formatTime(conv.last_message_at || new Date().toISOString())}
+                                                    </span>
                                                 </div>
                                                 <p className="text-sm text-muted-foreground truncate">
                                                     {getConversationPreview(conv)}
@@ -1447,7 +1661,10 @@ const Chat: React.FC = () => {
                                             </div>
 
                                             {conv.unread_count > 0 && (
-                                                <div className="flex-shrink-0 w-6 h-6 bg-primary text-primary-foreground rounded-full flex items-center justify-center text-xs font-bold shadow-glow">
+                                                <div 
+                                                    className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-glow"
+                                                    style={{ backgroundColor: messageColor }}
+                                                >
                                                     {conv.unread_count}
                                                 </div>
                                             )}
@@ -1532,6 +1749,9 @@ const Chat: React.FC = () => {
                             ref={messagesContainerRef}
                             onScroll={handleScroll}
                             className="flex-1 overflow-y-auto p-4 space-y-4 chat-scroll"
+                            style={{
+                                background: getMessageColors(selectedConversation).backgroundStyle
+                            }}
                         >
                             {isLoadingMessages ? (
                                 <div className="flex items-center justify-center h-full">
@@ -1545,6 +1765,7 @@ const Chat: React.FC = () => {
                                 </div>
                             ) : (
                                 messages.map((message, index) => {
+                                    const messageKey = `${selectedConversation.id}_${message.id || message.tempId || index}`;
                                     const isOwnMessage = message.senderId === Number(user?.id);
                                     const showAvatar =
                                         !isOwnMessage &&
@@ -1555,142 +1776,67 @@ const Chat: React.FC = () => {
                                         message.type === "video" ||
                                         message.type === "file";
 
-                                    // File / media messages: render outside the chat bubble
-                                    if (isFileType) {
-                                        return (
-                                            <motion.div
-                                                key={message.id || message.tempId || index}
-                                                initial={{ opacity: 0, y: 20 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                className={`flex gap-2 ${isOwnMessage ? "justify-end" : "justify-start"}`}
-                                            >
-                                                {!isOwnMessage && (
-                                                    <div className="flex-shrink-0 w-8">
-                                                        {showAvatar && (
-                                                            <img
-                                                                src={message.sender?.avatar || "/images/avatars/Avt-Default.png"}
-                                                                alt={message.sender?.name}
-                                                                className="w-8 h-8 rounded-full object-cover"
-                                                            />
-                                                        )}
-                                                    </div>
-                                                )}
-
-                                                <div className={`flex flex-col ${isOwnMessage ? "items-end" : "items-start"} max-w-[75%]`}>
-                                                    {showAvatar && !isOwnMessage && (
-                                                        <p className="text-xs text-muted-foreground mb-1 px-1">
-                                                            {message.sender?.name}
-                                                        </p>
-                                                    )}
-
-                                                    {/* media/file card (no bubble wrapper) */}
-                                                    <div className="mb-1">
-                                                        {renderMessage(message)}
-                                                    </div>
-
-                                                    <div className={`flex items-center gap-1 mt-1 px-1 ${isOwnMessage ? "justify-end" : "justify-start"}`}>
-                                                        <span className="text-xs text-muted-foreground">
-                                                            {formatMessageTime(message.timestamp)}
-                                                        </span>
-                                                        {isOwnMessage && (
-                                                            <span>
-                                                                {message.isRead ? (
-                                                                    <CheckCheck size={14} className="text-sky-400" />
-                                                                ) : (
-                                                                    <Check size={14} className="text-muted-foreground" />
-                                                                )}
-                                                            </span>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </motion.div>
-                                        );
-                                    }
+                                    const { messageColor, messageTextColor, secondaryMessageColor } = getMessageColors(selectedConversation);
 
                                     return (
                                         <motion.div
-                                            key={message.id || message.tempId || index}
+                                            key={messageKey}
                                             initial={{ opacity: 0, y: 20 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             className={`flex gap-2 ${isOwnMessage ? "justify-end" : "justify-start"}`}
                                         >
-                                            {/* Avatar người khác */}
-                                            {!isOwnMessage && (
-                                                <div className="flex-shrink-0 w-8">
-                                                    {showAvatar && (
-                                                        <img
-                                                            src={message.sender?.avatar || "/images/avatars/Avt-Default.png"}
-                                                            alt={message.sender?.name}
-                                                            className="w-8 h-8 rounded-full object-cover"
-                                                        />
-                                                    )}
-                                                </div>
+                                            {!isOwnMessage && showAvatar && (
+                                                <img
+                                                    src={message.sender?.avatar || "/images/avatars/Avt-Default.png"}
+                                                    alt={message.sender?.name}
+                                                    className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                                                />
                                             )}
+                                            {!isOwnMessage && !showAvatar && <div className="w-8" />}
 
-                                            {/* Bong bóng chat */}
-                                            <div className={`flex flex-col ${isOwnMessage ? "items-end" : "items-start"} max-w-[75%]`}>
-                                                {showAvatar && !isOwnMessage && (
-                                                    <p className="text-xs text-muted-foreground mb-1 px-1">
+                                            <div className={`max-w-[70%] ${isOwnMessage ? "items-end" : "items-start"} flex flex-col`}>
+                                                {!isOwnMessage && showAvatar && (
+                                                    <span className="text-xs font-semibold mb-1 px-1">
                                                         {message.sender?.name}
-                                                    </p>
+                                                    </span>
                                                 )}
 
-                                                <div
-                                                    className={`
-                                                        relative inline-block break-words
-                                                        rounded-2xl px-4 py-2.5 text-sm leading-relaxed
-                                                        shadow-md transition-all duration-200
-                                                        ${isOwnMessage
-                                                            ? "bg-gradient-to-br from-violet-500 to-sky-500 text-white rounded-br-sm"
-                                                            : "bg-[#1B1C2A] text-white rounded-bl-sm"
-                                                        }
-                                                        ${message.isPending ? "opacity-60" : ""}
-                                                        max-w-[22rem] sm:max-w-[26rem] md:max-w-[30rem]
-                                                    `}
-                                                    style={{
-                                                        wordWrap: "break-word",
-                                                        whiteSpace: "pre-wrap",
-                                                        overflowWrap: "anywhere",
-                                                    }}
-                                                >
-                                                    {renderMessage(message)}
+                                                {/* File types render without bubble */}
+                                                {isFileType ? (
+                                                    <div className={`${message.isPending ? "opacity-60" : ""}`}>
+                                                        {renderMessage(message)}
+                                                    </div>
+                                                ) : (
+                                                    /* Text message with dynamic colored bubble */
+                                                    <div
+                                                        className={`px-4 py-2 rounded-2xl min-w-0 max-w-full ${isOwnMessage
+                                                            ? "rounded-br-sm"
+                                                            : "rounded-bl-sm"
+                                                        } ${message.isPending ? "opacity-60" : ""}`}
+                                                        style={{
+                                                            backgroundColor: isOwnMessage ? messageColor : secondaryMessageColor,
+                                                            color: isOwnMessage ? messageTextColor : '#374151',
+                                                            wordBreak: 'break-word',
+                                                            overflowWrap: 'break-word',
+                                                            hyphens: 'auto'
+                                                        }}
+                                                    >
+                                                        {renderMessage(message)}
+                                                    </div>
+                                                )}
 
-                                                    {/* Đuôi bong bóng mềm kiểu Messenger */}
-                                                    {!isOwnMessage ? (
-                                                        <span
-                                                            className="absolute -left-2 bottom-0 w-3 h-4 bg-[#1B1C2A] rounded-bl-2xl"
-                                                            style={{
-                                                                clipPath: "path('M0,4 Q2,4 3,0 L3,4 Z')",
-                                                            }}
-                                                        ></span>
-                                                    ) : (
-                                                        <span
-                                                            className="absolute -right-2 bottom-0 w-3 h-4 bg-gradient-to-br from-violet-500 to-sky-500 rounded-br-2xl"
-                                                            style={{
-                                                                clipPath: "path('M3,4 Q1,4 0,0 L0,4 Z')",
-                                                            }}
-                                                        ></span>
-                                                    )}
-                                                </div>
-
-
-
-                                                {/* Thời gian + trạng thái */}
-                                                <div
-                                                    className={`flex items-center gap-1 mt-1 px-1 ${isOwnMessage ? "justify-end" : "justify-start"
-                                                        }`}
-                                                >
-                                                    <span className="text-xs text-muted-foreground">
-                                                        {formatMessageTime(message.timestamp)}
-                                                    </span>
+                                                <div className="flex items-center gap-1 text-xs mt-1 px-1">
+                                                    <span>{formatMessageTime(message.timestamp)}</span>
                                                     {isOwnMessage && (
-                                                        <span>
-                                                            {message.isRead ? (
-                                                                <CheckCheck size={14} className="text-sky-400" />
+                                                        <>
+                                                            {message.isPending ? (
+                                                                <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                                            ) : message.isRead ? (
+                                                                <CheckCheck size={14} style={{ color: messageColor }} />
                                                             ) : (
-                                                                <Check size={14} className="text-muted-foreground" />
+                                                                <Check size={14} />
                                                             )}
-                                                        </span>
+                                                        </>
                                                     )}
                                                 </div>
                                             </div>
@@ -1704,7 +1850,7 @@ const Chat: React.FC = () => {
                         {/* Message Input */}
                         <form onSubmit={handleSendMessage} className="p-4 border-t border-border bg-card/80 backdrop-blur-sm">
                             <div className="flex items-end gap-2">
-                                <label className="flex-shrink-0 p-2.5 hover:bg-secondary rounded-xl cursor-pointer transition-colors">
+                                <label className="flex-shrink-0 p-4 hover:bg-secondary rounded-xl cursor-pointer transition-colors">
                                     <Paperclip size={20} className="text-muted-foreground" />
                                     <input
                                         type="file"
@@ -1715,16 +1861,28 @@ const Chat: React.FC = () => {
                                 </label>
 
                                 <div className="flex-1 relative">
-                                    <input
-                                        type="text"
+                                    <textarea
                                         value={newMessage}
-                                        onChange={(e) => setNewMessage(e.target.value)}
-                                        placeholder="Nhập tin nhắn..."
-                                        className="w-full px-4 py-2.5 pr-12 bg-secondary/50 border border-input rounded-2xl focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all outline-none resize-none"
+                                        onChange={(e) => {
+                                            setNewMessage(e.target.value);
+                                            // Auto resize textarea
+                                            e.target.style.height = 'auto';
+                                            e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                                        }}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault();
+                                                handleSendMessage(e);
+                                            }
+                                        }}
+                                        placeholder="Nhập tin nhắn... (Shift+Enter để xuống dòng)"
+                                        className="w-full px-4 py-2.5 pr-12 bg-secondary/50 border border-input rounded-2xl focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all outline-none resize-none min-h-[44px] max-h-[120px] overflow-y-auto"
+                                        rows={1}
+                                        style={{ height: '44px' }}
                                     />
                                     <button
                                         type="button"
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 hover:bg-secondary/80 rounded-lg transition-colors"
+                                        className="absolute right-3 bottom-2.5 p-1.5 hover:bg-secondary/80 rounded-lg transition-colors"
                                     >
                                         <Smile size={20} className="text-muted-foreground" />
                                     </button>
@@ -1733,7 +1891,7 @@ const Chat: React.FC = () => {
                                 <button
                                     type="submit"
                                     disabled={!newMessage.trim()}
-                                    className="p-2.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-glow"
+                                    className="p-4 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-glow self-end"
                                 >
                                     <Send size={20} />
                                 </button>
@@ -1774,6 +1932,7 @@ const Chat: React.FC = () => {
                     conversation={selectedConversation}
                     onClose={() => setShowChatInfo(false)}
                     onLeave={handleLeaveConversation}
+                    onConversationUpdate={handleConversationUpdate}
                 />
             )}
 

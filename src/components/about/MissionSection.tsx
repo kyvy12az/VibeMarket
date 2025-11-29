@@ -36,31 +36,31 @@ export function MissionSection() {
         
         {/* Floating orbs with parallax */}
         <motion.div
-          style={{ y }}
           className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-tr from-primary/30 via-accent/30 to-transparent rounded-full blur-3xl"
           animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-        <motion.div
-          style={{ y: useTransform(scrollYProgress, [0, 1], [-50, 50]) }}
-          className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-tl from-accent/40 via-primary/20 to-transparent rounded-full blur-3xl"
-          animate={{
-            scale: [1, 1.3, 1],
-            opacity: [0.4, 0.6, 0.4],
+            scale: [1, 1.15, 1],
+            opacity: [0.3, 0.45, 0.3],
           }}
           transition={{
             duration: 10,
             repeat: Infinity,
-            ease: "easeInOut",
-            delay: 2,
+            ease: [0.22, 1, 0.36, 1],
           }}
+          style={{ willChange: 'transform, opacity' }}
+        />
+        <motion.div
+          className="absolute bottom-1/4 right-1/4 w-80 h-80 bg-gradient-to-tl from-accent/40 via-primary/20 to-transparent rounded-full blur-3xl"
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.4, 0.5, 0.4],
+          }}
+          transition={{
+            duration: 12,
+            repeat: Infinity,
+            ease: [0.22, 1, 0.36, 1],
+            delay: 1,
+          }}
+          style={{ willChange: 'transform, opacity' }}
         />
 
         {/* Grid pattern */}
@@ -70,11 +70,12 @@ export function MissionSection() {
       <div className="container mx-auto max-w-7xl">
         {/* Enhanced Header */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
+          viewport={{ once: true, margin: "-100px" }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
           className="text-center mb-20"
+          style={{ willChange: 'transform, opacity' }}
         >
           {/* Badge */}
           <motion.div

@@ -30,12 +30,12 @@ interface MenuItem {
 }
 
 const menuItems: MenuItem[] = [
-    {
-        to: "/",
-        label: "Trang chủ",
-        icon: Home,
-        hasSubmenu: false
-    },
+    // {
+    //     to: "/",
+    //     label: "Trang chủ",
+    //     icon: Home,
+    //     hasSubmenu: false
+    // },
     {
         label: "Mua sắm & Khám phá",
         icon: Store,
@@ -59,7 +59,7 @@ const menuItems: MenuItem[] = [
         hasSubmenu: true,
         submenu: [
             { to: "/ai-stylist", label: "AI Stylist", icon: Gift },
-            { to: "/ai-recomment", label: "AI gợi ý & Bạn bè", icon: UserCircle },
+            { to: "/ai-shopping", label: "AI trợ lý mua sắm", icon: UserCircle },
         ]
     },
     {
@@ -142,15 +142,45 @@ const Navigation = () => {
                     {/* Logo */}
                     <Link to="/">
                         <motion.div
-                            whileHover={{ scale: 1.05 }}
-                            className="flex items-center space-x-3"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            className="flex items-center gap-3"
                         >
-                            <div className="w-10 h-10 bg-gradient-hero rounded-xl flex items-center justify-center">
-                                <span className="text-white font-bold text-xl">V</span>
+                            <div className="relative group">
+                                {/* Glow effect */}
+                                <div className="absolute inset-0 bg-gradient-to-br from-primary/40 via-accent/40 to-primary/40 rounded-full blur-2xl group-hover:blur-3xl transition-all duration-500 opacity-60 group-hover:opacity-80"></div>
+                                {/* Logo container */}
+                                <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-primary via-accent to-emerald-600 p-0.5 shadow-xl shadow-primary/30 group-hover:shadow-2xl group-hover:shadow-primary/40 transition-all duration-300">
+                                    <div className="w-full h-full rounded-full bg-white dark:bg-gray-900 flex items-center justify-center overflow-hidden">
+                                        <img 
+                                            src="/logo-2.png" 
+                                            alt="VibeMarket Logo" 
+                                            className="w-9 h-9 object-contain transform group-hover:scale-110 transition-transform duration-300"
+                                            onError={(e) => {
+                                                // Fallback nếu không tìm thấy logo
+                                                e.currentTarget.style.display = 'none';
+                                                const container = e.currentTarget.parentElement;
+                                                if (container) {
+                                                    container.classList.remove('bg-white', 'dark:bg-gray-900');
+                                                    container.classList.add('bg-gradient-to-br', 'from-primary', 'via-accent', 'to-emerald-600');
+                                                    const fallback = document.createElement('span');
+                                                    fallback.className = 'text-white font-black text-2xl';
+                                                    fallback.textContent = 'V';
+                                                    container.appendChild(fallback);
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                </div>
                             </div>
-                            <span className="text-xl font-bold bg-gradient-hero bg-clip-text text-transparent">
-                                VibeMarket
-                            </span>
+                            <div className="hidden sm:flex flex-col -space-y-1">
+                                <span className="text-xl font-black bg-gradient-to-r from-purple-600 via-violet-500 to-fuchsia-600 bg-clip-text text-transparent tracking-tight">
+                                    VibeMarket
+                                </span>
+                                <span className="text-[8px] text-muted-foreground/80 font-bold tracking-[0.25em] uppercase pl-0.5">
+                                    Fashion & Lifestyle
+                                </span>
+                            </div>
                         </motion.div>
                     </Link>
 
@@ -267,16 +297,18 @@ const Navigation = () => {
 
                     {/* Action Buttons & User */}
                     <div className="flex items-center space-x-2">
-                        <Link to="/messages">
+                        <Link to="/messages" className="hidden md:inline-flex">
                             <Button variant="ghost" size="icon" className="relative">
                                 <MessageCircle className="w-5 h-5" />
                             </Button>
                         </Link>
                         
-                        <NotificationDropdown />
+                        <div className="">
+                            <NotificationDropdown />
+                        </div>
                         
                         <ThemeToggle />
-                        <Button variant="ghost" size="icon" className="relative" onClick={() => setCartModalOpen(true)}>
+                        <Button variant="ghost" size="icon" className="relative hidden md:inline-flex" onClick={() => setCartModalOpen(true)}>
                             <ShoppingCart className="w-5 h-5" />
                             {items.length > 0 && (
                                 <span className="absolute -top-1 -right-1 bg-destructive text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center border-2 border-card shadow">
@@ -286,13 +318,13 @@ const Navigation = () => {
                         </Button>
                         {/* Nếu chưa đăng nhập thì hiển thị icon user, nhấp vào mở modal đăng nhập */}
                         {!user ? (
-                            <Link to="/login">
+                            <Link to="/login" className="hidden md:inline-flex">
                                 <Button variant="ghost" size="icon" className="relative" aria-label="Đăng nhập">
                                     <User className="w-7 h-7" />
                                 </Button>
                             </Link>
                         ) : (
-                            <div className="relative" ref={userMenuRef}>
+                            <div className="relative hidden md:block" ref={userMenuRef}>
                                 <motion.button
                                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                                     className="flex items-center space-x-2 p-1 rounded-xl hover:bg-card/50 transition-all duration-300"
@@ -440,10 +472,10 @@ const Navigation = () => {
                             </SheetTrigger>
 
                             <SheetContent
-                                side="left"
+                                side="bottom"
                                 className={cn(
-                                    "p-0 bg-black text-white w-72 border-none",
-                                    "animate-in slide-in-from-left duration-300 ease-out" // 👈 hiệu ứng mượt
+                                    "p-0 bg-black text-white w-full h-full border-none",
+                                    "animate-in slide-in-from-bottom duration-300 ease-out"
                                 )}
                             >
                                 {/* Title ẩn để bỏ cảnh báo accessibility */}
@@ -453,65 +485,304 @@ const Navigation = () => {
 
                                 <div className="flex flex-col h-full">
                                     {/* Header */}
-                                    <div className="flex items-center space-x-3 px-6 py-6 border-b border-white/10">
-                                        <div className="w-10 h-10 bg-gradient-hero rounded-xl flex items-center justify-center">
-                                            <span className="text-white font-bold text-xl">V</span>
+                                    <div className="px-6 py-6 border-b border-white/10 space-y-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="relative group">
+                                                {/* Glow effect */}
+                                                <div className="absolute inset-0 bg-gradient-to-br from-primary/50 via-accent/50 to-primary/50 rounded-full blur-2xl group-hover:blur-3xl transition-all duration-500 opacity-70"></div>
+                                                {/* Logo container */}
+                                                <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-primary via-accent to-emerald-600 p-0.5 shadow-xl shadow-primary/40">
+                                                    <div className="w-full h-full rounded-full bg-gray-900 flex items-center justify-center overflow-hidden">
+                                                        <img 
+                                                            src="/logo.png" 
+                                                            alt="VibeMarket Logo" 
+                                                            className="w-9 h-9 object-contain"
+                                                            onError={(e) => {
+                                                                e.currentTarget.style.display = 'none';
+                                                                const container = e.currentTarget.parentElement;
+                                                                if (container) {
+                                                                    container.classList.remove('bg-gray-900');
+                                                                    container.classList.add('bg-gradient-to-br', 'from-primary', 'via-accent', 'to-emerald-600');
+                                                                    const fallback = document.createElement('span');
+                                                                    fallback.className = 'text-white font-black text-2xl';
+                                                                    fallback.textContent = 'V';
+                                                                    container.appendChild(fallback);
+                                                                }
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex flex-col -space-y-1">
+                                                <span className="text-2xl font-black bg-gradient-to-r from-purple-600 via-violet-500 to-fuchsia-600 bg-clip-text text-transparent tracking-tight">
+                                                    VibeMarket
+                                                </span>
+                                                <span className="text-[9px] text-white/60 font-bold tracking-[0.25em] uppercase pl-0.5">
+                                                    Fashion & Lifestyle
+                                                </span>
+                                            </div>
                                         </div>
-                                        <span className="text-xl font-bold bg-gradient-hero bg-clip-text text-transparent">
-                                            VibeMarket
-                                        </span>
+
+                                        {/* Quick Action Buttons */}
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <Link to="/messages" onClick={() => setOpen(false)} className="block">
+                                                <div className="flex flex-col items-center gap-2 py-3 px-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
+                                                    <MessageCircle className="w-5 h-5 text-white" />
+                                                    <span className="text-xs font-medium text-white">Tin nhắn</span>
+                                                </div>
+                                            </Link>
+                                            
+                                            <button 
+                                                className="relative flex flex-col items-center gap-2 py-3 px-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+                                                onClick={() => {
+                                                    setCartModalOpen(true);
+                                                    setOpen(false);
+                                                }}
+                                            >
+                                                <div className="relative">
+                                                    <ShoppingCart className="w-5 h-5 text-white" />
+                                                    {items.length > 0 && (
+                                                        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                                                            {items.length}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                                <span className="text-xs font-medium text-white">Giỏ hàng</span>
+                                            </button>
+
+                                            {/* <button className="flex flex-col items-center gap-2 py-3 px-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
+                                                <Bell className="w-5 h-5 text-white" />
+                                                <span className="text-xs font-medium text-white">Thông báo</span>
+                                            </button> */}
+                                        </div>
                                     </div>
 
                                     {/* Navigation */}
-                                    <nav className="flex-1 flex flex-col gap-1 px-6 py-4">
-                                        {[
-                                            { name: "Trang chủ", href: "/", icon: <Home className="w-5 h-5 mr-4 ml-2" /> },
-                                            { name: "Mua sắm", href: "/shop", icon: <ShoppingCart className="w-5 h-5 mr-4 ml-2" /> },
-                                            { name: "Cộng đồng", href: "/community", icon: <User className="w-5 h-5 mr-4 ml-2" /> },
-                                            { name: "Khám phá", href: "/discover", icon: <Search className="w-5 h-5 mr-4 ml-2" /> },
-                                            { name: "Flash Sale", href: "/flash-sale", icon: <Zap className="w-5 h-5 mr-4 ml-2" /> },
-                                            { name: "Local Brand", href: "/local-brand", icon: <StoreIcon className="w-5 h-5 mr-4 ml-2" /> },
-                                            { name: "AI Stylist", href: "/ai-stylist", icon: <Sparkles className="w-5 h-5 mr-4 ml-2" /> },
-                                            { name: "Ví & Điểm thưởng", href: "/wallet", icon: <Wallet className="w-5 h-5 mr-4 ml-2" /> },
-                                            { name: "Vòng quay nhận quà", href: "/lucky-wheel", icon: <Gift className="w-5 h-5 mr-4 ml-2" /> },
-                                            { name: "Giới thiệu", href: "/about", icon: <Info className="w-5 h-5 mr-4 ml-2" /> },
-                                        ].map((item) => (
-                                            <a
-                                                key={item.name}
-                                                href={item.href}
-                                                className="flex items-center py-3 px-2 rounded-lg hover:bg-white/10 transition-colors font-medium"
-                                            >
-                                                {item.icon}
-                                                {item.name}
-                                            </a>
+                                    <nav className="flex-1 overflow-y-auto px-4 py-4">
+                                        {menuItems.map((menuItem) => (
+                                            <div key={menuItem.label} className="mb-6">
+                                                {menuItem.hasSubmenu ? (
+                                                    <>
+                                                        {/* Menu với submenu */}
+                                                        <button
+                                                            onClick={() => setShowSubmenuMobile(showSubmenuMobile === menuItem.label ? null : menuItem.label)}
+                                                            className="w-full flex items-center justify-between px-3 py-2 mb-2 text-xs font-semibold text-white/50 uppercase tracking-wider hover:text-white/70 transition-colors"
+                                                        >
+                                                            <div className="flex items-center gap-2">
+                                                                <menuItem.icon className="w-4 h-4" />
+                                                                <span>{menuItem.label}</span>
+                                                            </div>
+                                                            <ChevronDown
+                                                                className={cn(
+                                                                    "w-4 h-4 transition-transform duration-200",
+                                                                    showSubmenuMobile === menuItem.label && "rotate-180"
+                                                                )}
+                                                            />
+                                                        </button>
+                                                        
+                                                        {/* Submenu items với animation */}
+                                                        <AnimatePresence>
+                                                            {showSubmenuMobile === menuItem.label && (
+                                                                <motion.div
+                                                                    initial={{ height: 0, opacity: 0 }}
+                                                                    animate={{ height: "auto", opacity: 1 }}
+                                                                    exit={{ height: 0, opacity: 0 }}
+                                                                    transition={{ duration: 0.2 }}
+                                                                    className="space-y-1 overflow-hidden"
+                                                                >
+                                                                    {menuItem.submenu?.map((subItem) => (
+                                                                        <Link
+                                                                            key={subItem.to}
+                                                                            to={subItem.to}
+                                                                            onClick={() => setOpen(false)}
+                                                                            className={cn(
+                                                                                "flex items-center gap-3 py-2.5 px-3 pl-6 rounded-lg transition-all",
+                                                                                pathname === subItem.to
+                                                                                    ? "bg-gradient-to-r from-primary/20 to-purple-600/20 text-white font-medium"
+                                                                                    : "text-white/80 hover:bg-white/10 hover:text-white"
+                                                                            )}
+                                                                        >
+                                                                            <subItem.icon className="w-5 h-5" />
+                                                                            <span className="text-sm">{subItem.label}</span>
+                                                                            {pathname === subItem.to && (
+                                                                                <motion.div
+                                                                                    layoutId="mobile-active-pill"
+                                                                                    className="ml-auto w-1.5 h-1.5 bg-primary rounded-full"
+                                                                                />
+                                                                            )}
+                                                                        </Link>
+                                                                    ))}
+                                                                </motion.div>
+                                                            )}
+                                                        </AnimatePresence>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        {/* Menu không có submenu */}
+                                                        <h3 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-3 px-3">
+                                                            {menuItem.label}
+                                                        </h3>
+                                                        <div className="space-y-1">
+                                                            <Link
+                                                                to={menuItem.to!}
+                                                                onClick={() => setOpen(false)}
+                                                                className={cn(
+                                                                    "flex items-center gap-3 py-2.5 px-3 rounded-lg transition-all",
+                                                                    pathname === menuItem.to
+                                                                        ? "bg-gradient-to-r from-primary/20 to-purple-600/20 text-white font-medium"
+                                                                        : "text-white/80 hover:bg-white/10 hover:text-white"
+                                                                )}
+                                                            >
+                                                                <menuItem.icon className="w-5 h-5" />
+                                                                <span className="text-sm">{menuItem.label}</span>
+                                                                {pathname === menuItem.to && (
+                                                                    <motion.div
+                                                                        layoutId="mobile-active-pill"
+                                                                        className="ml-auto w-1.5 h-1.5 bg-primary rounded-full"
+                                                                    />
+                                                                )}
+                                                            </Link>
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
                                         ))}
                                     </nav>
 
                                     {/* User info */}
-                                    {user ? (
-                                        <div className="px-6 pb-6 mt-auto">
-                                            <div className="flex items-center gap-3 mb-3">
-                                                <Avatar className="w-8 h-8">
-                                                    <AvatarImage src={user.avatar} alt={user.name} />
-                                                    <AvatarFallback>{user.name[0]}</AvatarFallback>
-                                                </Avatar>
-                                                <div>
-                                                    <div className="font-semibold">{user.name}</div>
-                                                    <div className="text-xs text-white/70">{user.email}</div>
-                                                    <div className="text-xs text-yellow-400 font-semibold flex items-center gap-1 mt-1">
-                                                        <Star className="w-4 h-4 inline-block" /> {user.role}
+                                    <div className="border-t border-white/10 px-4 py-4 bg-white/5">
+                                        {user ? (
+                                            <div className="space-y-3">
+                                                {/* User Profile Card - Clickable */}
+                                                <button
+                                                    onClick={() => setShowMobileUserMenu(!showMobileUserMenu)}
+                                                    className="w-full bg-gradient-to-br from-primary/20 to-purple-600/20 rounded-xl p-3 border border-white/10 hover:from-primary/30 hover:to-purple-600/30 transition-all"
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        {user.avatar ? (
+                                                            <img
+                                                                src={user.avatar}
+                                                                alt={user.name}
+                                                                className="w-12 h-12 rounded-full object-cover ring-2 ring-primary/50"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-bold text-lg">
+                                                                {user.name[0].toUpperCase()}
+                                                            </div>
+                                                        )}
+                                                        <div className="flex-1 min-w-0 text-left">
+                                                            <div className="font-semibold text-white truncate">{user.name}</div>
+                                                            <div className="text-xs text-white/70 truncate">{user.email}</div>
+                                                            <Badge className="mt-1 bg-gradient-to-r from-yellow-400 to-orange-500 text-black text-xs border-0">
+                                                                <Star className="w-3 h-3 mr-1" />
+                                                                {user.role}
+                                                            </Badge>
+                                                        </div>
+                                                        <ChevronDown
+                                                            className={cn(
+                                                                "w-5 h-5 text-white/70 transition-transform duration-200 flex-shrink-0",
+                                                                showMobileUserMenu && "rotate-180"
+                                                            )}
+                                                        />
                                                     </div>
-                                                </div>
-                                            </div>
+                                                </button>
 
-                                            <Button
-                                                variant="outline"
-                                                className="w-full border-white/20 text-white hover:bg-white/10"
+                                                {/* User Menu Items với animation */}
+                                                <AnimatePresence>
+                                                    {showMobileUserMenu && (
+                                                        <motion.div
+                                                            initial={{ height: 0, opacity: 0 }}
+                                                            animate={{ height: "auto", opacity: 1 }}
+                                                            exit={{ height: 0, opacity: 0 }}
+                                                            transition={{ duration: 0.2 }}
+                                                            className="space-y-2 overflow-hidden"
+                                                        >
+                                                            {/* Quick Actions Grid */}
+                                                            <div className="grid grid-cols-2 gap-2">
+                                                                <Link
+                                                                    to="/profile"
+                                                                    onClick={() => setOpen(false)}
+                                                                    className="flex flex-col items-center gap-2 py-3 px-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+                                                                >
+                                                                    <User className="w-5 h-5" />
+                                                                    <span className="text-xs font-medium">Hồ sơ</span>
+                                                                </Link>
+                                                                <Link
+                                                                    to="/orders"
+                                                                    onClick={() => setOpen(false)}
+                                                                    className="flex flex-col items-center gap-2 py-3 px-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+                                                                >
+                                                                    <Package className="w-5 h-5" />
+                                                                    <span className="text-xs font-medium">Đơn hàng</span>
+                                                                </Link>
+                                                                <Link
+                                                                    to="/wishlist"
+                                                                    onClick={() => setOpen(false)}
+                                                                    className="flex flex-col items-center gap-2 py-3 px-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+                                                                >
+                                                                    <Heart className="w-5 h-5" />
+                                                                    <span className="text-xs font-medium">Yêu thích</span>
+                                                                </Link>
+                                                                <Link
+                                                                    to="/wallet"
+                                                                    onClick={() => setOpen(false)}
+                                                                    className="flex flex-col items-center gap-2 py-3 px-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+                                                                >
+                                                                    <Wallet className="w-5 h-5" />
+                                                                    <span className="text-xs font-medium">Ví</span>
+                                                                </Link>
+                                                            </div>
+
+                                                            {/* Vendor Options */}
+                                                            {user && user.role === "user" && vendorStatus !== "approved" && (
+                                                                <Link
+                                                                    to="/vendor-registration"
+                                                                    onClick={() => setOpen(false)}
+                                                                    className="flex items-center gap-3 py-2.5 px-3 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+                                                                >
+                                                                    <Store className="w-5 h-5" />
+                                                                    <span className="text-sm font-medium">Đăng ký Vendor</span>
+                                                                </Link>
+                                                            )}
+
+                                                            {user && (user.role === "seller" || vendorStatus === "approved") && (
+                                                                <Link
+                                                                    to="/vendor-management"
+                                                                    onClick={() => setOpen(false)}
+                                                                    className="flex items-center gap-3 py-2.5 px-3 bg-white/10 rounded-lg hover:bg-white/20 transition-colors"
+                                                                >
+                                                                    <Store className="w-5 h-5" />
+                                                                    <span className="text-sm font-medium">Quản lý cửa hàng</span>
+                                                                </Link>
+                                                            )}
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+
+                                                {/* Logout Button */}
+                                                <Button
+                                                    onClick={() => {
+                                                        logout();
+                                                        setOpen(false);
+                                                    }}
+                                                    variant="outline"
+                                                    className="w-full border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300 hover:border-red-500"
+                                                >
+                                                    <LogOut className="w-4 h-4 mr-2" />
+                                                    Đăng xuất
+                                                </Button>
+                                            </div>
+                                        ) : (
+                                            <Link
+                                                to="/login"
+                                                onClick={() => setOpen(false)}
+                                                className="flex items-center justify-center gap-2 w-full py-3 bg-gradient-to-r from-primary to-purple-600 rounded-xl font-semibold hover:shadow-lg hover:shadow-primary/50 transition-all"
                                             >
-                                                Đăng xuất
-                                            </Button>
-                                        </div>
-                                    ) : null}
+                                                <User className="w-5 h-5" />
+                                                Đăng nhập
+                                            </Link>
+                                        )}
+                                    </div>
                                 </div>
                             </SheetContent>
                         </Sheet>

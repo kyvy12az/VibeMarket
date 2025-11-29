@@ -9,7 +9,9 @@ import {
     Video,
     VideoOff,
     PhoneOff,
-    Phone
+    Phone,
+    X,
+    Palette
 } from 'lucide-react';
 const isDev = import.meta.env.VITE_NODE_ENV === 'development';
 const log = isDev ? console.log.bind(console) : () => { };
@@ -37,6 +39,28 @@ interface CallData {
     }>;
 }
 
+type FilterType = 'none' | 'blur' | 'grayscale' | 'sepia' | 'vintage' | 'warm' | 'cold' | 'bright' | 'dark' | 'contrast';
+
+interface VideoFilter {
+    name: string;
+    type: FilterType;
+    icon: string;
+    filter: string;
+}
+
+const videoFilters: VideoFilter[] = [
+    { name: 'Không', type: 'none', icon: '❌', filter: 'none' },
+    { name: 'Làm mờ', type: 'blur', icon: '🌫️', filter: 'blur(3px)' },
+    { name: 'Đen trắng', type: 'grayscale', icon: '⚫', filter: 'grayscale(100%)' },
+    { name: 'Nâu cổ điển', type: 'sepia', icon: '🟫', filter: 'sepia(100%)' },
+    { name: 'Vintage', type: 'vintage', icon: '📸', filter: 'sepia(50%) contrast(1.2) brightness(1.1)' },
+    { name: 'Ấm áp', type: 'warm', icon: '🌅', filter: 'hue-rotate(15deg) saturate(1.3)' },
+    { name: 'Lạnh', type: 'cold', icon: '🧊', filter: 'hue-rotate(180deg) saturate(1.2)' },
+    { name: 'Sáng', type: 'bright', icon: '☀️', filter: 'brightness(1.3)' },
+    { name: 'Tối', type: 'dark', icon: '🌙', filter: 'brightness(0.7) contrast(1.2)' },
+    { name: 'Tương phản', type: 'contrast', icon: '⚡', filter: 'contrast(1.5) saturate(1.4)' },
+];
+
 const VideoCall: React.FC = () => {
     const navigate = useNavigate();
     const { conversationId, callType, callId } = useParams<{
@@ -62,6 +86,13 @@ const VideoCall: React.FC = () => {
     const socketRef = useRef<Socket | null>(null);
     const localVideoRef = useRef<HTMLVideoElement | null>(null);
 
+    // State Filter
+    const [showFilters, setShowFilters] = useState(false);
+    const [currentFilter, setCurrentFilter] = useState<FilterType>('none');
+    const [filteredStream, setFilteredStream] = useState<MediaStream | null>(null);
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const animationFrameRef = useRef<number>();
+
     const serverUrl = import.meta.env.VITE_BACKEND_CALL_URL || 'http://localhost:3000/call';
 
     const initializeStream = React.useCallback(async () => {
@@ -80,14 +111,12 @@ const VideoCall: React.FC = () => {
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
             log('Local stream acquired with tracks:', stream.getTracks().map(t => ({ kind: t.kind, enabled: t.enabled, muted: t.muted, readyState: t.readyState })));
 
-            // ensure audio track enabled
             const audioTrack = stream.getAudioTracks()[0];
             if (audioTrack) {
                 audioTrack.enabled = true;
                 log('Audio track enabled:', audioTrack.enabled, 'muted:', audioTrack.muted);
             }
 
-            // ensure video track enabled according to isVideoOff state
             const videoTrack = stream.getVideoTracks()[0];
             if (videoTrack) {
                 videoTrack.enabled = !isVideoOff;
@@ -96,12 +125,14 @@ const VideoCall: React.FC = () => {
 
             setLocalStream(stream);
             localStreamRef.current = stream;
+            setFilteredStream(stream); // Initialize with original stream
         } catch (err) {
             const error = err as Error;
             logError('Media error during initialization:', error.name, error.message);
             toast.error('Không thể truy cập camera/mic: ' + error.message + '. Vui lòng kiểm tra quyền truy cập.');
             setLocalStream(null);
             localStreamRef.current = null;
+            setFilteredStream(null);
         }
     }, [callType, isVideoOff]);
 
@@ -311,6 +342,7 @@ const VideoCall: React.FC = () => {
             clearAllVideos();
         };
     }, [serverUrl]);
+
     useEffect(() => {
         if (isConnected && peerRef.current?.id && localStreamRef.current && conversationId && callType && callId) {
             log('Auto-joining call with ID:', callId);
@@ -342,6 +374,134 @@ const VideoCall: React.FC = () => {
             }
         }
     }, []);
+
+    // Canvas filter processing
+    const applyCanvasFilter = React.useCallback((sourceStream: MediaStream, filterType: FilterType) => {
+        if (!canvasRef.current) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 640;
+            canvas.height = 480;
+            canvasRef.current = canvas;
+        }
+
+        const canvas = canvasRef.current;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return null;
+
+        // Create video element for source
+        const sourceVideo = document.createElement('video');
+        sourceVideo.srcObject = sourceStream;
+        sourceVideo.play();
+
+        // Create filtered stream from canvas
+        const filteredStream = canvas.captureStream(30);
+
+        const processFrame = () => {
+            if (sourceVideo.readyState >= 2) { // HAVE_CURRENT_DATA
+                canvas.width = sourceVideo.videoWidth || 640;
+                canvas.height = sourceVideo.videoHeight || 480;
+
+                // Apply filter based on type
+                ctx.save();
+
+                switch (filterType) {
+                    case 'blur':
+                        ctx.filter = 'blur(3px)';
+                        break;
+                    case 'grayscale':
+                        ctx.filter = 'grayscale(100%)';
+                        break;
+                    case 'sepia':
+                        ctx.filter = 'sepia(100%)';
+                        break;
+                    case 'vintage':
+                        ctx.filter = 'sepia(50%) contrast(1.2) brightness(1.1)';
+                        break;
+                    case 'warm':
+                        ctx.filter = 'hue-rotate(15deg) saturate(1.3)';
+                        break;
+                    case 'cold':
+                        ctx.filter = 'hue-rotate(180deg) saturate(1.2)';
+                        break;
+                    case 'bright':
+                        ctx.filter = 'brightness(1.3)';
+                        break;
+                    case 'dark':
+                        ctx.filter = 'brightness(0.7) contrast(1.2)';
+                        break;
+                    case 'contrast':
+                        ctx.filter = 'contrast(1.5) saturate(1.4)';
+                        break;
+                    default:
+                        ctx.filter = 'none';
+                }
+
+                ctx.drawImage(sourceVideo, 0, 0, canvas.width, canvas.height);
+                ctx.restore();
+            }
+
+            if (filterType !== 'none') {
+                animationFrameRef.current = requestAnimationFrame(processFrame);
+            }
+        };
+
+        sourceVideo.addEventListener('loadeddata', () => {
+            processFrame();
+        });
+
+        return filteredStream;
+    }, []);
+
+    // Update stream with filter
+    const updateStreamWithFilter = React.useCallback(async (filterType: FilterType) => {
+        if (!localStreamRef.current) return;
+
+        // Stop previous animation frame
+        if (animationFrameRef.current) {
+            cancelAnimationFrame(animationFrameRef.current);
+        }
+
+        if (filterType === 'none') {
+            // Use original stream
+            setFilteredStream(localStreamRef.current);
+            // Update all peer connections with original stream
+            Object.values(activeCalls).forEach((call) => {
+                const sender = call.peerConnection?.getSenders().find(s =>
+                    s.track && s.track.kind === 'video'
+                );
+                if (sender && localStreamRef.current) {
+                    const videoTrack = localStreamRef.current.getVideoTracks()[0];
+                    if (videoTrack) {
+                        sender.replaceTrack(videoTrack);
+                    }
+                }
+            });
+        } else {
+            // Apply canvas filter
+            const filtered = applyCanvasFilter(localStreamRef.current, filterType);
+            if (filtered) {
+                setFilteredStream(filtered);
+                // Update all peer connections with filtered stream
+                Object.values(activeCalls).forEach((call) => {
+                    const sender = call.peerConnection?.getSenders().find(s =>
+                        s.track && s.track.kind === 'video'
+                    );
+                    if (sender) {
+                        const videoTrack = filtered.getVideoTracks()[0];
+                        if (videoTrack) {
+                            sender.replaceTrack(videoTrack);
+                        }
+                    }
+                });
+            }
+        }
+    }, [localStreamRef.current, activeCalls, applyCanvasFilter]);
+
+    const handleFilterChange = (filterType: FilterType) => {
+        setCurrentFilter(filterType);
+        updateStreamWithFilter(filterType);
+        toast.success(`Đã áp dụng filter: ${videoFilters.find(f => f.type === filterType)?.name}`);
+    };
 
     const addVideoStream = (stream: MediaStream, id: string, name: string = 'Không rõ', avatar: string = '/images/avatars/Avt-Default.png') => {
         log('Adding video stream for:', id, 'name:', name, 'audio tracks:', stream.getAudioTracks().map(t => ({ kind: t.kind, enabled: t.enabled })));
@@ -557,6 +717,35 @@ const VideoCall: React.FC = () => {
     };
 
     useEffect(() => {
+        return () => {
+            if (animationFrameRef.current) {
+                cancelAnimationFrame(animationFrameRef.current);
+            }
+        };
+    }, []);
+
+    // Update local video ref to use filtered stream
+    useEffect(() => {
+        if (localVideoRef.current && (filteredStream || localStream)) {
+            try {
+                const v = localVideoRef.current;
+                v.muted = true;
+                v.playsInline = true;
+                v.autoplay = true;
+                v.srcObject = filteredStream || localStream;
+                const p = v.play();
+                if (p) {
+                    p.catch((err) => {
+                        log('Local video play() rejected (autoplay?):', err);
+                    });
+                }
+            } catch (err) {
+                logError('Error attaching filtered stream to video element:', err);
+            }
+        }
+    }, [filteredStream, localStream]);
+
+    useEffect(() => {
         if (localVideoRef.current && localStream) {
             try {
                 const v = localVideoRef.current;
@@ -604,6 +793,36 @@ const VideoCall: React.FC = () => {
                 }}
             />
             <div className="h-screen bg-gray-900 flex flex-col">
+                {/* Filter Panel */}
+                {showFilters && (
+                    <div className="absolute top-4 left-4 right-4 bg-black/80 backdrop-blur-md rounded-xl p-4 z-50 border border-gray-700">
+                        <div className="flex items-center justify-between mb-4">
+                            <h3 className="text-white font-semibold text-lg">Bộ lọc video</h3>
+                            <button
+                                onClick={() => setShowFilters(false)}
+                                className="w-8 h-8 rounded-full bg-gray-700 hover:bg-gray-600 flex items-center justify-center text-white transition-colors"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                            {videoFilters.map((filter) => (
+                                <button
+                                    key={filter.type}
+                                    onClick={() => handleFilterChange(filter.type)}
+                                    className={`p-3 rounded-lg border-2 transition-all duration-200 ${currentFilter === filter.type
+                                        ? 'border-blue-500 bg-blue-500/20 text-blue-300'
+                                        : 'border-gray-600 bg-gray-800 hover:bg-gray-700 text-white'
+                                        }`}
+                                >
+                                    <div className="text-2xl mb-1">{filter.icon}</div>
+                                    <div className="text-sm font-medium">{filter.name}</div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 <div className="flex-1 overflow-y-auto p-2 md:p-4">
                     {participants.length === 0 && !localStream ? (
                         <div className="flex flex-col items-center justify-center h-full text-white">
@@ -668,15 +887,15 @@ const VideoCall: React.FC = () => {
                                                     <div className="w-full h-full bg-gray-800 flex items-center justify-center">
                                                         <VideoOff className="w-10 h-10 text-gray-400" />
                                                     </div>
-                                                ) : participant.stream ? (
+                                                ) : (filteredStream || participant.stream) ? (
                                                     <video
                                                         autoPlay
                                                         playsInline
                                                         muted
                                                         className="w-full h-full object-cover rounded-xl transform -scale-x-100"
                                                         ref={(videoEl) => {
-                                                            if (videoEl && participant.stream) {
-                                                                videoEl.srcObject = participant.stream;
+                                                            if (videoEl && (filteredStream || participant.stream)) {
+                                                                videoEl.srcObject = filteredStream || participant.stream;
                                                                 localVideoRef.current = videoEl;
                                                             }
                                                         }}
@@ -700,33 +919,68 @@ const VideoCall: React.FC = () => {
                                             key={participant.id}
                                             className="relative bg-gray-900 rounded-xl overflow-hidden flex items-center justify-center"
                                         >
-                                            {participant.stream ? (
-                                                <video
-                                                    autoPlay
-                                                    playsInline
-                                                    muted={participant.isLocal}
-                                                    className={`w-full h-full object-cover transform -scale-x-100 ${participant.isLocal ? 'border-4 border-white/20' : ''
-                                                        }`}
-                                                    ref={(videoEl) => {
-                                                        if (videoEl && participant.stream) {
-                                                            videoEl.srcObject = participant.stream;
-                                                        }
-                                                    }}
-                                                />
+                                            {participant.isLocal ? (
+                                                // Local participant with filter
+                                                (isVideoOff ? (
+                                                    <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                                                        <VideoOff className="w-16 h-16 text-gray-400" />
+                                                    </div>
+                                                ) : (filteredStream || participant.stream) ? (
+                                                    <video
+                                                        autoPlay
+                                                        playsInline
+                                                        muted
+                                                        className="w-full h-full object-cover transform -scale-x-100 border-4 border-white/20"
+                                                        ref={(videoEl) => {
+                                                            if (videoEl && (filteredStream || participant.stream)) {
+                                                                videoEl.srcObject = filteredStream || participant.stream;
+                                                            }
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                                                        {participant.avatar ? (
+                                                            <img
+                                                                src={participant.avatar}
+                                                                alt={participant.name}
+                                                                className="w-24 h-24 rounded-full object-cover border-4 border-gray-700"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-3xl font-bold">
+                                                                {participant.name.charAt(0).toUpperCase()}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))
                                             ) : (
-                                                <div className="w-full h-full bg-gray-800 flex items-center justify-center">
-                                                    {participant.avatar ? (
-                                                        <img
-                                                            src={participant.avatar}
-                                                            alt={participant.name}
-                                                            className="w-24 h-24 rounded-full object-cover border-4 border-gray-700"
-                                                        />
-                                                    ) : (
-                                                        <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-3xl font-bold">
-                                                            {participant.name.charAt(0).toUpperCase()}
-                                                        </div>
-                                                    )}
-                                                </div>
+                                                // Remote participants (no filter)
+                                                participant.stream ? (
+                                                    <video
+                                                        autoPlay
+                                                        playsInline
+                                                        muted={false}
+                                                        className="w-full h-full object-cover transform -scale-x-100"
+                                                        ref={(videoEl) => {
+                                                            if (videoEl && participant.stream) {
+                                                                videoEl.srcObject = participant.stream;
+                                                            }
+                                                        }}
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                                                        {participant.avatar ? (
+                                                            <img
+                                                                src={participant.avatar}
+                                                                alt={participant.name}
+                                                                className="w-24 h-24 rounded-full object-cover border-4 border-gray-700"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-3xl font-bold">
+                                                                {participant.name.charAt(0).toUpperCase()}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )
                                             )}
 
                                             <div className="absolute bottom-2 left-2 bg-black/50 backdrop-blur-md px-2 py-1 rounded-md">
@@ -753,17 +1007,32 @@ const VideoCall: React.FC = () => {
                             >
                                 {isMuted ? <MicOff className="w-4 h-4 md:w-5 md:h-5" /> : <Mic className="w-4 h-4 md:w-5 md:h-5" />}
                             </button>
+
                             {callType === 'video' && (
-                                <button
-                                    onClick={toggleVideo}
-                                    className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all duration-200 ${isVideoOff
-                                        ? 'bg-red-500 hover:bg-red-600 text-white'
-                                        : 'bg-gray-700 hover:bg-gray-600 text-white'
-                                        }`}
-                                    title={isVideoOff ? 'Bật camera' : 'Tắt camera'}
-                                >
-                                    {isVideoOff ? <VideoOff className="w-4 h-4 md:w-5 md:h-5" /> : <Video className="w-4 h-4 md:w-5 md:h-5" />}
-                                </button>
+                                <>
+                                    <button
+                                        onClick={toggleVideo}
+                                        className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all duration-200 ${isVideoOff
+                                            ? 'bg-red-500 hover:bg-red-600 text-white'
+                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                            }`}
+                                        title={isVideoOff ? 'Bật camera' : 'Tắt camera'}
+                                    >
+                                        {isVideoOff ? <VideoOff className="w-4 h-4 md:w-5 md:h-5" /> : <Video className="w-4 h-4 md:w-5 md:h-5" />}
+                                    </button>
+
+                                    {/* Filter Button */}
+                                    <button
+                                        onClick={() => setShowFilters(!showFilters)}
+                                        className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all duration-200 ${showFilters
+                                            ? 'bg-blue-500 hover:bg-blue-600 text-white'
+                                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                                            }`}
+                                        title="Bộ lọc video"
+                                    >
+                                        <Palette className="w-4 h-4 md:w-5 md:h-5" />
+                                    </button>
+                                </>
                             )}
 
                             {/* End Call */}

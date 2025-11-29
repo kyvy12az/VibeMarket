@@ -18,31 +18,29 @@ export function AboutHero() {
         <motion.div
           className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-tr from-primary/30 via-accent/30 to-transparent rounded-full blur-3xl"
           animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.3, 0.5, 0.3],
-            x: [0, 50, 0],
-            y: [0, 30, 0],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
-        <motion.div
-          className="absolute bottom-1/4 right-1/3 w-80 h-80 bg-gradient-to-tl from-accent/40 via-primary/20 to-transparent rounded-full blur-3xl"
-          animate={{
-            scale: [1, 1.3, 1],
-            opacity: [0.4, 0.6, 0.4],
-            x: [0, -40, 0],
-            y: [0, -20, 0],
+            scale: [1, 1.15, 1],
+            opacity: [0.3, 0.45, 0.3],
           }}
           transition={{
             duration: 10,
             repeat: Infinity,
-            ease: "easeInOut",
-            delay: 2,
+            ease: [0.22, 1, 0.36, 1],
           }}
+          style={{ willChange: 'transform, opacity' }}
+        />
+        <motion.div
+          className="absolute bottom-1/4 right-1/3 w-80 h-80 bg-gradient-to-tl from-accent/40 via-primary/20 to-transparent rounded-full blur-3xl"
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.4, 0.5, 0.4],
+          }}
+          transition={{
+            duration: 12,
+            repeat: Infinity,
+            ease: [0.22, 1, 0.36, 1],
+            delay: 1,
+          }}
+          style={{ willChange: 'transform, opacity' }}
         />
 
         {/* Grid pattern overlay */}
@@ -53,17 +51,19 @@ export function AboutHero() {
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           {/* Left Content */}
           <motion.div
-            initial={{ opacity: 0, x: -50 }}
+            initial={{ opacity: 0, x: -30 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut" }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
             className="space-y-8"
+            style={{ willChange: 'transform, opacity' }}
           >
             {/* Badge */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.15, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 border border-primary/20 backdrop-blur-sm shadow-lg"
+              style={{ willChange: 'transform, opacity' }}
             >
               <Sparkles className="h-5 w-5 text-primary animate-pulse" />
               <span className="text-sm font-semibold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">

@@ -63,7 +63,11 @@ import {
   Wallet,
   Wallet2,
   DollarSign,
-  HeartHandshake
+  HeartHandshake,
+  CheckCircle,
+  Clock,
+  ChevronRight,
+  SeparatorHorizontal
 } from "lucide-react";
 
 const Profile = () => {
@@ -230,26 +234,50 @@ const Profile = () => {
           >
             <div className="sticky top-6 space-y-4">
               {/* Profile Card */}
-              <Card className="overflow-hidden border-0 shadow-lg">
-                <div className="h-24 bg-gradient-primary" />
+              <Card className="overflow-hidden border-none shadow-2xl">
+                <div className="h-32 bg-gradient-to-r from-primary via-purple-500 to-pink-500 relative overflow-hidden">
+                  <motion.div
+                    className="absolute inset-0 opacity-30"
+                    animate={{
+                      backgroundPosition: ["0% 0%", "100% 100%"],
+                    }}
+                    transition={{
+                      duration: 20,
+                      repeat: Infinity,
+                      repeatType: "reverse"
+                    }}
+                    style={{
+                      backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)",
+                      backgroundSize: "20px 20px"
+                    }}
+                  />
+                </div>
                 <CardContent className="relative pt-0 pb-6">
-                  <div className="flex flex-col items-center -mt-12">
-                    <div className="relative">
-                      <Avatar className="w-24 h-24 border-4 border-card shadow-xl">
+                  <div className="flex flex-col items-center -mt-16">
+                    <motion.div 
+                      className="relative"
+                      whileHover={{ scale: 1.05 }}
+                      transition={{ type: "spring", stiffness: 300 }}
+                    >
+                      <Avatar className="w-32 h-32 border-4 border-background shadow-2xl ring-4 ring-primary/20">
                         <AvatarImage src={avatarPreview || mockUser.avatar} alt={mockUser.name} />
-                        <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
+                        <AvatarFallback className="text-3xl bg-gradient-to-br from-primary to-purple-600 text-white">
                           {mockUser.name[0]}
                         </AvatarFallback>
                       </Avatar>
                       <Dialog open={isAvatarModalOpen} onOpenChange={setIsAvatarModalOpen}>
                         <DialogTrigger asChild>
-                          <Button
-                            size="icon"
-                            className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full shadow-md"
-                            variant="default"
+                          <motion.div
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
                           >
-                            <Camera className="w-4 h-4" />
-                          </Button>
+                            <Button
+                              size="icon"
+                              className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full shadow-lg bg-gradient-to-r from-primary to-purple-600 hover:opacity-90"
+                            >
+                              <Camera className="w-5 h-5" />
+                            </Button>
+                          </motion.div>
                         </DialogTrigger>
                         <DialogContent className="sm:max-w-md">
                           <DialogHeader>
@@ -263,9 +291,9 @@ const Profile = () => {
                           </DialogHeader>
                           <div className="space-y-4 py-4">
                             <div className="flex flex-col items-center gap-4">
-                              <Avatar className="w-32 h-32 border-4 border-primary/20 shadow-lg">
+                              <Avatar className="w-40 h-40 border-4 border-primary/20 shadow-2xl">
                                 <AvatarImage src={avatarPreview || mockUser.avatar} alt="Preview" />
-                                <AvatarFallback className="text-4xl">{mockUser.name[0]}</AvatarFallback>
+                                <AvatarFallback className="text-5xl">{mockUser.name[0]}</AvatarFallback>
                               </Avatar>
                               <div className="w-full space-y-2">
                                 <Label htmlFor="avatar-upload" className="text-sm font-medium">
@@ -298,7 +326,7 @@ const Profile = () => {
                             <Button
                               onClick={handleAvatarSave}
                               disabled={!avatarPreview}
-                              className="w-full sm:w-auto"
+                              className="w-full sm:w-auto bg-gradient-to-r from-primary to-purple-600"
                             >
                               <Save className="w-4 h-4 mr-2" />
                               Lưu ảnh đại diện
@@ -306,28 +334,54 @@ const Profile = () => {
                           </DialogFooter>
                         </DialogContent>
                       </Dialog>
-                    </div>
+                      <motion.div
+                        className="absolute -top-1 -right-1 w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg"
+                        animate={{ rotate: [0, 10, -10, 0] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      >
+                        <Crown className="w-4 h-4 text-white" />
+                      </motion.div>
+                    </motion.div>
 
-                    <h2 className="mt-4 text-xl font-bold text-center">{mockUser.name}</h2>
-                    <p className="text-sm text-muted-foreground text-center mt-1">{mockUser.bio}</p>
+                    <motion.h2 
+                      className="mt-4 text-2xl font-bold text-center bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                    >
+                      {mockUser.name}
+                    </motion.h2>
+                    <p className="text-sm text-muted-foreground text-center mt-2 px-4">
+                      {mockUser.bio}
+                    </p>
 
-                    <div className="flex gap-2 mt-4">
-                      <Badge className="bg-gradient-primary text-white border-0 shadow-sm">
-                        <Crown className="w-3 h-3 mr-1" />
-                        {mockUser.level}
-                      </Badge>
-                      <Badge variant="secondary" className="shadow-sm">
-                        <Sparkles className="w-3 h-3 mr-1" />
-                        {mockUser.points} điểm
-                      </Badge>
+                    <div className="flex gap-2 mt-4 flex-wrap justify-center">
+                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <Badge className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white border-none shadow-lg px-3 py-1.5">
+                          <Crown className="w-3.5 h-3.5 mr-1" />
+                          {mockUser.level}
+                        </Badge>
+                      </motion.div>
+                      <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                        <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white border-none shadow-lg px-3 py-1.5">
+                          <Sparkles className="w-3.5 h-3.5 mr-1" />
+                          {mockUser.points} điểm
+                        </Badge>
+                      </motion.div>
                     </div>
 
                     <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
                       <DialogTrigger asChild>
-                        <Button className="w-full mt-4" variant="outline">
-                          <Edit3 className="w-4 h-4 mr-2" />
-                          Chỉnh sửa
-                        </Button>
+                        <motion.div 
+                          className="w-full mt-4"
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <Button className="w-full bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 shadow-lg" variant="default">
+                            <Edit3 className="w-4 h-4 mr-2" />
+                            Chỉnh sửa hồ sơ
+                          </Button>
+                        </motion.div>
                       </DialogTrigger>
                       <DialogContent className="sm:max-w-[500px]">
                         <DialogHeader>
@@ -362,7 +416,7 @@ const Profile = () => {
                           <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
                             Hủy
                           </Button>
-                          <Button onClick={() => setIsEditModalOpen(false)}>
+                          <Button onClick={() => setIsEditModalOpen(false)} className="bg-gradient-to-r from-primary to-purple-600">
                             <Save className="w-4 h-4 mr-2" />
                             Lưu thay đổi
                           </Button>
@@ -373,83 +427,106 @@ const Profile = () => {
 
                   {/* Quick Stats */}
                   <div className="grid grid-cols-2 gap-3 mt-6 pt-6 border-t">
-                    <div className="text-center p-3 rounded-lg bg-primary/5">
-                      <Package className="w-5 h-5 mx-auto mb-1 text-primary" />
-                      <div className="text-xl font-bold">{mockUser.stats.totalOrders}</div>
-                      <div className="text-xs text-muted-foreground">Đơn hàng</div>
-                    </div>
-                    <div className="text-center p-3 rounded-lg bg-accent/5">
-                      <Star className="w-5 h-5 mx-auto mb-1 text-accent" />
-                      <div className="text-xl font-bold">{mockUser.stats.reviews}</div>
-                      <div className="text-xs text-muted-foreground">Đánh giá</div>
-                    </div>
-                    <div className="text-center p-3 rounded-lg bg-success/5">
-                      <Users className="w-5 h-5 mx-auto mb-1 text-success" />
-                      <div className="text-xl font-bold">{mockUser.stats.followers}</div>
-                      <div className="text-xs text-muted-foreground">Followers</div>
-                    </div>
-                    <div className="text-center p-3 rounded-lg bg-warning/5">
-                      <UserPlus className="w-5 h-5 mx-auto mb-1 text-warning" />
-                      <div className="text-xl font-bold">{mockUser.stats.following}</div>
-                      <div className="text-xs text-muted-foreground">Following</div>
-                    </div>
+                    {[
+                      { icon: Package, value: mockUser.stats.totalOrders, label: "Đơn hàng", color: "from-blue-500 to-cyan-500" },
+                      { icon: Star, value: mockUser.stats.reviews, label: "Đánh giá", color: "from-yellow-500 to-orange-500" },
+                      { icon: Users, value: mockUser.stats.followers, label: "Followers", color: "from-green-500 to-emerald-500" },
+                      { icon: UserPlus, value: mockUser.stats.following, label: "Following", color: "from-purple-500 to-pink-500" }
+                    ].map((stat, idx) => (
+                      <motion.div
+                        key={idx}
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: idx * 0.1 }}
+                        whileHover={{ y: -4 }}
+                        className="text-center p-4 rounded-xl bg-gradient-to-br from-muted/50 to-muted/30 hover:shadow-lg transition-shadow"
+                      >
+                        <div className={`w-10 h-10 mx-auto mb-2 rounded-full bg-gradient-to-r ${stat.color} flex items-center justify-center shadow-lg`}>
+                          <stat.icon className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="text-2xl font-bold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                          {stat.value}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">{stat.label}</div>
+                      </motion.div>
+                    ))}
                   </div>
                 </CardContent>
               </Card>
               {/* Achievements */}
-              <Card className="border-0 shadow-md">
-                <CardHeader>
+              <Card className="border-none shadow-xl overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border-b">
                   <CardTitle className="flex items-center gap-2">
-                    <Award className="w-5 h-5 text-warning" />
+                    <div className="p-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg">
+                      <Award className="w-5 h-5 text-white" />
+                    </div>
                     Thành tích & Huy hiệu
                   </CardTitle>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="pt-6">
                   <div className="grid grid-cols-2 gap-4">
                     {achievements.map((achievement, index) => (
-                      <div
+                      <motion.div
                         key={index}
-                        className="p-4 rounded-lg shadow-sm flex flex-col items-center text-center border hover-lift"
-                        aria-labelledby={`achv-title-${index}`}
-                        role="group"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ delay: index * 0.1 }}
+                        whileHover={{ y: -4, scale: 1.05 }}
+                        className={`p-4 rounded-xl shadow-md flex flex-col items-center text-center border-2 transition-all ${
+                          achievement.earned 
+                            ? 'border-transparent bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20' 
+                            : 'border-dashed border-muted-foreground/20 bg-muted/30'
+                        }`}
                       >
-                        <div
-                          className="w-14 h-14 rounded-full flex items-center justify-center mb-3 flex-shrink-0"
-                          style={{ backgroundColor: `${achievement.color}10` }}
-                          aria-hidden="true"
+                        <motion.div
+                          className={`w-16 h-16 rounded-full flex items-center justify-center mb-3 ${
+                            achievement.earned ? 'shadow-lg' : ''
+                          }`}
+                          style={{ 
+                            background: achievement.earned 
+                              ? `linear-gradient(135deg, ${achievement.color}, ${achievement.color}dd)` 
+                              : `${achievement.color}20` 
+                          }}
+                          animate={achievement.earned ? {
+                            rotate: [0, 10, -10, 0],
+                            scale: [1, 1.1, 1]
+                          } : {}}
+                          transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
                         >
-                          <achievement.icon className="sm:w-7 sm:h-7 w-6 h-6" style={{ color: achievement.color }} />
-                        </div>
+                          <achievement.icon 
+                            className={`w-8 h-8 ${achievement.earned ? '' : ''}`} 
+                            style={{ color: achievement.earned ? '' : achievement.color }} 
+                          />
+                        </motion.div>
 
-                        <h4 id={`achv-title-${index}`} className="sm:text-sm text-xs font-semibold mb-1 truncate">
+                        <h4 className="text-sm font-semibold mb-1 line-clamp-1">
                           {achievement.title}
                         </h4>
 
-                        <p className="text-xs text-muted-foreground mb-3 truncate">
+                        <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
                           {achievement.description}
                         </p>
 
                         {achievement.earned ? (
-                          <Badge className="px-2 py-1 text-xs bg-success/10 text-success">Hoàn thành</Badge>
+                          <Badge className="px-2 py-1 text-xs bg-gradient-to-r from-green-500 to-emerald-500 text-white border-none shadow-md">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Hoàn thành
+                          </Badge>
                         ) : null}
 
                         {!achievement.earned && achievement.target && (
-                          <div className="w-full mt-1">
-                            <div className="flex justify-between text-xs mb-2">
-                              <span>{achievement.progress}</span>
-                              <span>{achievement.target}</span>
+                          <div className="w-full mt-2">
+                            <div className="flex justify-between text-xs mb-2 font-medium">
+                              <span className="text-primary">{achievement.progress}</span>
+                              <span className="text-muted-foreground">{achievement.target}</span>
                             </div>
                             <Progress
                               value={(achievement.progress / achievement.target) * 100}
                               className="h-2 w-full"
-                              aria-valuenow={(achievement.progress / achievement.target) * 100}
-                              aria-valuemin={0}
-                              aria-valuemax={100}
-                              role="progressbar"
                             />
                           </div>
                         )}
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
                 </CardContent>
@@ -567,244 +644,377 @@ const Profile = () => {
                 {/* Charts Section */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Spending Chart */}
-                  <Card className="border-0 shadow-md">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <TrendingUp className="w-5 h-5 text-primary" />
-                        Chi tiêu 6 tháng gần đây
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ResponsiveContainer width="100%" height={280}>
-                        <LineChart data={spendingData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                          <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                          <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                          <Tooltip
-                            contentStyle={{
-                              backgroundColor: "hsl(var(--card))",
-                              border: "1px solid hsl(var(--border))",
-                              borderRadius: "8px"
-                            }}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="amount"
-                            stroke="hsl(var(--primary))"
-                            strokeWidth={3}
-                            dot={{ fill: "hsl(var(--primary))", r: 5 }}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </CardContent>
-                  </Card>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                  >
+                    <Card className="border-0 shadow-md">
+                      <CardHeader className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-b">
+                        <CardTitle className="flex items-center gap-2">
+                          <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg">
+                            <TrendingUp className="w-5 h-5 text-white" />
+                          </div>
+                          Chi tiêu 6 tháng gần đây
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-6">
+                        <ResponsiveContainer width="100%" height={280}>
+                          <LineChart data={spendingData}>
+                            <defs>
+                              <linearGradient id="colorAmount" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                            <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                            <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                            <Tooltip
+                              contentStyle={{
+                                backgroundColor: "hsl(var(--card))",
+                                border: "1px solid hsl(var(--border))",
+                                borderRadius: "12px",
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
+                              }}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="amount"
+                              stroke="hsl(var(--primary))"
+                              strokeWidth={3}
+                              dot={{ fill: "hsl(var(--primary))", r: 6, strokeWidth: 2, stroke: "hsl(var(--background))" }}
+                              activeDot={{ r: 8 }}
+                              fill="url(#colorAmount)"
+                            />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
 
-                  {/* Category Distribution - Donut Chart */}
-                  <Card className="border-0 shadow-md">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Target className="w-5 h-5 text-accent" />
-                        Danh mục yêu thích
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ResponsiveContainer width="100%" height={280}>
-                        <PieChart>
-                          <Pie
-                            data={categoryData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={70}
-                            outerRadius={110}
-                            paddingAngle={2}
-                            dataKey="value"
-                            label={false}
-                          >
-                            {categoryData.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Pie>
-                          <Tooltip content={<CategoryTooltip />} wrapperStyle={{ pointerEvents: "none" }} />
-                          <text
-                            x="50%"
-                            y="45%"
-                            textAnchor="middle"
-                            dominantBaseline="middle"
-                            className="text-3xl font-bold fill-foreground"
-                          >
-                            {categoryData.reduce((sum, item) => sum + item.value, 0)}%
-                          </text>
-                          <text
-                            x="50%"
-                            y="55%"
-                            textAnchor="middle"
-                            dominantBaseline="middle"
-                            className="text-sm fill-muted-foreground"
-                          >
-                            Danh mục
-                          </text>
-                          <Legend
-                            verticalAlign="bottom"
-                            height={36}
-                            iconType="circle"
-                            formatter={(value) => <span className="text-sm">{value}</span>}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </CardContent>
-                  </Card>
+                  {/* Category Distribution */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.3 }}
+                  >
+                    <Card className="border-0 shadow-md">
+                      <CardHeader className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-b">
+                        <CardTitle className="flex items-center gap-2">
+                          <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg">
+                            <Target className="w-5 h-5 text-white" />
+                          </div>
+                          Danh mục yêu thích
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-6">
+                        <ResponsiveContainer width="100%" height={280}>
+                          <PieChart>
+                            <Pie
+                              data={categoryData}
+                              cx="50%"
+                              cy="45%"
+                              innerRadius={60}
+                              outerRadius={90}
+                              paddingAngle={5}
+                              dataKey="value"
+                              label={false}
+                            >
+                              {categoryData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.color} />
+                              ))}
+                            </Pie>
+                            <Tooltip content={<CategoryTooltip />} />
+                            <text
+                              x="50%"
+                              y="42%"
+                              textAnchor="middle"
+                              dominantBaseline="middle"
+                              className="text-3xl font-bold fill-foreground"
+                            >
+                              100%
+                            </text>
+                            <text
+                              x="50%"
+                              y="52%"
+                              textAnchor="middle"
+                              dominantBaseline="middle"
+                              className="text-sm fill-muted-foreground"
+                            >
+                              Tổng danh mục
+                            </text>
+                            <Legend
+                              verticalAlign="bottom"
+                              height={36}
+                              iconType="circle"
+                              formatter={(value) => <span className="text-xs">{value}</span>}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
 
                   {/* Community Activity */}
-                  <Card className="border-0 shadow-md lg:col-span-2">
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <MessageSquare className="w-5 h-5 text-success" />
-                        Hoạt động cộng đồng
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ResponsiveContainer width="100%" height={280}>
-                        <BarChart data={communityData}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                          <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
-                          <YAxis stroke="hsl(var(--muted-foreground))" />
-                          <Tooltip
-                            contentStyle={{
-                              backgroundColor: "hsl(var(--card))",
-                              border: "1px solid hsl(var(--border))",
-                              borderRadius: "8px"
-                            }}
-                          />
-                          <Bar dataKey="posts" fill="hsl(var(--primary))" name="Bài viết" radius={[8, 8, 0, 0]} />
-                          <Bar dataKey="likes" fill="hsl(var(--accent))" name="Lượt thích" radius={[8, 8, 0, 0]} />
-                          <Bar dataKey="comments" fill="hsl(var(--success))" name="Bình luận" radius={[8, 8, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </CardContent>
-                  </Card>
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="lg:col-span-2"
+                  >
+                    <Card className="border-0 shadow-md">
+                      <CardHeader className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-b">
+                        <CardTitle className="flex items-center gap-2">
+                          <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg">
+                            <MessageSquare className="w-5 h-5 text-white" />
+                          </div>
+                          Hoạt động cộng đồng
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="pt-6">
+                        <ResponsiveContainer width="100%" height={280}>
+                          <BarChart data={communityData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                            <XAxis dataKey="month" stroke="hsl(var(--muted-foreground))" />
+                            <YAxis stroke="hsl(var(--muted-foreground))" />
+                            <Tooltip
+                              contentStyle={{
+                                backgroundColor: "hsl(var(--card))",
+                                border: "1px solid hsl(var(--border))",
+                                borderRadius: "12px",
+                                boxShadow: "0 4px 12px rgba(0,0,0,0.1)"
+                              }}
+                            />
+                            <Legend />
+                            <Bar dataKey="posts" fill="hsl(var(--primary))" name="Bài viết" radius={[8, 8, 0, 0]} />
+                            <Bar dataKey="likes" fill="hsl(var(--accent))" name="Lượt thích" radius={[8, 8, 0, 0]} />
+                            <Bar dataKey="comments" fill="hsl(var(--success))" name="Bình luận" radius={[8, 8, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
                 </div>
               </TabsContent>
 
               {/* ACTIVITY TAB */}
               <TabsContent value="activity" className="space-y-4">
-                <Card className="border-0 shadow-md">
-                  <CardHeader>
-                    <CardTitle>Hoạt động gần đây</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {recentActivity.map((activity, index) => (
-                        <div
-                          key={index}
-                          className="flex items-start gap-4 p-4 rounded-xl border hover-lift"
-                        >
-                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                            <activity.icon className="w-5 h-5 text-primary" />
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium mb-1">{activity.content}</p>
-                            <p className="text-xs text-muted-foreground">{activity.time}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <Card className="border-none shadow-xl">
+                    <CardHeader className="bg-gradient-to-r from-primary/10 to-purple-500/10 border-b">
+                      <CardTitle className="flex items-center gap-2">
+                        <Clock className="w-5 h-5 text-primary" />
+                        Hoạt động gần đây
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                      <div className="space-y-4">
+                        {recentActivity.map((activity, index) => (
+                          <motion.div
+                            key={index}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            whileHover={{ x: 4 }}
+                            className="flex items-start gap-4 p-4 rounded-xl border-2 border-transparent hover:border-primary/20 bg-gradient-to-r from-muted/50 to-muted/30 hover:shadow-lg transition-all group"
+                          >
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-primary to-purple-600 flex items-center justify-center flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform">
+                              <activity.icon className="w-6 h-6 text-white" />
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium mb-1 group-hover:text-primary transition-colors">
+                                {activity.content}
+                              </p>
+                              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {activity.time}
+                              </p>
+                            </div>
+                            <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-primary transition-colors" />
+                          </motion.div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               </TabsContent>
 
               {/* WISHLIST TAB */}
               <TabsContent value="wishlist" className="space-y-4">
-                <Card className="border-0 shadow-md">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Heart className="w-5 h-5 text-accent" />
-                      Danh sách yêu thích ({wishlistItems.length} sản phẩm)
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {wishlistItems.map((item, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center gap-4 p-4 rounded-xl border hover-lift"
-                        >
-                          <div className="w-16 h-16 bg-muted rounded-lg flex items-center justify-center flex-shrink-0">
-                            <Gift className="w-8 h-8 text-muted-foreground" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-sm mb-1">{item.name}</h4>
-                            <p className="text-xs text-muted-foreground mb-1">{item.category}</p>
-                            <p className="text-primary font-bold text-sm">
-                              {item.price.toLocaleString('vi-VN')}đ
-                            </p>
-                          </div>
-                          <Button size="sm" className="flex-shrink-0">
-                            <ShoppingBag className="w-4 h-4" />
-                          </Button>
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <Card className="border-none shadow-xl">
+                    <CardHeader className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 border-b">
+                      <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Heart className="w-5 h-5 text-pink-500" />
+                          Danh sách yêu thích
                         </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                        <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 text-white">
+                          {wishlistItems.length} sản phẩm
+                        </Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {wishlistItems.map((item, index) => (
+                          <motion.div
+                            key={index}
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            transition={{ delay: index * 0.1 }}
+                            whileHover={{ y: -4, scale: 1.02 }}
+                            className="flex items-center gap-4 p-4 rounded-xl border-2 border-transparent hover:border-primary/20 bg-gradient-to-r from-muted/50 to-muted/30 hover:shadow-xl transition-all group"
+                          >
+                            <div className="w-20 h-20 bg-gradient-to-br from-primary/20 to-purple-500/20 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md group-hover:shadow-lg transition-shadow">
+                              <Gift className="w-10 h-10 text-primary" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-sm mb-1 line-clamp-2 group-hover:text-primary transition-colors">
+                                {item.name}
+                              </h4>
+                              <Badge variant="outline" className="text-xs mb-2">
+                                {item.category}
+                              </Badge>
+                              <p className="font-bold text-base bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                                {item.price.toLocaleString('vi-VN')}₫
+                              </p>
+                            </div>
+                            <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                              <Button 
+                                size="sm" 
+                                className="flex-shrink-0 bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 shadow-lg"
+                              >
+                                <ShoppingBag className="w-4 h-4" />
+                              </Button>
+                            </motion.div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               </TabsContent>
 
               {/* INFO TAB */}
               <TabsContent value="info" className="space-y-6">
-                <Card className="border-0 shadow-md">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <User className="w-5 h-5" />
-                      Thông tin cơ bản
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="name" className="flex items-center gap-2">
-                          <User className="w-4 h-4" />
-                          Họ và tên
-                        </Label>
-                        <Input id="name" defaultValue={mockUser.name} />
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                >
+                  <Card className="border-none shadow-xl">
+                    <CardHeader className="bg-gradient-to-r from-primary/10 to-purple-500/10 border-b">
+                      <CardTitle className="flex items-center gap-2">
+                        <User className="w-5 h-5 text-primary" />
+                        Thông tin cơ bản
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-6 pt-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <motion.div 
+                          className="space-y-2"
+                          whileFocus={{ scale: 1.02 }}
+                        >
+                          <Label htmlFor="name" className="flex items-center gap-2 text-sm font-medium">
+                            <User className="w-4 h-4 text-primary" />
+                            Họ và tên
+                          </Label>
+                          <Input 
+                            id="name" 
+                            defaultValue={mockUser.name}
+                            className="border-2 focus:border-primary transition-all"
+                          />
+                        </motion.div>
+                        <motion.div 
+                          className="space-y-2"
+                          whileFocus={{ scale: 1.02 }}
+                        >
+                          <Label htmlFor="email" className="flex items-center gap-2 text-sm font-medium">
+                            <Mail className="w-4 h-4 text-primary" />
+                            Email
+                          </Label>
+                          <Input 
+                            id="email" 
+                            type="email" 
+                            defaultValue={mockUser.email}
+                            className="border-2 focus:border-primary transition-all"
+                          />
+                        </motion.div>
+                        <motion.div 
+                          className="space-y-2"
+                          whileFocus={{ scale: 1.02 }}
+                        >
+                          <Label htmlFor="phone" className="flex items-center gap-2 text-sm font-medium">
+                            <Phone className="w-4 h-4 text-primary" />
+                            Số điện thoại
+                          </Label>
+                          <Input 
+                            id="phone" 
+                            defaultValue={mockUser.phone}
+                            className="border-2 focus:border-primary transition-all"
+                          />
+                        </motion.div>
+                        <motion.div 
+                          className="space-y-2"
+                          whileFocus={{ scale: 1.02 }}
+                        >
+                          <Label htmlFor="joinDate" className="flex items-center gap-2 text-sm font-medium">
+                            <Calendar className="w-4 h-4 text-primary" />
+                            Ngày tham gia
+                          </Label>
+                          <Input 
+                            id="joinDate" 
+                            defaultValue={mockUser.joinDate} 
+                            disabled
+                            className="border-2 bg-muted"
+                          />
+                        </motion.div>
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="email" className="flex items-center gap-2">
-                          <Mail className="w-4 h-4" />
-                          Email
+                      <SeparatorHorizontal />
+                      <motion.div 
+                        className="space-y-2"
+                        whileFocus={{ scale: 1.02 }}
+                      >
+                        <Label htmlFor="bio" className="text-sm font-medium">Giới thiệu bản thân</Label>
+                        <Textarea 
+                          id="bio" 
+                          defaultValue={mockUser.bio} 
+                          rows={4}
+                          className="border-2 focus:border-primary transition-all resize-none"
+                        />
+                      </motion.div>
+                      <motion.div 
+                        className="space-y-2"
+                        whileFocus={{ scale: 1.02 }}
+                      >
+                        <Label htmlFor="address" className="flex items-center gap-2 text-sm font-medium">
+                          <MapPin className="w-4 h-4 text-primary" />
+                          Địa chỉ
                         </Label>
-                        <Input id="email" type="email" defaultValue={mockUser.email} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="phone" className="flex items-center gap-2">
-                          <Phone className="w-4 h-4" />
-                          Số điện thoại
-                        </Label>
-                        <Input id="phone" defaultValue={mockUser.phone} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="joinDate" className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4" />
-                          Ngày tham gia
-                        </Label>
-                        <Input id="joinDate" defaultValue={mockUser.joinDate} disabled />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="bio">Giới thiệu bản thân</Label>
-                      <Textarea id="bio" defaultValue={mockUser.bio} rows={3} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="address" className="flex items-center gap-2">
-                        <MapPin className="w-4 h-4" />
-                        Địa chỉ
-                      </Label>
-                      <Input id="address" defaultValue={mockUser.address} />
-                    </div>
-                    <Button className="w-full md:w-auto">
-                      <Save className="w-4 h-4 mr-2" />
-                      Lưu thay đổi
-                    </Button>
-                  </CardContent>
-                </Card>
+                        <Input 
+                          id="address" 
+                          defaultValue={mockUser.address}
+                          className="border-2 focus:border-primary transition-all"
+                        />
+                      </motion.div>
+                      <motion.div
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <Button className="w-full md:w-auto bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 shadow-lg">
+                          <Save className="w-4 h-4 mr-2" />
+                          Lưu thay đổi
+                        </Button>
+                      </motion.div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
               </TabsContent>
             </Tabs>
           </motion.main>

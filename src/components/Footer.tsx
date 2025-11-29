@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Facebook, Instagram, Twitter, Youtube } from "lucide-react";
+import { Facebook, Instagram, Twitter, Youtube, ShoppingBag } from "lucide-react";
 
 const Footer = () => (
   <footer className="relative bg-gradient-card border-t border-border/30 py-16 overflow-hidden">
@@ -15,14 +15,42 @@ const Footer = () => (
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="flex items-center space-x-3 mb-6"
+            className="flex items-center gap-3 mb-6"
           >
-            <div className="w-12 h-12 bg-gradient-hero rounded-2xl flex items-center justify-center shadow-lg glow-primary">
-              <span className="text-white font-bold text-2xl">V</span>
+            <div className="relative group">
+              {/* Glow effect */}
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/40 via-accent/40 to-primary/40 rounded-full blur-2xl group-hover:blur-3xl transition-all duration-500 opacity-60 group-hover:opacity-80"></div>
+              {/* Logo container */}
+              <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-primary via-accent to-emerald-600 p-0.5 shadow-xl shadow-primary/30 group-hover:shadow-2xl group-hover:shadow-primary/40 transition-all duration-300">
+                <div className="w-full h-full rounded-full bg-white dark:bg-gray-900 flex items-center justify-center overflow-hidden">
+                  <img 
+                    src="/logo-2.png" 
+                    alt="VibeMarket Logo" 
+                    className="w-9 h-9 object-contain transform group-hover:scale-110 transition-transform duration-300"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      const container = e.currentTarget.parentElement;
+                      if (container) {
+                        container.classList.remove('bg-white', 'dark:bg-gray-900');
+                        container.classList.add('bg-gradient-to-br', 'from-primary', 'via-accent', 'to-emerald-600');
+                        const fallback = document.createElement('span');
+                        fallback.className = 'text-white font-black text-2xl';
+                        fallback.textContent = 'V';
+                        container.appendChild(fallback);
+                      }
+                    }}
+                  />
+                </div>
+              </div>
             </div>
-            <span className="text-2xl font-bold bg-gradient-hero bg-clip-text text-transparent">
-              VibeMarket
-            </span>
+            <div className="flex flex-col -space-y-1">
+              <span className="text-2xl font-black bg-gradient-to-r from-purple-600 via-violet-500 to-fuchsia-600 bg-clip-text text-transparent tracking-tight">
+                VibeMarket
+              </span>
+              <span className="text-[9px] text-muted-foreground/60 font-bold tracking-[0.25em] uppercase pl-0.5">
+                Fashion & Lifestyle
+              </span>
+            </div>
           </motion.div>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}
@@ -49,7 +77,7 @@ const Footer = () => (
                 key={name}
                 href={href}
                 aria-label={name}
-                className="w-10 h-10 bg-card border border-border rounded-xl flex items-center justify-center hover:bg-primary hover:border-primary hover:text-primary-foreground transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+                className="w-10 h-10 bg-card border border-border rounded-xl flex items-center justify-center bg-gradient-to-r hover:from-primary hover:to-purple-600 hover:text-background transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
               >
                 <Icon className="w-5 h-5" />
               </a>
@@ -122,7 +150,7 @@ const Footer = () => (
               placeholder="Nhập email của bạn"
               className="flex-1 px-4 py-3 bg-card border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300"
             />
-            <button className="px-6 py-3 bg-gradient-primary text-primary-foreground rounded-xl font-medium hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 glow-primary">
+            <button className="px-6 py-3 bg-gradient-to-r from-primary to-purple-600 rounded-xl font-medium hover:shadow-lg hover:-translate-y-0.5 transition-all duration-300 glow-primary">
               Đăng ký
             </button>
           </div>

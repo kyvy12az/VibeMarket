@@ -134,120 +134,193 @@ export const NotificationDropdown = () => {
   return (
     <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="w-5 h-5" />
-          {unreadCount > 0 && (
-            <Badge className="absolute -top-2 -right-2 w-5 h-5 p-0 flex items-center justify-center bg-primary text-primary-foreground text-xs">
-              {unreadCount > 9 ? "9+" : unreadCount}
-            </Badge>
-          )}
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="w-96 p-0" align="end">
-        <div className="flex items-center justify-between p-4 border-b border-border">
-          <h3 className="font-semibold text-lg">Thông báo</h3>
-          <div className="flex gap-2">
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <Button variant="ghost" size="icon" className="relative group">
+            <motion.div
+              animate={unreadCount > 0 ? { rotate: [0, -15, 15, -15, 0] } : {}}
+              transition={{ duration: 0.5, repeat: Infinity, repeatDelay: 3 }}
+            >
+              <Bell className="w-5 h-5 group-hover:text-primary transition-colors" />
+            </motion.div>
             {unreadCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={markAllAsRead}
-                className="text-xs h-8"
+              <motion.div
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute -top-1 -right-1"
               >
-                <Check className="w-3 h-3 mr-1" />
-                Đọc tất cả
-              </Button>
+                <Badge className="w-5 h-5 p-0 flex items-center justify-center bg-gradient-to-br from-red-500 to-pink-600 text-white text-xs font-bold border-2 border-background shadow-lg">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </Badge>
+              </motion.div>
             )}
-            {notifications.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearAll}
-                className="text-xs h-8 text-destructive hover:text-destructive"
-              >
-                <Trash2 className="w-3 h-3 mr-1" />
-                Xóa tất cả
-              </Button>
-            )}
+          </Button>
+        </motion.div>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-[420px] p-0 overflow-hidden" align="end">
+        {/* Header với gradient */}
+        <div className="bg-gradient-to-br from-primary/10 via-purple-500/5 to-pink-500/5 backdrop-blur-sm border-b border-border/50">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center">
+                <Bell className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <h3 className="font-bold text-base bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent">
+                  Thông báo
+                </h3>
+                {unreadCount > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    {unreadCount} thông báo chưa đọc
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="flex gap-1">
+              {unreadCount > 0 && (
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={markAllAsRead}
+                    className="text-xs h-8 hover:bg-primary/10"
+                  >
+                    <Check className="w-3 h-3 mr-1" />
+                    Đọc tất cả
+                  </Button>
+                </motion.div>
+              )}
+              {notifications.length > 0 && (
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearAll}
+                    className="text-xs h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                  >
+                    <Trash2 className="w-3 h-3 mr-1" />
+                    Xóa
+                  </Button>
+                </motion.div>
+              )}
+            </div>
           </div>
         </div>
 
-        <ScrollArea className="h-[400px]">
+        <ScrollArea className="h-[450px]">
           <AnimatePresence mode="popLayout">
             {notifications.length === 0 ? (
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex flex-col items-center justify-center py-12 px-4"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="flex flex-col items-center justify-center py-16 px-4"
               >
-                <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                  <Bell className="w-8 h-8 text-muted-foreground" />
-                </div>
-                <p className="text-muted-foreground text-center">
+                <motion.div
+                  animate={{
+                    scale: [1, 1.1, 1],
+                    rotate: [0, 10, -10, 0],
+                  }}
+                  transition={{ duration: 2, repeat: Infinity, repeatDelay: 1 }}
+                  className="w-20 h-20 rounded-full bg-gradient-to-br from-primary/20 to-purple-500/20 flex items-center justify-center mb-4 shadow-lg"
+                >
+                  <Bell className="w-10 h-10 text-primary" />
+                </motion.div>
+                <p className="text-muted-foreground text-center font-medium">
                   Không có thông báo nào
+                </p>
+                <p className="text-xs text-muted-foreground/70 text-center mt-1">
+                  Các thông báo mới sẽ xuất hiện ở đây
                 </p>
               </motion.div>
             ) : (
               notifications.map((notification, index) => (
                 <motion.div
                   key={notification.id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ delay: index * 0.05 }}
+                  layout
+                  initial={{ opacity: 0, x: -20, scale: 0.95 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: 20, scale: 0.95 }}
+                  transition={{
+                    delay: index * 0.03,
+                    type: "spring",
+                    stiffness: 500,
+                    damping: 30,
+                  }}
                 >
-                  <div
+                  <motion.div
+                    whileHover={{ x: 4 }}
                     className={cn(
-                      "p-4 hover:bg-accent/50 transition-colors cursor-pointer relative group",
-                      !notification.isRead && "bg-primary/5"
+                      "p-4 transition-all cursor-pointer relative group border-l-4",
+                      !notification.isRead
+                        ? "bg-gradient-to-r from-primary/10 via-transparent to-transparent border-l-primary hover:from-primary/15"
+                        : "border-l-transparent hover:bg-accent/30"
                     )}
                     onClick={() => markAsRead(notification.id)}
                   >
                     <div className="flex gap-3">
-                      <div
+                      <motion.div
+                        whileHover={{ rotate: 360, scale: 1.1 }}
+                        transition={{ duration: 0.5 }}
                         className={cn(
-                          "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
-                          getNotificationBgColor(notification.type)
+                          "w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md",
+                          notification.type === "order" && "bg-gradient-to-br from-blue-500/20 to-blue-600/30",
+                          notification.type === "promotion" && "bg-gradient-to-br from-orange-500/20 to-red-600/30",
+                          notification.type === "community" && "bg-gradient-to-br from-green-500/20 to-emerald-600/30",
+                          notification.type === "system" && "bg-gradient-to-br from-purple-500/20 to-pink-600/30"
                         )}
                       >
                         {getNotificationIcon(notification.type)}
-                      </div>
+                      </motion.div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-start justify-between gap-2 mb-1">
                           <h4
                             className={cn(
                               "font-medium text-sm line-clamp-1",
-                              !notification.isRead && "text-foreground font-semibold"
+                              !notification.isRead && "text-foreground font-bold"
                             )}
                           >
                             {notification.title}
                           </h4>
                           {!notification.isRead && (
-                            <div className="w-2 h-2 rounded-full bg-primary flex-shrink-0 mt-1" />
+                            <motion.div
+                              initial={{ scale: 0 }}
+                              animate={{ scale: 1 }}
+                              className="w-2.5 h-2.5 rounded-full bg-gradient-to-br from-primary to-purple-600 flex-shrink-0 mt-1 shadow-lg shadow-primary/50"
+                            />
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                        <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                           {notification.message}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-2">
-                          {notification.time}
-                        </p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <div className="flex items-center gap-1.5 text-xs text-muted-foreground/80">
+                            <div className="w-1 h-1 rounded-full bg-muted-foreground/50" />
+                            {notification.time}
+                          </div>
+                        </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 flex-shrink-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          deleteNotification(notification.id);
-                        }}
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        whileHover={{ opacity: 1, scale: 1 }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
                       >
-                        <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive" />
-                      </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 flex-shrink-0 hover:bg-destructive/10"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteNotification(notification.id);
+                          }}
+                        >
+                          <Trash2 className="w-4 h-4 text-muted-foreground hover:text-destructive transition-colors" />
+                        </Button>
+                      </motion.div>
                     </div>
-                  </div>
-                  {index < notifications.length - 1 && <Separator />}
+                  </motion.div>
+                  {index < notifications.length - 1 && (
+                    <Separator className="opacity-50" />
+                  )}
                 </motion.div>
               ))
             )}
@@ -256,11 +329,16 @@ export const NotificationDropdown = () => {
 
         {notifications.length > 0 && (
           <>
-            <Separator />
-            <div className="p-3">
-              <Button variant="ghost" className="w-full text-sm text-primary hover:text-primary">
-                Xem tất cả thông báo
-              </Button>
+            <Separator className="opacity-50" />
+            <div className="p-3 bg-gradient-to-r from-transparent via-primary/5 to-transparent">
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  variant="ghost"
+                  className="w-full text-sm font-semibold bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent hover:from-primary hover:to-purple-600 hover:bg-primary/5"
+                >
+                  Xem tất cả thông báo
+                </Button>
+              </motion.div>
             </div>
           </>
         )}

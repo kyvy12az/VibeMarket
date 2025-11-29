@@ -25,7 +25,8 @@ export const useLuckyWheel = () => {
       if (lastReset !== today) {
         setSpinsLeft(10);
         localStorage.setItem('lastResetDate', today);
-        saveDailySpins({ spinsLeft: 10, history });
+        saveDailySpins({ spinsLeft: 10, history: [] });
+        setHistory([]); // Clear history on new day
       }
     };
     
@@ -33,28 +34,39 @@ export const useLuckyWheel = () => {
     const interval = setInterval(checkReset, 60000); // Check every minute
     
     return () => clearInterval(interval);
-  }, [history]);
+  }, []);
+
+  // Auto-save whenever spinsLeft or history changes
+  useEffect(() => {
+    if (spinsLeft !== null && history !== null) {
+      saveDailySpins({ spinsLeft, history });
+    }
+  }, [spinsLeft, history]);
 
   const handleSpin = async (winningPrize: Prize) => {
     if (spinsLeft <= 0 || isSpinning) return;
 
     setIsSpinning(true);
-    const newSpinsLeft = spinsLeft - 1;
-    setSpinsLeft(newSpinsLeft);
 
     // Play spin sound
     playSpinSound();
 
-    // Wait for animation to complete (4 seconds)
-    await new Promise(resolve => setTimeout(resolve, 4000));
+    // Wait for wheel animation to complete (4.5 seconds)
+    // await new Promise(resolve => setTimeout(resolve, 4500));
+
+    // Decrease spins
+    const newSpinsLeft = spinsLeft - 1;
+    setSpinsLeft(newSpinsLeft);
+
+    // Update history
+    const newHistoryItem: SpinHistory = { 
+      prize: winningPrize, 
+      timestamp: Date.now() 
+    };
+    const newHistory = [newHistoryItem, ...history].slice(0, 50); // Keep 50 latest
+    setHistory(newHistory);
 
     // Update state
-    const newHistory: SpinHistory[] = [
-      { prize: winningPrize, timestamp: Date.now() },
-      ...history
-    ].slice(0, 10); // Keep only 10 latest
-
-    setHistory(newHistory);
     setCurrentPrize(winningPrize);
     setShowModal(true);
     setShowConfetti(true);
@@ -63,7 +75,7 @@ export const useLuckyWheel = () => {
     // Play win sound
     playWinSound();
 
-    // Save to localStorage
+    // Save to localStorage (will be auto-saved by useEffect, but we can force it here too)
     saveDailySpins({ spinsLeft: newSpinsLeft, history: newHistory });
 
     // Hide confetti after 5 seconds
@@ -79,9 +91,13 @@ export const useLuckyWheel = () => {
 
   const resetSpins = (count = 10) => {
     setSpinsLeft(count);
-    setHistory([]); // optional: clear history
-    saveDailySpins({ spinsLeft: count, history: [] });
+    saveDailySpins({ spinsLeft: count, history });
     localStorage.setItem('lastResetDate', new Date().toDateString());
+  };
+
+  const clearHistory = () => {
+    setHistory([]);
+    saveDailySpins({ spinsLeft, history: [] });
   };
 
   return {
@@ -93,6 +109,7 @@ export const useLuckyWheel = () => {
     currentPrize,
     showConfetti,
     handleSpin,
-    resetSpins, // <-- expose reset
+    resetSpins,
+    clearHistory,
   };
 };
