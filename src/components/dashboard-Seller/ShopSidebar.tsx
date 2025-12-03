@@ -1,4 +1,4 @@
-import { LayoutDashboard, Package, ShoppingCart, BarChart3, Plus, Settings, Store, Home } from "lucide-react";
+import { LayoutDashboard, Package, ShoppingCart, BarChart3, Plus, Settings, Store, Home, MessageSquare } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
     Sidebar,
@@ -20,6 +20,7 @@ const menuItems = [
     { title: "Đơn hàng", url: "/vendor-management/order-management", icon: ShoppingCart },
     { title: "Sản phẩm", url: "/vendor-management/product-management", icon: Package },
     { title: "Thêm sản phẩm", url: "/vendor-management/add-product", icon: Plus },
+    { title: "Tin nhắn", url: "/vendor-management/messages", icon: MessageSquare },
     { title: "Thống kê", url: "/vendor-management/statistics", icon: BarChart3 },
     { title: "Cài đặt", url: "/vendor-management/setting", icon: Settings },
 ];

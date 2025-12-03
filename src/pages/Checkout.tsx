@@ -53,8 +53,8 @@ export default function Checkout() {
   useEffect(() => {
     if (!productData && location.state?.productId) {
       fetch(`${import.meta.env.VITE_BACKEND_URL}/api/product/detail.php?id=${location.state.productId}`)
-        .then(res => res.json())
-        .then(data => {
+        .then((res) => res.json())
+        .then((data) => {
           if (data.success) setProduct(data.product);
         });
     } else if (productData) {
@@ -65,17 +65,17 @@ export default function Checkout() {
   // Fetch provinces on mount
   useEffect(() => {
     fetch('https://provinces.open-api.vn/api/v2/p/')
-      .then(res => res.json())
-      .then(data => setProvinces(data))
-      .catch(err => console.error('Error fetching provinces:', err));
+      .then((res) => res.json())
+      .then((data) => setProvinces(data))
+      .catch((err) => console.error('Error fetching provinces:', err));
   }, []);
 
   // Fetch wards when province changes
   useEffect(() => {
     if (selectedProvince) {
       fetch(`https://provinces.open-api.vn/api/v2/p/${selectedProvince}?depth=2`)
-        .then(res => res.json())
-        .then(data => {
+        .then((res) => res.json())
+        .then((data) => {
           // API v2 trả về trực tiếp mảng wards (đã gộp từ tất cả districts)
           if (data.wards && Array.isArray(data.wards)) {
             setWards(data.wards);
@@ -85,7 +85,7 @@ export default function Checkout() {
           setSelectedWard("");
           handleInputChange("ward", "");
         })
-        .catch(err => console.error('Error fetching wards:', err));
+        .catch((err) => console.error('Error fetching wards:', err));
     } else {
       setWards([]);
       setSelectedWard("");
@@ -93,22 +93,64 @@ export default function Checkout() {
   }, [selectedProvince]);
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const validateStep1 = () => {
+    if (!formData.fullName.trim()) {
+      toast.error("Vui lòng nhập họ và tên");
+      return false;
+    }
+    if (!formData.phone.trim()) {
+      toast.error("Vui lòng nhập số điện thoại");
+      return false;
+    }
+    if (!/^[0-9]{10}$/.test(formData.phone.trim())) {
+      toast.error("Số điện thoại không hợp lệ (phải có 10 chữ số)");
+      return false;
+    }
+    if (!formData.address.trim()) {
+      toast.error("Vui lòng nhập địa chỉ chi tiết");
+      return false;
+    }
+    if (!formData.city.trim()) {
+      toast.error("Vui lòng chọn tỉnh/thành phố");
+      return false;
+    }
+    if (!formData.ward.trim()) {
+      toast.error("Vui lòng chọn xã/phường");
+      return false;
+    }
+    return true;
   };
 
   const handleSubmit = async () => {
     if (isProcessing) return;
 
-    if (step < 3) {
-      setStep(step + 1);
+    if (step === 1) {
+      if (!validateStep1()) return;
+      setStep(2);
       return;
     }
 
-    const isOnlinePayment = ["momo", "vnpay", "payos"].includes(formData.paymentMethod);
+    if (step === 2) {
+      if (!formData.paymentMethod) {
+        toast.error("Vui lòng chọn phương thức thanh toán");
+        return;
+      }
+      setStep(3);
+      return;
+    }
+
+    if (step === 3) {
+      if (!validateStep1()) return;
+    }
+
+    const isOnlinePayment = ["momo", "vnpay", "zalopay"].includes(formData.paymentMethod);
     if (!isOnlinePayment) setIsProcessing(true);
     let keepLoadingForRedirect = false;
 
-    const products = productsData.map(item => ({
+    const products = productsData.map((item) => ({
       id: item.id,
       seller_id: item.seller_id,
       quantity: item.quantity,
@@ -150,12 +192,33 @@ export default function Checkout() {
         return;
       }
 
-      if (formData.paymentMethod === "momo") {
+      if (formData.paymentMethod === "zalopay") {
+        const zalopayRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/payment/zalopay/pay.php`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("vibeventure_token") || ""}`
+          },
+          body: JSON.stringify({
+            orderCode: data.code,
+            orderInfo: `Thanh toán đơn hàng #${data.code}`,
+            amount: total
+          }),
+        });
+        const zalopayData = await zalopayRes.json();
+        if (zalopayData.success && zalopayData.payUrl) {
+          keepLoadingForRedirect = true;
+          window.location.href = zalopayData.payUrl;
+          return;
+        } else {
+          toast.error(zalopayData.message || "Không thể tạo thanh toán ZaloPay!");
+        }
+      } else if (formData.paymentMethod === "momo") {
         const momoRes = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/payment/momo/pay.php`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${localStorage.getItem("token") || ""}`
+            "Authorization": `Bearer ${localStorage.getItem("vibeventure_token") || ""}`
           },
           body: JSON.stringify({
             orderCode: data.code,
@@ -699,31 +762,7 @@ export default function Checkout() {
                             </Label>
                           </div>
                         </motion.div>
-
-                        <motion.div 
-                          whileHover={{ scale: 1.02, y: -2 }}
-                          className={`flex items-center space-x-3 p-5 border-2 rounded-xl transition-all cursor-pointer shadow-sm ${
-                            formData.paymentMethod === "payos"
-                              ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30 shadow-lg"
-                              : "border-border hover:border-blue-400 hover:bg-muted/50"
-                          }`}
-                        >
-                          <RadioGroupItem value="payos" id="payos" />
-                          <div className="flex-1">
-                            <Label htmlFor="payos" className="flex items-center gap-3 cursor-pointer">
-                              <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
-                                <CreditCard className="w-6 h-6 text-blue-600 dark:text-blue-400" />
-                              </div>
-                              <div>
-                                <p className="font-semibold text-lg">Chuyển khoản ngân hàng</p>
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  Chuyển khoản qua ATM, Internet Banking, QR Code
-                                </p>
-                              </div>
-                            </Label>
-                          </div>
-                        </motion.div>
-
+                        
                         <motion.div 
                           whileHover={{ scale: 1.02, y: -2 }}
                           className={`flex items-center space-x-3 p-5 border-2 rounded-xl transition-all cursor-pointer shadow-sm ${
@@ -771,39 +810,31 @@ export default function Checkout() {
                             </Label>
                           </div>
                         </motion.div>
-                      </RadioGroup>
 
-                      {formData.paymentMethod === "banking" && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          className="mt-6 p-5 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-xl border border-blue-200 dark:border-blue-800"
+                        <motion.div 
+                          whileHover={{ scale: 1.02, y: -2 }}
+                          className={`flex items-center space-x-3 p-5 border-2 rounded-xl transition-all cursor-pointer shadow-sm ${
+                            formData.paymentMethod === "zalopay"
+                              ? "border-blue-500 bg-blue-50 dark:bg-blue-950/30 shadow-lg"
+                              : "border-border hover:border-blue-400 hover:bg-muted/50"
+                          }`}
                         >
-                          <h4 className="font-semibold mb-3 flex items-center gap-2">
-                            <Info className="w-5 h-5 text-blue-600" />
-                            Thông tin chuyển khoản:
-                          </h4>
-                          <div className="space-y-2 text-sm bg-background/50 p-4 rounded-lg">
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Ngân hàng:</span>
-                              <strong>Vietcombank</strong>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Số tài khoản:</span>
-                              <strong className="font-mono">1234567890</strong>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Chủ tài khoản:</span>
-                              <strong>CÔNG TY THƯƠNG MẠI ABC</strong>
-                            </div>
-                            <Separator className="my-2" />
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">Nội dung:</span>
-                              <strong className="text-primary">{product?.name} - {formData.fullName}</strong>
-                            </div>
+                          <RadioGroupItem value="zalopay" id="zalopay" />
+                          <div className="flex-1">
+                            <Label htmlFor="zalopay" className="flex items-center gap-3 cursor-pointer">
+                              <div className="p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl">
+                                <img src="/images/icons/zalopay.webp" alt="ZaloPay" className="w-6 h-6" />
+                              </div>
+                              <div>
+                                <p className="font-semibold text-lg">ZaloPay</p>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  Thanh toán qua ví ZaloPay, QR Code
+                                </p>
+                              </div>
+                            </Label>
                           </div>
                         </motion.div>
-                      )}
+                      </RadioGroup>
                     </CardContent>
                   </Card>
                 )}
@@ -868,11 +899,34 @@ export default function Checkout() {
                             Thanh toán
                           </h4>
                           <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 p-4 rounded-xl border border-blue-200 dark:border-blue-800">
-                            <p className="font-medium">
-                              {formData.paymentMethod === "cod" ? "💵 Thanh toán khi nhận hàng" :
-                               formData.paymentMethod === "payos" ? "🏦 Chuyển khoản ngân hàng" :
-                               formData.paymentMethod === "vnpay" ? "💳 VNPay" : "💖 Ví MoMo"}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              {formData.paymentMethod === "cod" && (
+                                <>
+                                  <div className="w-6 h-6 rounded bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                                    <span className="text-sm">💵</span>
+                                  </div>
+                                  <p className="font-medium">Thanh toán khi nhận hàng</p>
+                                </>
+                              )}
+                              {formData.paymentMethod === "zalopay" && (
+                                <>
+                                  <img src="/images/icons/zalopay.webp" alt="ZaloPay" className="w-6 h-6 object-contain" />
+                                  <p className="font-medium">ZaloPay</p>
+                                </>
+                              )}
+                              {formData.paymentMethod === "vnpay" && (
+                                <>
+                                  <img src="/images/icons/vnpay.png" alt="VNPay" className="w-6 h-6 object-contain" />
+                                  <p className="font-medium">VNPay</p>
+                                </>
+                              )}
+                              {formData.paymentMethod === "momo" && (
+                                <>
+                                  <img src="/images/icons/momo.png" alt="MoMo" className="w-6 h-6 object-contain" />
+                                  <p className="font-medium">Ví MoMo</p>
+                                </>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <div className="space-y-3">

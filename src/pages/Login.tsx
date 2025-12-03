@@ -2,7 +2,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, ArrowRight, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { AuthLayout } from '@/components/AuthLayout';
@@ -28,6 +28,8 @@ const Login: React.FC = () => {
   const bearRef = React.useRef<HTMLDivElement>(null);
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = (location.state && location.state.from && location.state.from.pathname) || "/";
 
   React.useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -73,7 +75,8 @@ const Login: React.FC = () => {
   const onSubmit = async (values: LoginFormValues) => {
     const success = await login(values.email, values.password, values.rememberMe);
     if (success) {
-      navigate('/');
+      // Quay lại trang trước khi đăng nhập nếu có
+      navigate(from, { replace: true });
     }
   };
 

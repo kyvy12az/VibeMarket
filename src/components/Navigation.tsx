@@ -96,6 +96,24 @@ const Navigation = () => {
     const submenuRef = useRef<HTMLDivElement>(null);
     const [open, setOpen] = useState(false);
 
+    // Helper function để lấy URL đầy đủ của avatar
+    const getAvatarUrl = (avatar: string | null | undefined) => {
+        if (!avatar) return '/images/avatars/default-avatar.jpg';
+        
+        // Nếu avatar bắt đầu bằng http/https (Google, Facebook avatar) thì dùng luôn
+        if (avatar.startsWith('http://') || avatar.startsWith('https://')) {
+            return avatar;
+        }
+        
+        // Nếu avatar bắt đầu bằng /uploads (đã upload lên server) thì thêm BACKEND_URL
+        if (avatar.startsWith('/uploads/')) {
+            return `${import.meta.env.VITE_BACKEND_URL}${avatar}`;
+        }
+        
+        // Các trường hợp khác (avatar local)
+        return avatar;
+    };
+
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
@@ -331,19 +349,11 @@ const Navigation = () => {
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                 >
-                                    {user.avatar ? (
-                                        <img
-                                            src={user.avatar || "/images/avatars/Avt-Default.png"}
-                                            alt={user.name}
-                                            className="w-10 h-10 rounded-full object-cover ring-2 ring-primary/20 hover:ring-primary/50 transition-all duration-300"
-                                        />
-                                    ) : (
-                                        <img
-                                            src="/images/avatars/Avt-Default.png"
-                                            alt={user.name}
-                                            className="w-10 h-10 rounded-full object-cover ring-2 ring-primary/20 hover:ring-primary/50 transition-all duration-300"
-                                        />
-                                    )}
+                                    <img
+                                        src={getAvatarUrl(user.avatar)}
+                                        alt={user.name}
+                                        className="w-10 h-10 rounded-full object-cover ring-2 ring-primary/20 hover:ring-primary/50 transition-all duration-300"
+                                    />
                                     <div className="hidden md:block text-left">
                                         <p className="text-sm font-medium text-foreground">{user.name}</p>
                                         {user.points !== undefined && (
@@ -363,19 +373,11 @@ const Navigation = () => {
                                         {/* User Info Header */}
                                         <div className="hidden md:block p-4 bg-gradient-primary/10 border-b border-border">
                                             <div className="flex items-center space-x-3">
-                                                {user.avatar ? (
-                                                    <img
-                                                        src={user.avatar}
-                                                        alt={user.name}
-                                                        className="w-10 h-10 rounded-xl object-cover ring-2 ring-primary/20 hover:ring-primary/50 transition-all duration-300"
-                                                    />
-                                                ) : (
-                                                    <img
-                                                        src="/images/avatars/Avt-Default.png"
-                                                        alt={user.name}
-                                                        className="w-10 h-10 rounded-full object-cover ring-2 ring-primary/20 hover:ring-primary/50 transition-all duration-300"
-                                                    />
-                                                )}
+                                                <img
+                                                    src={getAvatarUrl(user.avatar)}
+                                                    alt={user.name}
+                                                    className="w-10 h-10 rounded-xl object-cover ring-2 ring-primary/20 hover:ring-primary/50 transition-all duration-300"
+                                                />
                                                 <div>
                                                     <h3 className="font-semibold text-foreground">{user.name}</h3>
                                                     <p className="text-sm text-muted-foreground">{user.email}</p>
@@ -659,17 +661,11 @@ const Navigation = () => {
                                                     className="w-full bg-gradient-to-br from-primary/20 to-purple-600/20 rounded-xl p-3 border border-white/10 hover:from-primary/30 hover:to-purple-600/30 transition-all"
                                                 >
                                                     <div className="flex items-center gap-3">
-                                                        {user.avatar ? (
-                                                            <img
-                                                                src={user.avatar}
-                                                                alt={user.name}
-                                                                className="w-12 h-12 rounded-full object-cover ring-2 ring-primary/50"
-                                                            />
-                                                        ) : (
-                                                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-purple-600 flex items-center justify-center text-white font-bold text-lg">
-                                                                {user.name[0].toUpperCase()}
-                                                            </div>
-                                                        )}
+                                                        <img
+                                                            src={getAvatarUrl(user.avatar)}
+                                                            alt={user.name}
+                                                            className="w-12 h-12 rounded-full object-cover ring-2 ring-primary/50"
+                                                        />
                                                         <div className="flex-1 min-w-0 text-left">
                                                             <div className="font-semibold text-white truncate">{user.name}</div>
                                                             <div className="text-xs text-white/70 truncate">{user.email}</div>

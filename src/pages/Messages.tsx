@@ -5,7 +5,7 @@ import React, {
     useCallback,
     Fragment,
 } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dialog, Transition } from "@headlessui/react";
 import { formatDistanceToNow } from "date-fns";
@@ -61,6 +61,8 @@ import {
 const Chat: React.FC = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
+    const location = useLocation();
+    const navigationState = location.state as { selectedConversationId?: number; sellerId?: number } | null;
 
     // State
     const [isMobile, setIsMobile] = useState(false);
@@ -154,6 +156,7 @@ const Chat: React.FC = () => {
                 return;
             }
 
+            // Fetch all conversations (both user and shop conversations)
             const response = await fetch(
                 `${import.meta.env.VITE_BACKEND_URL}/api/chat/conversations.php`,
                 {
@@ -1179,7 +1182,19 @@ const Chat: React.FC = () => {
         console.log("User:", user);
 
         if (user && token) {
-            fetchConversations();
+            fetchConversations().then(() => {
+                // Auto-select conversation from navigation state if exists
+                if (navigationState?.selectedConversationId) {
+                    const conversation = conversations.find(
+                        (c) => c.id === navigationState.selectedConversationId
+                    );
+                    if (conversation) {
+                        handleConversationSelect(conversation);
+                    }
+                    // Clear navigation state to prevent re-selection on refresh
+                    navigate(location.pathname, { replace: true, state: null });
+                }
+            });
             initializeSocket();
             updateOnlineStatus("online");
         } else {

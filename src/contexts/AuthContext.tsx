@@ -7,6 +7,7 @@ interface AuthContextType {
   login: (email: string, password: string, rememberMe?: boolean) => Promise<boolean>;
   register: (email: string, password: string, name: string) => Promise<boolean>;
   logout: () => void;
+  updateUser: (userData: Partial<User>) => void;
   isLoading: boolean;
 }
 
@@ -28,7 +29,7 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:80";
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Hàm cập nhật status (online/offline)
   const updateUserStatus = async (status: 'online' | 'offline') => {
@@ -81,6 +82,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         localStorage.removeItem('vibeventure_token');
       }
     }
+    setIsLoading(false);
   }, []);
 
   // Ping activity mỗi 30 giây khi user đang đăng nhập
@@ -346,6 +348,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     });
   };
 
+  const updateUser = (userData: Partial<User>) => {
+    if (!user) return;
+    
+    const updatedUser = { ...user, ...userData };
+    setUser(updatedUser);
+    localStorage.setItem('vibeventure_user', JSON.stringify(updatedUser));
+  };
+
   const value = {
     user,
     login,
@@ -354,6 +364,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     facebookLogin,
     zaloLogin,
     logout,
+    updateUser,
     isLoading
   };
 

@@ -33,13 +33,10 @@ import GoogleCallback from "./pages/GoogleCallback";
 import FacebookCallback from "./pages/FacebookCallBack";
 import BrandProducts from "./pages/BrandProducts";
 import RewardsRedemption from "./pages/RewardsRedemption";
-import MomoCallback from "./pages/MomoCallBack";
-import PayosCallBack from "./pages/PayosCallBack";
 import ShopDashboard from "./pages/ShopDashboard";
 import { ThemeProvider } from "@/components/theme-provider";
 import About from "./pages/About";
 import PaymentResult from "./pages/PaymentResult";
-import VnpayCallBack from "./pages/VnpayCallBack";
 import PageTransition from "./components/PageTransition";
 import LoadingOverlay from "./components/LoadingOverlay";
 import { AnimatePresence } from "framer-motion";
@@ -51,7 +48,9 @@ import {EditProduct} from "./components/dashboard-Seller/EditProduct";
 import ReviewOrder from "./pages/ReviewOrder";
 import { StoreDetail } from "./components/store/StoreDetail";
 import AIShoppingAssistant from "./pages/AIShoppingAssistant";
-import PostDetail from "./pages/PostDetail"
+import PostDetail from "./pages/PostDetail";
+import ProtectedRoute from "./components/ProtectedRoute";
+import PayCallback from "./pages/PayCallback";
 
 const queryClient = new QueryClient();
 
@@ -92,7 +91,22 @@ function App() {
                   <Route path="/wallet" element={<WalletPage />} />
                   <Route path="/rewards" element={<RewardsRedemption />} />
                   <Route path="/checkout" element={<Checkout />} />
-                  <Route path="/profile" element={<Profile />} />
+                  <Route 
+                    path="/profile" 
+                    element={
+                      <ProtectedRoute>
+                        <Profile />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  <Route 
+                    path="/profile/:userId" 
+                    element={
+                      <ProtectedRoute>
+                        <Profile />
+                      </ProtectedRoute>
+                    } 
+                  />
                   <Route path="/orders" element={<OrderManagement />} />
                   <Route path="/orders/:code" element={<OrderDetail />} />
                   <Route path="/orders/:orderId/review" element={<ReviewOrder />} />
@@ -107,13 +121,22 @@ function App() {
                   <Route path="/callback/zalo" element={<ZaloCallback />} />
                   <Route path="/callback/google" element={<GoogleCallback />} />
                   <Route path="/callback/facebook" element={<FacebookCallback />} />
-                  <Route path="/callback/vnpay" element={<VnpayCallBack />} />
+                  <Route path="/callback/momo" element={<PayCallback />} />
+                  <Route path="/callback/zalopay" element={<PayCallback />} />
+                  <Route path="/callback/vnpay" element={<PayCallback />} />
                   <Route path="/payment-result" element={<PaymentResult />} />
                   <Route path="*" element={<NotFound />} />
                 </Route>
                 <Route path="/vendor-management/*" element={<ShopDashboard />} />
                 <Route path="/vendor-management/edit-product/:id" element={<EditProduct />} />
-                <Route path="/messages" element={<Messages />} />
+                <Route 
+                  path="/messages" 
+                  element={
+                    <ProtectedRoute>
+                      <Messages />
+                    </ProtectedRoute>
+                  } 
+                />
                 <Route
                   path="call/:conversationId/:callType/:callId"
                   element={

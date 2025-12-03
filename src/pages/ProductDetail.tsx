@@ -543,7 +543,7 @@ const ProductDetail = () => {
                                                 size="lg"
                                                 onClick={() => setSelectedSize(size)}
                                                 className={`min-w-[60px] font-semibold ${selectedSize === size
-                                                        ? "bg-gradient-primary shadow-lg"
+                                                        ? "bg-gradient-to-r from-primary to-purple-600 shadow-lg"
                                                         : "hover:border-primary"
                                                     }`}
                                             >
@@ -574,7 +574,7 @@ const ProductDetail = () => {
                                                 size="lg"
                                                 onClick={() => setSelectedColor(color)}
                                                 className={`font-semibold ${selectedColor === color
-                                                        ? "bg-gradient-primary shadow-lg"
+                                                        ? "bg-gradient-to-r from-primary to-purple-600 shadow-lg"
                                                         : "hover:border-primary"
                                                     }`}
                                             >
@@ -624,7 +624,7 @@ const ProductDetail = () => {
                             <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                                 <Button
                                     size="lg"
-                                    className="w-full bg-gradient-primary hover:opacity-90 shadow-lg text-lg h-14"
+                                    className="w-full bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 shadow-lg text-lg h-14"
                                     onClick={() => handleAddToCart()}
                                 >
                                     <ShoppingCart className="w-5 h-5 mr-2" />
@@ -710,16 +710,16 @@ const ProductDetail = () => {
                 >
                     <Tabs defaultValue="description" className="w-full">
                         <TabsList className="grid w-full grid-cols-4 h-14 bg-muted/50 p-1 rounded-xl">
-                            <TabsTrigger value="description" className="text-base font-semibold data-[state=active]:bg-gradient-primary data-[state=active]:text-white rounded-lg">
+                            <TabsTrigger value="description" className="text-base font-semibold data-[state=active]:bg-gradient-to-r from-primary to-purple-600 data-[state=active]:text-white rounded-lg">
                                 Mô tả
                             </TabsTrigger>
-                            <TabsTrigger value="specifications" className="text-base font-semibold data-[state=active]:bg-gradient-primary data-[state=active]:text-white rounded-lg">
+                            <TabsTrigger value="specifications" className="text-base font-semibold data-[state=active]:bg-gradient-to-r from-primary to-purple-600 data-[state=active]:text-white rounded-lg">
                                 Thông số
                             </TabsTrigger>
-                            <TabsTrigger value="reviews" className="text-base font-semibold data-[state=active]:bg-gradient-primary data-[state=active]:text-white rounded-lg">
+                            <TabsTrigger value="reviews" className="text-base font-semibold data-[state=active]:bg-gradient-to-r from-primary to-purple-600 data-[state=active]:text-white rounded-lg">
                                 Đánh giá {reviewStats && reviewStats.total_reviews > 0 && `(${reviewStats.total_reviews})`}
                             </TabsTrigger>
-                            <TabsTrigger value="shipping" className="text-base font-semibold data-[state=active]:bg-gradient-primary data-[state=active]:text-white rounded-lg">
+                            <TabsTrigger value="shipping" className="text-base font-semibold data-[state=active]:bg-gradient-to-r from-primary to-purple-600 data-[state=active]:text-white rounded-lg">
                                 Vận chuyển
                             </TabsTrigger>
                         </TabsList>

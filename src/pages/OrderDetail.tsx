@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +34,7 @@ import {
 
 const OrderDetail = () => {
     const { code } = useParams();
+    const { user } = useAuth();
     const [order, setOrder] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
@@ -47,6 +50,89 @@ const OrderDetail = () => {
             })
             .catch(() => setLoading(false));
     }, [code]);
+
+    const handleChatWithShop = async (sellerId: number, sellerUserId: number) => {
+        console.log('handleChatWithShop called with:', { sellerId, sellerUserId, user });
+        
+        if (!user) {
+            toast.error('Vui lòng đăng nhập để chat với shop');
+            return;
+        }
+
+        if (!sellerId || !sellerUserId) {
+            toast.error('Thông tin shop không hợp lệ');
+            console.error('Missing seller data:', { sellerId, sellerUserId });
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('vibeventure_token') || localStorage.getItem('token');
+            if (!token) {
+                toast.error('Vui lòng đăng nhập để chat');
+                return;
+            }
+
+            // Check if conversation already exists
+            const checkResponse = await fetch(
+                `${import.meta.env.VITE_BACKEND_URL}/api/chat/conversations.php?category=shop&seller_id=${sellerId}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token.replace('Bearer ', '')}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            const checkData = await checkResponse.json();
+
+            if (checkData.success && checkData.data.length > 0) {
+                // Conversation exists, navigate to messages page
+                navigate('/messages', { 
+                    state: { 
+                        selectedConversationId: checkData.data[0].id,
+                        sellerId: sellerId 
+                    } 
+                });
+                return;
+            }
+
+            // Create new conversation with participants array
+            const createResponse = await fetch(
+                `${import.meta.env.VITE_BACKEND_URL}/api/chat/conversations.php`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token.replace('Bearer ', '')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        type: 'private',
+                        conversation_category: 'shop',
+                        seller_id: sellerId,
+                        participants: [Number(user.id), sellerUserId] // Add participants array
+                    })
+                }
+            );
+
+            const createData = await createResponse.json();
+
+            if (createData.success) {
+                toast.success('Đã tạo cuộc trò chuyện với shop');
+                // Navigate with conversation ID from response
+                navigate('/messages', { 
+                    state: { 
+                        selectedConversationId: createData.data.id,
+                        sellerId: sellerId 
+                    } 
+                });
+            } else {
+                throw new Error(createData.message || 'Không thể tạo cuộc trò chuyện');
+            }
+        } catch (error: any) {
+            console.error('Error creating shop conversation:', error);
+            toast.error(error.message || 'Không thể tạo cuộc trò chuyện với shop');
+        }
+    };
 
     if (loading) {
         return (
@@ -669,12 +755,37 @@ const OrderDetail = () => {
                                 <CardContent className="pt-6 space-y-3">
                                     <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
                                         <span className="text-sm text-muted-foreground">Phương thức:</span>
-                                        <span className="text-sm font-semibold">
-                                            {order.payment_method === "cod" ? "💵 Tiền mặt" :
-                                             order.payment_method === "momo" ? "💖 MoMo" :
-                                             order.payment_method === "payos" ? "🏦 VietQR" :
-                                             order.payment_method || "Chưa có"}
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            {order.payment_method === "cod" && (
+                                                <>
+                                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-md">
+                                                        <span className="text-white text-lg">💵</span>
+                                                    </div>
+                                                    <span className="text-sm font-semibold">Tiền mặt</span>
+                                                </>
+                                            )}
+                                            {order.payment_method === "momo" && (
+                                                <>
+                                                    <img src="/images/icons/momo.png" alt="Logo MoMo" className='w-8 h-8 rounded-lg' />
+                                                    <span className="text-sm font-semibold">MoMo</span>
+                                                </>
+                                            )}
+                                            {order.payment_method === "zalopay" && (
+                                                <>
+                                                    <img src="/images/icons/zalopay.webp" alt="Logo ZaloPay" className='w-8 h-8 rounded-lg'/>
+                                                    <span className="text-sm font-semibold">ZaloPay</span>
+                                                </>
+                                            )}
+                                            {order.payment_method === "vnpay" && (
+                                                <>
+                                                    <img src="/images/icons/vnpay.png" alt="Logo VNPay" className='w-8 h-8 rounded-lg' />
+                                                    <span className="text-sm font-semibold">VNPay</span>
+                                                </>
+                                            )}
+                                            {!order.payment_method && (
+                                                <span className="text-sm font-semibold text-muted-foreground">Chưa có</span>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="flex justify-between items-center p-3 rounded-lg bg-muted/50">
                                         <span className="text-sm text-muted-foreground">Trạng thái:</span>
@@ -716,7 +827,9 @@ const OrderDetail = () => {
                                     </CardTitle>
                                 </CardHeader>
                                 <CardContent className="pt-6">
-                                    {(order.items || []).map((item, idx) => (
+                                    {(order.items || []).map((item, idx) => {
+                                        console.log('Order item data:', item); // Debug log
+                                        return (
                                         <div key={item.id || idx} className="space-y-4">
                                             <div className="p-4 rounded-xl bg-gradient-to-r from-muted/50 to-muted/30">
                                                 <div className="flex items-center justify-between mb-3">
@@ -757,7 +870,20 @@ const OrderDetail = () => {
                                             </div>
                                             <div className="grid grid-cols-2 gap-2">
                                                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                                                    <Button variant="outline" size="sm" className="w-full border-2">
+                                                    <Button 
+                                                        variant="outline" 
+                                                        size="sm" 
+                                                        className="w-full border-2"
+                                                        onClick={() => {
+                                                            if (!item.seller_id || !item.seller_user_id) {
+                                                                toast.error('Thông tin shop chưa đầy đủ');
+                                                                console.error('Missing seller data in item:', item);
+                                                                return;
+                                                            }
+                                                            handleChatWithShop(item.seller_id, item.seller_user_id);
+                                                        }}
+                                                        disabled={!item.seller_id || !item.seller_user_id}
+                                                    >
                                                         <MessageCircle className="mr-2 h-4 w-4" />
                                                         Chat
                                                     </Button>
@@ -770,7 +896,8 @@ const OrderDetail = () => {
                                                 </motion.div>
                                             </div>
                                         </div>
-                                    ))}
+                                        );
+                                    })}
                                 </CardContent>
                             </Card>
                         </motion.div>

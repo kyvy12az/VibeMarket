@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { useAuth } from "@/contexts/AuthContext";
+import { useParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -48,6 +50,8 @@ import {
   TrendingUp,
   Trophy,
   Users,
+  UserPlus,
+  UserMinus,
   MessageSquare,
   Target,
   Star,
@@ -55,7 +59,6 @@ import {
   Zap,
   Save,
   Package,
-  UserPlus,
   Settings,
   LogOut,
   Crown,
@@ -71,11 +74,25 @@ import {
 } from "lucide-react";
 
 const Profile = () => {
+  const { userId: urlUserId } = useParams<{ userId: string }>();
+  const { user: authUser, updateUser } = useAuth();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userData, setUserData] = useState<any>(null);
+  const [spendingData, setSpendingData] = useState<any[]>([]);
+  const [recentActivity, setRecentActivity] = useState<any[]>([]);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+  
+  // Kiểm tra xem đang xem profile của mình hay người khác
+  const isOwnProfile = !urlUserId || (authUser && urlUserId === String(authUser.id));
+  const targetUserId = urlUserId || authUser?.id;
 
-  const mockUser = {
+  const mockUser = userData || {
     name: "Nguyễn Kỳ Vỹ",
     email: "kyvydev@gmail.com",
     phone: "0901234567",
@@ -94,14 +111,7 @@ const Profile = () => {
     }
   };
 
-  const spendingData = [
-    { month: "T1", amount: 1200000, orders: 3 },
-    { month: "T2", amount: 800000, orders: 2 },
-    { month: "T3", amount: 1500000, orders: 4 },
-    { month: "T4", amount: 2200000, orders: 6 },
-    { month: "T5", amount: 1800000, orders: 5 },
-    { month: "T6", amount: 2500000, orders: 7 },
-  ];
+
 
   const categoryData = [
     { name: "Làm đẹp", value: 35, amount: 8750000, color: "hsl(var(--primary))" },
@@ -192,12 +202,168 @@ const Profile = () => {
     { name: "Máy pha cà phê", price: 15000000, image: "/placeholder.svg", category: "Gia dụng" }
   ];
 
-  const recentActivity = [
-    { type: "review", content: "Đánh giá 5 sao cho Kem dưỡng da Olay", time: "2 giờ trước", icon: Star },
-    { type: "order", content: "Đặt hàng thành công #DH001234", time: "1 ngày trước", icon: ShoppingBag },
-    { type: "follow", content: "Theo dõi cửa hàng Beauty World", time: "3 ngày trước", icon: Heart },
-    { type: "post", content: "Chia sẻ bài viết về xu hướng thời trang", time: "5 ngày trước", icon: Edit3 },
-  ];
+  // Fetch profile data
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!targetUserId) {
+        setIsLoading(false);
+        return;
+      }
+      
+      setIsLoading(true);
+      try {
+        const token = localStorage.getItem('vibeventure_token');
+        
+        let response, data;
+        
+        if (isOwnProfile) {
+          // Lấy profile của chính mình với đầy đủ thông tin
+          response = await fetch(`${BACKEND_URL}/api/user/profile.php`, {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          
+          const text = await response.text();
+          
+          if (!response.ok) {
+            console.error('API Error:', response.status, text);
+            if (response.status === 401) {
+              toast.error('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+            } else {
+              toast.error('Không thể tải thông tin profile');
+            }
+            setIsLoading(false);
+            return;
+          }
+          
+          data = JSON.parse(text);
+          
+          if (data.success) {
+            setUserData(data.user);
+            setSpendingData(data.spendingData || []);
+            setRecentActivity(data.recentActivity || []);
+          }
+        } else {
+          // Lấy public profile của người khác
+          const headers: any = {};
+          if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+          }
+          
+          response = await fetch(`${BACKEND_URL}/api/user/public_profile.php?user_id=${targetUserId}`, {
+            headers
+          });
+          
+          data = await response.json();
+          
+          if (data.success) {
+            setUserData(data.user);
+            setRecentActivity(data.recentActivity || []);
+            setIsFollowing(data.isFollowing || false);
+            setSpendingData([]); // Public profile không có spending data
+          } else {
+            toast.error(data.error || 'Không thể tải thông tin profile');
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+        toast.error('Không thể tải thông tin profile');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchProfile();
+  }, [targetUserId, isOwnProfile, BACKEND_URL]);
+
+  // Handle follow/unfollow
+  const handleFollowToggle = async () => {
+    if (!authUser) {
+      toast.error('Vui lòng đăng nhập để theo dõi');
+      return;
+    }
+
+    setFollowLoading(true);
+    try {
+      const token = localStorage.getItem('vibeventure_token');
+      const response = await fetch(`${BACKEND_URL}/api/user/follow.php`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          user_id: targetUserId,
+          action: isFollowing ? 'unfollow' : 'follow'
+        })
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        setIsFollowing(data.isFollowing);
+        toast.success(data.message);
+        
+        // Cập nhật số lượng followers
+        if (userData) {
+          setUserData({
+            ...userData,
+            stats: {
+              ...userData.stats,
+              followers: userData.stats.followers + (data.isFollowing ? 1 : -1)
+            }
+          });
+        }
+      } else {
+        toast.error(data.error || 'Không thể thực hiện thao tác');
+      }
+    } catch (error) {
+      console.error('Error toggling follow:', error);
+      toast.error('Không thể thực hiện thao tác');
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
+  // Update profile info
+  const handleUpdateProfile = async (formData: any) => {
+    try {
+      const token = localStorage.getItem('vibeventure_token');
+      const response = await fetch(`${BACKEND_URL}/api/user/profile.php`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(formData)
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Cập nhật thông tin thành công!');
+        setIsEditModalOpen(false);
+        // Refresh profile data
+        const res = await fetch(`${BACKEND_URL}/api/user/profile.php`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const newData = await res.json();
+        if (newData.success) {
+          setUserData(newData.user);
+          // Cập nhật user trong AuthContext để Navigation hiển thị ngay
+          updateUser({
+            name: newData.user.name,
+            phone: newData.user.phone,
+            address: newData.user.address
+          });
+        }
+      } else {
+        toast.error(data.error || 'Cập nhật thất bại');
+      }
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      toast.error('Không thể cập nhật thông tin');
+    }
+  };
 
   const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -214,13 +380,75 @@ const Profile = () => {
     }
   };
 
-  const handleAvatarSave = () => {
-    if (avatarPreview) {
-      toast.success("Avatar đã được cập nhật thành công!");
-      setIsAvatarModalOpen(false);
-      // TODO: Upload avatar to server
+  const handleAvatarSave = async () => {
+    if (!avatarPreview) return;
+    
+    try {
+      const token = localStorage.getItem('vibeventure_token');
+      const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+      const file = fileInput?.files?.[0];
+      
+      if (!file) {
+        toast.error('Vui lòng chọn file ảnh');
+        return;
+      }
+      
+      const formData = new FormData();
+      formData.append('avatar', file);
+      
+      const response = await fetch(`${BACKEND_URL}/api/user/update_avatar.php`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+      
+      const data = await response.json();
+      if (data.success) {
+        toast.success('Avatar đã được cập nhật thành công!');
+        setIsAvatarModalOpen(false);
+        setAvatarPreview(null);
+        // Refresh profile data
+        const res = await fetch(`${BACKEND_URL}/api/user/profile.php`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const newData = await res.json();
+        if (newData.success) {
+          setUserData(newData.user);
+          // Cập nhật avatar trong AuthContext để Navigation hiển thị ngay
+          updateUser({ avatar: data.avatar });
+        }
+      } else {
+        toast.error(data.error || 'Cập nhật avatar thất bại');
+      }
+    } catch (error) {
+      console.error('Error updating avatar:', error);
+      toast.error('Không thể cập nhật avatar');
     }
   };
+
+  // Icon mapping for activity types
+  const getActivityIcon = (type: string) => {
+    const icons: any = {
+      'review': Star,
+      'order': ShoppingBag,
+      'follow': Heart,
+      'post': Edit3
+    };
+    return icons[type] || ShoppingBag;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Đang tải thông tin...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -260,80 +488,90 @@ const Profile = () => {
                       transition={{ type: "spring", stiffness: 300 }}
                     >
                       <Avatar className="w-32 h-32 border-4 border-background shadow-2xl ring-4 ring-primary/20">
-                        <AvatarImage src={avatarPreview || mockUser.avatar} alt={mockUser.name} />
+                        <AvatarImage 
+                          src={avatarPreview || (mockUser.avatar?.startsWith('/uploads/') ? `${BACKEND_URL}${mockUser.avatar}` : mockUser.avatar)} 
+                          alt={mockUser.name} 
+                        />
                         <AvatarFallback className="text-3xl bg-gradient-to-br from-primary to-purple-600 text-white">
                           {mockUser.name[0]}
                         </AvatarFallback>
                       </Avatar>
-                      <Dialog open={isAvatarModalOpen} onOpenChange={setIsAvatarModalOpen}>
-                        <DialogTrigger asChild>
-                          <motion.div
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                          >
-                            <Button
-                              size="icon"
-                              className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full shadow-lg bg-gradient-to-r from-primary to-purple-600 hover:opacity-90"
-                            >
-                              <Camera className="w-5 h-5" />
-                            </Button>
-                          </motion.div>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-md">
-                          <DialogHeader>
-                            <DialogTitle className="flex items-center gap-2">
-                              <Camera className="w-5 h-5 text-primary" />
-                              Thay đổi ảnh đại diện
-                            </DialogTitle>
-                            <DialogDescription>
-                              Chọn một ảnh mới để làm ảnh đại diện của bạn
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-4 py-4">
-                            <div className="flex flex-col items-center gap-4">
-                              <Avatar className="w-40 h-40 border-4 border-primary/20 shadow-2xl">
-                                <AvatarImage src={avatarPreview || mockUser.avatar} alt="Preview" />
-                                <AvatarFallback className="text-5xl">{mockUser.name[0]}</AvatarFallback>
-                              </Avatar>
-                              <div className="w-full space-y-2">
-                                <Label htmlFor="avatar-upload" className="text-sm font-medium">
-                                  Chọn ảnh từ thiết bị của bạn
-                                </Label>
-                                <Input
-                                  id="avatar-upload"
-                                  type="file"
-                                  accept="image/*"
-                                  onChange={handleAvatarChange}
-                                  className="cursor-pointer file:mr-4 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                  Định dạng: JPG, PNG, GIF. Kích thước tối đa: 5MB
-                                </p>
+                      {isOwnProfile && (
+                        <>
+                          <Dialog open={isAvatarModalOpen} onOpenChange={setIsAvatarModalOpen}>
+                            <DialogTrigger asChild>
+                              <motion.div
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                              >
+                                <Button
+                                  size="icon"
+                                  className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full shadow-lg bg-gradient-to-r from-primary to-purple-600 hover:opacity-90"
+                                >
+                                  <Camera className="w-5 h-5" />
+                                </Button>
+                              </motion.div>
+                            </DialogTrigger>
+                            <DialogContent className="sm:max-w-md">
+                              <DialogHeader>
+                                <DialogTitle className="flex items-center gap-2">
+                                  <Camera className="w-5 h-5 text-primary" />
+                                  Thay đổi ảnh đại diện
+                                </DialogTitle>
+                                <DialogDescription>
+                                  Chọn một ảnh mới để làm ảnh đại diện của bạn
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-4 py-4">
+                                <div className="flex flex-col items-center gap-4">
+                                  <Avatar className="w-40 h-40 border-4 border-primary/20 shadow-2xl">
+                                    <AvatarImage 
+                                      src={avatarPreview || (mockUser.avatar?.startsWith('/uploads/') ? `${BACKEND_URL}${mockUser.avatar}` : mockUser.avatar)} 
+                                      alt="Preview" 
+                                    />
+                                    <AvatarFallback className="text-5xl">{mockUser.name[0]}</AvatarFallback>
+                                  </Avatar>
+                                  <div className="w-full space-y-2">
+                                    <Label htmlFor="avatar-upload" className="text-sm font-medium">
+                                      Chọn ảnh từ thiết bị của bạn
+                                    </Label>
+                                    <Input
+                                      id="avatar-upload"
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={handleAvatarChange}
+                                      className="cursor-pointer file:mr-4 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                      Định dạng: JPG, PNG, GIF. Kích thước tối đa: 5MB
+                                    </p>
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          </div>
-                          <DialogFooter className="flex-col sm:flex-row gap-2">
-                            <Button
-                              variant="outline"
-                              onClick={() => {
-                                setIsAvatarModalOpen(false);
-                                setAvatarPreview(null);
-                              }}
-                              className="w-full sm:w-auto"
-                            >
-                              Hủy
-                            </Button>
-                            <Button
-                              onClick={handleAvatarSave}
-                              disabled={!avatarPreview}
-                              className="w-full sm:w-auto bg-gradient-to-r from-primary to-purple-600"
-                            >
-                              <Save className="w-4 h-4 mr-2" />
-                              Lưu ảnh đại diện
-                            </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
+                              <DialogFooter className="flex-col sm:flex-row gap-2">
+                                <Button
+                                  variant="outline"
+                                  onClick={() => {
+                                    setIsAvatarModalOpen(false);
+                                    setAvatarPreview(null);
+                                  }}
+                                  className="w-full sm:w-auto"
+                                >
+                                  Hủy
+                                </Button>
+                                <Button
+                                  onClick={handleAvatarSave}
+                                  disabled={!avatarPreview}
+                                  className="w-full sm:w-auto bg-gradient-to-r from-primary to-purple-600"
+                                >
+                                  <Save className="w-4 h-4 mr-2" />
+                                  Lưu ảnh đại diện
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        </>
+                      )}
                       <motion.div
                         className="absolute -top-1 -right-1 w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg"
                         animate={{ rotate: [0, 10, -10, 0] }}
@@ -370,20 +608,22 @@ const Profile = () => {
                       </motion.div>
                     </div>
 
-                    <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-                      <DialogTrigger asChild>
-                        <motion.div 
-                          className="w-full mt-4"
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                        >
-                          <Button className="w-full bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 shadow-lg" variant="default">
-                            <Edit3 className="w-4 h-4 mr-2" />
-                            Chỉnh sửa hồ sơ
-                          </Button>
-                        </motion.div>
-                      </DialogTrigger>
-                      <DialogContent className="sm:max-w-[500px]">
+                    {/* Nút Chỉnh sửa hoặc Follow/Unfollow */}
+                    {isOwnProfile ? (
+                      <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
+                        <DialogTrigger asChild>
+                          <motion.div 
+                            className="w-full mt-4"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            <Button className="w-full bg-gradient-to-r from-primary to-purple-600 hover:opacity-90 shadow-lg" variant="default">
+                              <Edit3 className="w-4 h-4 mr-2" />
+                              Chỉnh sửa hồ sơ
+                            </Button>
+                          </motion.div>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[500px]">
                         <DialogHeader>
                           <DialogTitle>Chỉnh sửa thông tin cá nhân</DialogTitle>
                           <DialogDescription>
@@ -416,13 +656,54 @@ const Profile = () => {
                           <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>
                             Hủy
                           </Button>
-                          <Button onClick={() => setIsEditModalOpen(false)} className="bg-gradient-to-r from-primary to-purple-600">
+                          <Button onClick={() => {
+                            const name = (document.getElementById('edit-name') as HTMLInputElement)?.value;
+                            const phone = (document.getElementById('edit-phone') as HTMLInputElement)?.value;
+                            const bio = (document.getElementById('edit-bio') as HTMLTextAreaElement)?.value;
+                            const address = (document.getElementById('edit-address') as HTMLInputElement)?.value;
+                            handleUpdateProfile({ name, phone, bio, address });
+                          }} className="bg-gradient-to-r from-primary to-purple-600">
                             <Save className="w-4 h-4 mr-2" />
                             Lưu thay đổi
                           </Button>
                         </div>
                       </DialogContent>
                     </Dialog>
+                    ) : (
+                      <motion.div 
+                        className="w-full mt-4"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <Button 
+                          className="w-full" 
+                          onClick={handleFollowToggle}
+                          disabled={followLoading || !authUser}
+                          variant={isFollowing ? "outline" : "default"}
+                        >
+                          {followLoading ? (
+                            <div className="flex items-center gap-2">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                              <span>Đang xử lý...</span>
+                            </div>
+                          ) : (
+                            <>
+                              {isFollowing ? (
+                                <>
+                                  <UserMinus className="w-4 h-4 mr-2" />
+                                  Đang theo dõi
+                                </>
+                              ) : (
+                                <>
+                                  <UserPlus className="w-4 h-4 mr-2" />
+                                  Theo dõi
+                                </>
+                              )}
+                            </>
+                          )}
+                        </Button>
+                      </motion.div>
+                    )}
                   </div>
 
                   {/* Quick Stats */}
@@ -541,15 +822,17 @@ const Profile = () => {
             transition={{ delay: 0.1 }}
             className="lg:col-span-2"
           >
-            <Tabs defaultValue="dashboard" className="space-y-6">
-              <TabsList className="w-full grid grid-cols-4 h-auto p-1 bg-card shadow-md">
-                <TabsTrigger
-                  value="dashboard"
-                  className="peer data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:pb-2"
-                >
-                  <TrendingUp className="w-4 h-4 mr-2" />
-                  Dashboard
-                </TabsTrigger>
+            <Tabs defaultValue={isOwnProfile ? "dashboard" : "activity"} className="space-y-6">
+              <TabsList className={`w-full grid ${isOwnProfile ? 'grid-cols-4' : 'grid-cols-1'} h-auto p-1 bg-card shadow-md`}>
+                {isOwnProfile && (
+                  <TabsTrigger
+                    value="dashboard"
+                    className="peer data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:pb-2"
+                  >
+                    <TrendingUp className="w-4 h-4 mr-2" />
+                    Dashboard
+                  </TabsTrigger>
+                )}
                 <TabsTrigger
                   value="activity"
                   className="peer data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:pb-2"
@@ -557,24 +840,29 @@ const Profile = () => {
                   <MessageSquare className="w-4 h-4 mr-2" />
                   Hoạt động
                 </TabsTrigger>
-                <TabsTrigger
-                  value="wishlist"
-                  className="peer data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:pb-2"
-                >
-                  <Heart className="w-4 h-4 mr-2" />
-                  Wishlist
-                </TabsTrigger>
-                <TabsTrigger
-                  value="info"
-                  className="peer data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:pb-2"
-                >
-                  <User className="w-4 h-4 mr-2" />
-                  Thông tin
-                </TabsTrigger>
+                {isOwnProfile && (
+                  <>
+                    <TabsTrigger
+                      value="wishlist"
+                      className="peer data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:pb-2"
+                    >
+                      <Heart className="w-4 h-4 mr-2" />
+                      Wishlist
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="info"
+                      className="peer data-[state=active]:border-b-2 data-[state=active]:border-primary data-[state=active]:pb-2"
+                    >
+                      <User className="w-4 h-4 mr-2" />
+                      Thông tin
+                    </TabsTrigger>
+                  </>
+                )}
               </TabsList>
 
               {/* DASHBOARD TAB */}
-              <TabsContent value="dashboard" className="space-y-6">
+              {isOwnProfile && (
+                <TabsContent value="dashboard" className="space-y-6">
                 {/* Quick Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   <Card className="border border-primary/20 bg-primary/10 rounded-lg shadow-sm hover:shadow-md">
@@ -797,6 +1085,7 @@ const Profile = () => {
                   </motion.div>
                 </div>
               </TabsContent>
+              )}
 
               {/* ACTIVITY TAB */}
               <TabsContent value="activity" className="space-y-4">
@@ -823,7 +1112,10 @@ const Profile = () => {
                             className="flex items-start gap-4 p-4 rounded-xl border-2 border-transparent hover:border-primary/20 bg-gradient-to-r from-muted/50 to-muted/30 hover:shadow-lg transition-all group"
                           >
                             <div className="w-12 h-12 rounded-full bg-gradient-to-r from-primary to-purple-600 flex items-center justify-center flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform">
-                              <activity.icon className="w-6 h-6 text-white" />
+                              {(() => {
+                                const IconComponent = getActivityIcon(activity.type);
+                                return <IconComponent className="w-6 h-6 text-white" />;
+                              })()}
                             </div>
                             <div className="flex-1">
                               <p className="text-sm font-medium mb-1 group-hover:text-primary transition-colors">
@@ -844,6 +1136,7 @@ const Profile = () => {
               </TabsContent>
 
               {/* WISHLIST TAB */}
+              {isOwnProfile && (
               <TabsContent value="wishlist" className="space-y-4">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -901,8 +1194,10 @@ const Profile = () => {
                   </Card>
                 </motion.div>
               </TabsContent>
+              )}
 
               {/* INFO TAB */}
+              {isOwnProfile && (
               <TabsContent value="info" className="space-y-6">
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
@@ -1016,6 +1311,7 @@ const Profile = () => {
                   </Card>
                 </motion.div>
               </TabsContent>
+              )}
             </Tabs>
           </motion.main>
         </div>

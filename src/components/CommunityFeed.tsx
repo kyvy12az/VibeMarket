@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Link } from "react-router-dom";
 import {
   Heart,
   MessageCircle,
@@ -33,6 +34,7 @@ const CommunityFeed = () => {
     {
       id: 1,
       author: {
+        id: 1,
         name: "Minh Anh",
         username: "@minhanh_review",
         avatar: "https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=100&h=100&fit=crop",
@@ -60,6 +62,7 @@ const CommunityFeed = () => {
     {
       id: 2,
       author: {
+        id: 2,
         name: "Tech Guru",
         username: "@techguru_vn",
         avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop",
@@ -89,6 +92,7 @@ const CommunityFeed = () => {
     {
       id: 3,
       author: {
+        id: 3,
         name: "Fashion Lover",
         username: "@fashion_style",
         avatar: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop",
@@ -335,7 +339,7 @@ const CommunityFeed = () => {
 
                     <CardHeader className="pb-4 relative">
                       <div className="flex items-start justify-between">
-                        <div className="flex items-center gap-3">
+                        <Link to={`/profile/${post.author.id}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
                           {/* Avatar with Ring */}
                           <div className="relative">
                             <motion.div
@@ -376,7 +380,7 @@ const CommunityFeed = () => {
                               {post.timeAgo}
                             </p>
                           </div>
-                        </div>
+                        </Link>
 
                         <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
                           <Button variant="ghost" size="icon" className="rounded-full">
@@ -752,7 +756,7 @@ const CommunityFeed = () => {
                     className="group"
                   >
                     <div className="flex items-center justify-between p-3 rounded-lg hover:bg-accent/10 transition-colors">
-                      <div className="flex items-center gap-3">
+                      <Link to={`/profile/${user.id}`} className="flex items-center gap-3 flex-1 hover:opacity-80 transition-opacity">
                         <div className="relative">
                           <Avatar className="w-10 h-10 ring-2 ring-primary/20">
                             <AvatarImage src={user.avatar} />
@@ -772,7 +776,7 @@ const CommunityFeed = () => {
                             {user.followers} followers
                           </p>
                         </div>
-                      </div>
+                      </Link>
                       <motion.div
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
