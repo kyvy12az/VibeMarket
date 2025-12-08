@@ -51,6 +51,7 @@ import AIShoppingAssistant from "./pages/AIShoppingAssistant";
 import PostDetail from "./pages/PostDetail";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PayCallback from "./pages/PayCallback";
+import UserVouchers from "./pages/UserVouchers";
 
 const queryClient = new QueryClient();
 
@@ -87,6 +88,7 @@ function App() {
                   <Route path="/ai-shopping" element={<AIShoppingAssistant />} />
                   <Route path="/ai-recomment" element={<AIRecommendationsPage />} />
                   <Route path="/lucky-wheel" element={<LuckyWheel />} />
+                  <Route path="/user-vouchers" element={<UserVouchers />} />
                   <Route path="/product/:id" element={<ProductDetail />} />
                   <Route path="/wallet" element={<WalletPage />} />
                   <Route path="/rewards" element={<RewardsRedemption />} />

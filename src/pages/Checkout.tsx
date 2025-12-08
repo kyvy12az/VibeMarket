@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Check, CreditCard, MapPin, Package, Shield, Star, Truck, Info, ChevronRight, Sparkles, Clock, ChevronsUpDown } from "lucide-react";
+import { ArrowLeft, Check, CreditCard, MapPin, Package, Shield, Star, Truck, Info, ChevronRight, Sparkles, Clock, ChevronsUpDown, Ticket, Percent, X, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -46,9 +46,17 @@ export default function Checkout() {
   const [openProvinceCombo, setOpenProvinceCombo] = useState(false);
   const [openWardCombo, setOpenWardCombo] = useState(false);
 
+  // Coupon states
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<any>(null);
+  const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
+  const [showCouponList, setShowCouponList] = useState(false);
+  const [loadingCoupon, setLoadingCoupon] = useState(false);
+
   const subtotal = productsData.reduce((sum, p) => sum + p.price * p.quantity, 0);
   const shippingFee = formData.shippingMethod === "express" ? 50000 : 25000;
-  const total = subtotal + shippingFee;
+  const discountAmount = appliedCoupon?.discount_amount || 0;
+  const total = subtotal + shippingFee - discountAmount;
 
   useEffect(() => {
     if (!productData && location.state?.productId) {
@@ -91,6 +99,107 @@ export default function Checkout() {
       setSelectedWard("");
     }
   }, [selectedProvince]);
+
+  // Fetch available coupons when component mounts
+  useEffect(() => {
+    fetchAvailableCoupons();
+  }, [productsData]);
+
+  const fetchAvailableCoupons = async () => {
+    if (!productsData.length) return;
+
+    const sellerId = productsData[0]?.seller_id;
+    if (!sellerId) return;
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/vendor/coupons/get_coupons.php?vendor_id=${sellerId}`
+      );
+      const data = await response.json();
+
+      if (data.success && data.coupons) {
+        // Filter active coupons and sort by best discount
+        const activeCoupons = data.coupons
+          .filter((c: any) => c.status === 'active')
+          .map((coupon: any) => {
+            // Calculate potential discount for sorting
+            let potentialDiscount = 0;
+            const orderTotal = subtotal + shippingFee;
+
+            if (coupon.min_purchase && orderTotal < coupon.min_purchase) {
+              potentialDiscount = 0; // Can't use this coupon
+            } else if (coupon.discount_type === 'percentage') {
+              potentialDiscount = (orderTotal * coupon.discount_value) / 100;
+              if (coupon.max_discount && potentialDiscount > coupon.max_discount) {
+                potentialDiscount = coupon.max_discount;
+              }
+            } else {
+              potentialDiscount = coupon.discount_value;
+            }
+
+            return { ...coupon, potentialDiscount };
+          })
+          .sort((a: any, b: any) => b.potentialDiscount - a.potentialDiscount); // Sort by best discount first
+
+        setAvailableCoupons(activeCoupons);
+      }
+    } catch (error) {
+      console.error('Error fetching coupons:', error);
+    }
+  };
+
+  const validateAndApplyCoupon = async (code: string) => {
+    if (!code.trim()) {
+      toast.error('Vui lòng nhập mã giảm giá');
+      return;
+    }
+
+    setLoadingCoupon(true);
+    const sellerId = productsData[0]?.seller_id;
+    const orderTotal = subtotal + shippingFee;
+
+    try {
+      const response = await fetch(
+        `${import.meta.env.VITE_BACKEND_URL}/api/vendor/coupons/validate_coupon.php`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            coupon_code: code.toUpperCase(),
+            seller_id: sellerId,
+            product_id: null,
+            order_total: orderTotal
+          })
+        }
+      );
+
+      const data = await response.json();
+
+      if (data.success) {
+        setAppliedCoupon(data.coupon);
+        toast.success(`Áp dụng mã giảm giá thành công! Giảm ${data.coupon.discount_amount.toLocaleString('vi-VN')}₫`);
+        setShowCouponList(false);
+      } else {
+        toast.error(data.message || 'Mã giảm giá không hợp lệ');
+      }
+    } catch (error) {
+      console.error('Error validating coupon:', error);
+      toast.error('Lỗi khi áp dụng mã giảm giá');
+    } finally {
+      setLoadingCoupon(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    setCouponCode('');
+    toast.info('Đã xóa mã giảm giá');
+  };
+
+  const selectCoupon = (coupon: any) => {
+    setCouponCode(coupon.code);
+    validateAndApplyCoupon(coupon.code);
+  };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -164,7 +273,8 @@ export default function Checkout() {
     const address = `${formData.address}, ${formData.ward}, ${formData.city}`;
     const subtotal = productsData.reduce((sum, p) => sum + p.price * p.quantity, 0);
     const shippingFee = formData.shippingMethod === "express" ? 50000 : 25000;
-    const total = subtotal + shippingFee;
+    const discountAmount = appliedCoupon?.discount_amount || 0;
+    const total = subtotal + shippingFee - discountAmount;
 
     const orderData = {
       customer_id,
@@ -177,6 +287,8 @@ export default function Checkout() {
       total,
       shipping_fee: shippingFee,
       email: formData.email,
+      coupon_id: appliedCoupon?.id || null,
+      discount_amount: discountAmount,
     };
 
     try {
@@ -190,6 +302,23 @@ export default function Checkout() {
       if (!data.success) {
         toast.error(data.message || "Có lỗi xảy ra!");
         return;
+      }
+
+      // Apply coupon usage count after successful order
+      if (appliedCoupon?.id) {
+        try {
+          await fetch(
+            `${import.meta.env.VITE_BACKEND_URL}/api/vendor/coupons/apply_coupon.php`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ coupon_id: appliedCoupon.id })
+            }
+          );
+        } catch (err) {
+          console.error('Error applying coupon usage:', err);
+          // Don't show error to user as order is already created
+        }
       }
 
       if (formData.paymentMethod === "zalopay") {
@@ -1062,6 +1191,181 @@ export default function Checkout() {
 
                   <Separator />
 
+                  {/* Coupon Section */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold text-sm flex items-center gap-2">
+                        <Ticket className="w-4 h-4 text-primary" />
+                        Mã giảm giá
+                      </h4>
+                      {availableCoupons.length > 0 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setShowCouponList(!showCouponList)}
+                          className="text-xs h-7"
+                        >
+                          {showCouponList ? "Ẩn" : `${availableCoupons.length} mã`}
+                        </Button>
+                      )}
+                    </div>
+
+                    {!appliedCoupon ? (
+                      <>
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Nhập mã giảm giá"
+                            value={couponCode}
+                            onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                            className="font-mono"
+                            disabled={loadingCoupon}
+                          />
+                          <Button
+                            onClick={() => validateAndApplyCoupon(couponCode)}
+                            disabled={loadingCoupon || !couponCode.trim()}
+                            size="sm"
+                          >
+                            {loadingCoupon ? "..." : "Áp dụng"}
+                          </Button>
+                        </div>
+
+                        {/* Available Coupons List */}
+                        <AnimatePresence>
+                          {showCouponList && availableCoupons.length > 0 && (
+                            <motion.div
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: "auto" }}
+                              exit={{ opacity: 0, height: 0 }}
+                              className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar"
+                            >
+                              {availableCoupons.map((coupon) => {
+                                const canUse = !coupon.min_purchase || (subtotal + shippingFee) >= coupon.min_purchase;
+                                const isUsageLimitReached = coupon.usage_limit && coupon.used_count >= coupon.usage_limit;
+
+                                return (
+                                  <motion.div
+                                    key={coupon.id}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    whileHover={{ scale: 1.02 }}
+                                    className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                                      canUse && !isUsageLimitReached
+                                        ? "border-primary/20 bg-gradient-to-r from-primary/5 to-purple-500/5 hover:border-primary/50 hover:shadow-md"
+                                        : "border-border/50 bg-muted/20 opacity-60 cursor-not-allowed"
+                                    }`}
+                                    onClick={() => {
+                                      if (canUse && !isUsageLimitReached) {
+                                        selectCoupon(coupon);
+                                      }
+                                    }}
+                                  >
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                          <Tag className="w-3 h-3 text-primary" />
+                                          <code className="font-bold text-sm bg-primary/10 px-2 py-0.5 rounded">
+                                            {coupon.code}
+                                          </code>
+                                          {coupon.potentialDiscount > 0 && (
+                                            <Badge variant="secondary" className="text-xs">
+                                              Tốt nhất
+                                            </Badge>
+                                          )}
+                                        </div>
+                                        
+                                        <p className="text-xs text-muted-foreground line-clamp-1">
+                                          {coupon.description || "Mã giảm giá"}
+                                        </p>
+
+                                        <div className="flex items-center gap-2 mt-2">
+                                          {coupon.discount_type === "percentage" ? (
+                                            <Badge variant="outline" className="text-xs gap-1">
+                                              <Percent className="w-3 h-3" />
+                                              {coupon.discount_value}%
+                                              {coupon.max_discount && (
+                                                <span className="text-muted-foreground">
+                                                  (max {coupon.max_discount.toLocaleString()}₫)
+                                                </span>
+                                              )}
+                                            </Badge>
+                                          ) : (
+                                            <Badge variant="outline" className="text-xs">
+                                              -{coupon.discount_value.toLocaleString()}₫
+                                            </Badge>
+                                          )}
+                                        </div>
+
+                                        {coupon.min_purchase && (
+                                          <p className="text-xs text-muted-foreground mt-1">
+                                            Đơn tối thiểu: {coupon.min_purchase.toLocaleString()}₫
+                                            {!canUse && (
+                                              <span className="text-red-500 ml-1">(Chưa đủ điều kiện)</span>
+                                            )}
+                                          </p>
+                                        )}
+
+                                        {isUsageLimitReached && (
+                                          <p className="text-xs text-red-500 mt-1">Đã hết lượt sử dụng</p>
+                                        )}
+                                      </div>
+
+                                      {canUse && !isUsageLimitReached && coupon.potentialDiscount > 0 && (
+                                        <div className="text-right">
+                                          <p className="text-xs text-muted-foreground">Giảm</p>
+                                          <p className="font-bold text-sm text-primary">
+                                            -{coupon.potentialDiscount.toLocaleString()}₫
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </motion.div>
+                                );
+                              })}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </>
+                    ) : (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="p-4 rounded-lg border-2 border-green-500/30 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Ticket className="w-4 h-4 text-green-600" />
+                              <code className="font-bold text-sm bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded">
+                                {appliedCoupon.code}
+                              </code>
+                            </div>
+                            {appliedCoupon.description && (
+                              <p className="text-xs text-muted-foreground mb-2">
+                                {appliedCoupon.description}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-2">
+                              <Check className="w-4 h-4 text-green-600" />
+                              <span className="text-sm font-semibold text-green-700 dark:text-green-400">
+                                Giảm {appliedCoupon.discount_amount.toLocaleString()}₫
+                              </span>
+                            </div>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={removeCoupon}
+                            className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-900/30"
+                          >
+                            <X className="w-4 h-4 text-red-500" />
+                          </Button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </div>
+
+                  <Separator />
+
                   {/* Price Breakdown */}
                   <div className="space-y-3 bg-muted/20 p-4 rounded-lg">
                     <div className="flex justify-between text-sm">
@@ -1075,6 +1379,17 @@ export default function Checkout() {
                       </span>
                       <span className="font-medium">{shippingFee.toLocaleString()}₫</span>
                     </div>
+                    {appliedCoupon && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-green-600 dark:text-green-400 flex items-center gap-1">
+                          <Ticket className="w-4 h-4" />
+                          Giảm giá
+                        </span>
+                        <span className="font-medium text-green-600 dark:text-green-400">
+                          -{discountAmount.toLocaleString()}₫
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <Separator />

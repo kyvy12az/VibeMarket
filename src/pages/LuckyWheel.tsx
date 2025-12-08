@@ -38,10 +38,12 @@ const LuckyWheel = () => {
         showConfetti,
         handleSpin,
         resetSpins,
+        voucherCode,
+        voucherExpiry
     } = useLuckyWheel();
 
     const { width, height } = useWindowSize();
-    const totalSpins = 10;
+    const totalSpins = 1;
     const progressPercentage = ((totalSpins - spinsLeft) / totalSpins) * 100;
 
     // Handler khi vòng quay kết thúc - Gọi handleSpin từ hook
@@ -255,15 +257,15 @@ const LuckyWheel = () => {
                                             Nhận thêm lượt
                                             <Badge className="ml-2 bg-white/20">Soon</Badge>
                                         </Button>
-                                        <Button
+                                        {/* <Button
                                             variant="outline"
                                             size="lg"
                                             className="border-2 hover:border-primary hover:bg-primary/5"
-                                            onClick={() => resetSpins(10)}
+                                            onClick={() => resetSpins(1)}
                                         >
                                             <RefreshCw className="w-5 h-5 mr-2" />
-                                            Reset ({totalSpins} lượt)
-                                        </Button>
+                                            Reset (1 lượt)
+                                        </Button> */}
                                     </div>
                                 </div>
 
@@ -380,7 +382,7 @@ const LuckyWheel = () => {
                                     <ul className="space-y-2 text-sm text-muted-foreground">
                                         <li className="flex items-start gap-2">
                                             <span className="text-primary font-bold">•</span>
-                                            Mỗi người dùng có {totalSpins} lượt quay miễn phí mỗi ngày
+                                            Mỗi người dùng có 1 lượt quay miễn phí mỗi ngày
                                         </li>
                                         <li className="flex items-start gap-2">
                                             <span className="text-primary font-bold">•</span>
@@ -446,6 +448,8 @@ const LuckyWheel = () => {
                 isOpen={showModal}
                 onClose={() => setShowModal(false)}
                 prize={currentPrize}
+                voucherCode={voucherCode}
+                voucherExpiry={voucherExpiry}
             />
         </div>
     );

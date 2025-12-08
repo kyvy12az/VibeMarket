@@ -18,7 +18,8 @@ import {
   Crown,
   Check,
   Share2,
-  Download
+  Download,
+  Clock
 } from "lucide-react";
 import { toast } from 'sonner';
 
@@ -26,6 +27,8 @@ interface PrizeModalProps {
   isOpen: boolean;
   onClose: () => void;
   prize: Prize | null;
+  voucherCode?: string | null;
+  voucherExpiry?: string | null;
 }
 
 const iconMap: Record<string, any> = {
@@ -40,19 +43,33 @@ const iconMap: Record<string, any> = {
   sparkles: Sparkles,
 };
 
-export const PrizeModal = ({ isOpen, onClose, prize }: PrizeModalProps) => {
+export const PrizeModal = ({ isOpen, onClose, prize, voucherCode, voucherExpiry }: PrizeModalProps) => {
   if (!prize) return null;
 
   const handleClaim = () => {
-    // TODO: Implement claim reward logic
-    toast.success("Đã nhận thưởng thành công!", {
-      description: `${prize.value} đã được thêm vào ví của bạn`,
-      action: {
-        label: "Xem ngay",
-        onClick: () => window.location.href = "/wallet"
-      }
-    });
+    if (voucherCode) {
+      // Copy voucher code to clipboard
+      navigator.clipboard.writeText(voucherCode);
+      toast.success("Đã sao chép mã voucher!", {
+        description: `Mã ${voucherCode} đã được lưu vào clipboard`,
+        action: {
+          label: "Xem kho voucher",
+          onClick: () => window.location.href = "/user-vouchers"
+        }
+      });
+    } else {
+      toast.success("Đã nhận thưởng thành công!", {
+        description: `${prize.value} đã được thêm vào tài khoản`,
+      });
+    }
     onClose();
+  };
+
+  const handleCopyVoucher = () => {
+    if (voucherCode) {
+      navigator.clipboard.writeText(voucherCode);
+      toast.success("Đã sao chép mã voucher!");
+    }
   };
 
   const handleShare = () => {
@@ -358,6 +375,60 @@ export const PrizeModal = ({ isOpen, onClose, prize }: PrizeModalProps) => {
                   </CardContent>
                 </Card>
               </motion.div>
+
+              {/* Voucher Code Section - Only show if voucherCode exists */}
+              {voucherCode && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.55 }}
+                  className="mb-6"
+                >
+                  <Card className="border-2 border-green-500/30 bg-gradient-to-br from-green-500/10 to-emerald-500/10">
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-center justify-center gap-2 text-green-600">
+                        <Tag className="w-5 h-5" />
+                        <span className="font-semibold">Mã Voucher của bạn</span>
+                      </div>
+                      
+                      <div 
+                        onClick={handleCopyVoucher}
+                        className="bg-white/50 border-2 border-dashed border-green-500/50 rounded-lg p-4 cursor-pointer hover:bg-white/70 transition-colors"
+                      >
+                        <code className="text-2xl font-mono font-bold text-green-600 block text-center">
+                          {voucherCode}
+                        </code>
+                        <p className="text-xs text-center text-muted-foreground mt-2">
+                          👆 Click để sao chép
+                        </p>
+                      </div>
+
+                      {voucherExpiry && (
+                        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                          <Clock className="w-4 h-4" />
+                          <span>
+                            HSD: {new Date(voucherExpiry).toLocaleDateString('vi-VN', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric'
+                            })}
+                          </span>
+                        </div>
+                      )}
+
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full border-green-500/30 hover:bg-green-500/10"
+                        onClick={() => window.location.href = '/user-vouchers'}
+                      >
+                        <Gift className="w-4 h-4 mr-2" />
+                        Xem kho voucher
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
 
               {/* Action Buttons */}
               <motion.div

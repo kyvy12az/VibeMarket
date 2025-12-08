@@ -98,13 +98,13 @@ export const DEFAULT_PRIZES: Prize[] = [
 export const loadDailySpins = (): DailySpins => {
   const stored = localStorage.getItem('luckyWheelData');
   if (!stored) {
-    return { spinsLeft: 10, history: [] };
+    return { spinsLeft: 1, history: [] };
   }
   
   try {
     return JSON.parse(stored);
   } catch {
-    return { spinsLeft: 10, history: [] };
+    return { spinsLeft: 1, history: [] };
   }
 };
 

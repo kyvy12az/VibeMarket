@@ -618,6 +618,25 @@ const OrderDetail = () => {
                                             </span>
                                             <span className="font-medium">{formatCurrency(order.shipping_fee)}</span>
                                         </div>
+                                        {order.coupon_code && order.discount_amount > 0 && (
+                                            <motion.div 
+                                                initial={{ opacity: 0, y: -10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                className="flex justify-between text-sm items-center p-3 rounded-lg bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border border-green-200 dark:border-green-800"
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-green-700 dark:text-green-300 font-medium flex items-center gap-1">
+                                                        🎫 Mã giảm giá:
+                                                    </span>
+                                                    <Badge className="bg-green-600 text-white font-mono text-xs">
+                                                        {order.coupon_code}
+                                                    </Badge>
+                                                </div>
+                                                <span className="font-semibold text-green-700 dark:text-green-300">
+                                                    -{formatCurrency(order.discount_amount)}
+                                                </span>
+                                            </motion.div>
+                                        )}
                                         {order.discount > 0 && (
                                             <div className="flex justify-between text-sm text-green-600">
                                                 <span>Giảm giá:</span>
