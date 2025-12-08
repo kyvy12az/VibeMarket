@@ -24,7 +24,7 @@ const About = () => {
       >
         <AboutHero />
 
-        <ProductShowcase3D />
+        {/* <ProductShowcase3D /> */}
 
         <MissionSection />
 
