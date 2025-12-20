@@ -146,12 +146,14 @@ const AddProduct = () => {
 
     const uploadProductImages = async (files: File[]): Promise<string[]> => {
         const formData = new FormData();
-        files.forEach(f => formData.append("files[]", f));
+        files.forEach(file => {
+            formData.append("files[]", file); 
+        });
         formData.append("type", "products");
 
         const res = await fetch(
             `${import.meta.env.VITE_BACKEND_URL}/api/upload.php`,
-            { method: "POST", body: formData }
+            { method: "POST", body: formData, credentials: "include" }
         );
 
         if (!res.ok) {
