@@ -144,143 +144,146 @@ const AddProduct = () => {
         }
     };
 
+    const uploadProductImages = async (files: File[]): Promise<string[]> => {
+        const formData = new FormData();
+        files.forEach(f => formData.append("files[]", f));
+        formData.append("type", "products");
+
+        const res = await fetch(
+            `${import.meta.env.VITE_BACKEND_URL}/api/upload.php`,
+            { method: "POST", body: formData }
+        );
+
+        if (!res.ok) {
+            throw new Error("Upload failed");
+        }
+
+        const data = await res.json();
+
+        // 🔥 CHUẨN BACKEND MỚI
+        if (!data.success || !Array.isArray(data.paths)) {
+            throw new Error(data.message || "Upload response invalid");
+        }
+
+        // 👉 Trả về PATH, không phải URL
+        return data.paths;
+    };
+
+
     // Submit logic giữ nguyên
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
         if (isProcessing) return;
 
         if (!form.name || !form.price || selectedFiles.length === 0) {
             toast({ title: "Vui lòng nhập đủ thông tin sản phẩm", variant: "destructive" });
             return;
         }
+
         if (!sellerId) {
             toast({ title: "Không tìm thấy seller_id", variant: "destructive" });
             return;
         }
 
         setIsProcessing(true);
-        await new Promise(resolve => setTimeout(resolve, 3500));
 
         try {
-            let uploadedImageUrls: string[] = [];
+            /* ================= UPLOAD IMAGE ================= */
+            const imagePaths = await uploadProductImages(selectedFiles);
 
-            if (selectedFiles.length > 0) {
-                const formData = new FormData();
-                selectedFiles.forEach((f) => formData.append("files[]", f));
-                formData.append("type", "products");
-
-                const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/upload.php`, {
-                    method: "POST",
-                    body: formData,
-                });
-
-                const text = await res.text();
-                let uploadResp: any = null;
-                try {
-                    uploadResp = text ? JSON.parse(text) : null;
-                } catch (err) {
-                    console.error("Upload response is not valid JSON:", text, err);
-                    toast({ 
-                        title: "Upload ảnh thất bại", 
-                        description: "Server trả về response không hợp lệ", 
-                        variant: "destructive" 
-                    });
-                    setIsProcessing(false);
-                    return;
-                }
-
-                if (uploadResp && Array.isArray(uploadResp.urls) && uploadResp.urls.length > 0) {
-                    uploadedImageUrls = uploadResp.urls;
-                } else if (uploadResp && Array.isArray(uploadResp.data) && uploadResp.data.length > 0) {
-                    uploadedImageUrls = uploadResp.data.map((d: any) => d.url ?? d.file_url ?? d.fileUrl).filter(Boolean);
-                } else if (uploadResp && uploadResp.url) {
-                    uploadedImageUrls = [uploadResp.url];
-                } else {
-                    console.warn("Upload image failed", uploadResp);
-                    toast({ 
-                        title: "Upload ảnh thất bại", 
-                        description: uploadResp?.message || "Không có đường dẫn trả về", 
-                        variant: "destructive" 
-                    });
-                    setIsProcessing(false);
-                    return;
-                }
+            if (imagePaths.length === 0) {
+                toast({ title: "Upload ảnh thất bại", variant: "destructive" });
+                return;
             }
 
-            console.log("Uploaded image URLs:", uploadedImageUrls);
-
-            if (uploadedImageUrls.length > 0) {
-                setForm(f => ({ ...f, image: uploadedImageUrls[0] }));
-            }
-
+            /* ================= CALC DISCOUNT ================= */
             const price = Number(form.price);
-            const originalPrice = Number(form.originalPrice);
-            let discount = 0;
-            if (originalPrice > 0 && price < originalPrice) {
-                discount = Math.round(((originalPrice - price) / originalPrice) * 100);
-            }
+            const originalPrice = Number(form.originalPrice || 0);
 
-            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/product/add.php`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    ...form,
-                    price: Number(form.price),
-                    originalPrice: Number(form.originalPrice),
-                    image: uploadedImageUrls,
-                    rating: Number(form.rating),
-                    sold: Number(form.sold),
-                    discount,
-                    isLive: form.isLive ? 1 : 0,
-                    seller_id: sellerId,
-                    seller_name: form.seller.name,
-                    seller_avatar: form.seller.avatar,
-                    tags: tags.join(","),
-                    weight: Number(form.weight),
-                    length: Number(form.length),
-                    width: Number(form.width),
-                    height: Number(form.height),
-                    cost: Number(form.cost),
-                    sale_price: Number(form.sale_price),
-                    sale_quantity: Number(form.sale_quantity),
-                    quantity: Number(form.quantity),
-                    low_stock: Number(form.low_stock),
-                    shipping_fee: Number(form.shipping_fee),
-                    release_date: form.release_date,
-                    colors: form.colors,
-                    sizes: form.sizes,
-                    origin: form.origin,
-                    flash_sale: form.flash_sale ? 1 : 0
-                })
-            });
+            const discount =
+                originalPrice > 0 && price < originalPrice
+                    ? Math.round(((originalPrice - price) / originalPrice) * 100)
+                    : 0;
+
+            /* ================= ADD PRODUCT ================= */
+            const res = await fetch(
+                `${import.meta.env.VITE_BACKEND_URL}/api/product/add.php`,
+                {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        ...form,
+
+                        price,
+                        originalPrice,
+
+                        image: imagePaths,     // ✅ toàn bộ ảnh (array path)
+
+                        rating: Number(form.rating),
+                        sold: Number(form.sold),
+                        discount,
+                        isLive: form.isLive ? 1 : 0,
+
+                        seller_id: sellerId,
+                        seller_name: form.seller.name,
+                        seller_avatar: form.seller.avatar,
+
+                        tags: tags.join(","),
+
+                        weight: Number(form.weight),
+                        length: Number(form.length),
+                        width: Number(form.width),
+                        height: Number(form.height),
+
+                        cost: Number(form.cost),
+                        sale_price: Number(form.sale_price),
+                        sale_quantity: Number(form.sale_quantity),
+
+                        quantity: Number(form.quantity),
+                        low_stock: Number(form.low_stock),
+                        shipping_fee: Number(form.shipping_fee),
+
+                        release_date: form.release_date,
+                        colors: form.colors,
+                        sizes: form.sizes,
+                        origin: form.origin,
+
+                        flash_sale: form.flash_sale ? 1 : 0
+                    })
+                }
+            );
 
             const data = await res.json();
-            if (data.success) {
-                toast({ 
-                    title: "Thêm sản phẩm thành công!", 
-                    description: "Sản phẩm mới đã được thêm vào cửa hàng.", 
-                    variant: "success" 
+
+            if (!data.success) {
+                toast({
+                    title: "Thêm sản phẩm thất bại",
+                    description: data.message,
+                    variant: "destructive"
                 });
-                navigate("/vendor-management/product-management");
-            } else {
-                toast({ 
-                    title: "Thêm sản phẩm thất bại", 
-                    description: data.message, 
-                    variant: "destructive" 
-                });
+                return;
             }
-        } catch (err) {
+
+            toast({
+                title: "Thêm sản phẩm thành công!",
+                description: "Sản phẩm mới đã được thêm vào cửa hàng.",
+                variant: "success"
+            });
+
+            navigate("/vendor-management/product-management");
+
+        } catch (err: any) {
             console.error(err);
-            toast({ 
-                title: "Có lỗi xảy ra", 
-                description: "Không thể kết nối tới máy chủ.", 
-                variant: "destructive" 
+            toast({
+                title: "Có lỗi xảy ra",
+                description: err.message || "Không thể kết nối tới máy chủ",
+                variant: "destructive"
             });
         } finally {
             setIsProcessing(false);
         }
     };
+
 
     useEffect(() => {
         if (selectedImages.length > 0) {
@@ -336,13 +339,13 @@ const AddProduct = () => {
                         {/* Main Header */}
                         <div className="relative">
                             <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-purple-500/5 to-pink-500/5 rounded-3xl -z-10" />
-                            
+
                             <div className="p-8">
                                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                                     <div className="flex items-start gap-6">
                                         <motion.div
                                             className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 via-rose-500 to-red-500 shadow-xl"
-                                            animate={{ 
+                                            animate={{
                                                 rotate: [0, 5, -5, 0],
                                                 scale: [1, 1.05, 1]
                                             }}
@@ -412,8 +415,8 @@ const AddProduct = () => {
                                             <CheckCircle className="w-4 h-4 text-green-500" />
                                         </div>
                                     </div>
-                                    <Progress 
-                                        value={getFormCompletion()} 
+                                    <Progress
+                                        value={getFormCompletion()}
                                         className="h-2 bg-muted"
                                     />
                                 </div>
@@ -429,16 +432,14 @@ const AddProduct = () => {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: index * 0.1 }}
-                                        className={`relative cursor-pointer group ${
-                                            currentStep === step.id ? 'scale-105' : 'hover:scale-102'
-                                        } transition-all duration-300`}
+                                        className={`relative cursor-pointer group ${currentStep === step.id ? 'scale-105' : 'hover:scale-102'
+                                            } transition-all duration-300`}
                                         onClick={() => setCurrentStep(step.id)}
                                     >
-                                        <Card className={`border-2 ${
-                                            currentStep === step.id 
-                                                ? 'border-primary shadow-lg bg-primary/5' 
-                                                : 'border-border hover:border-primary/50'
-                                        } transition-all duration-300`}>
+                                        <Card className={`border-2 ${currentStep === step.id
+                                            ? 'border-primary shadow-lg bg-primary/5'
+                                            : 'border-border hover:border-primary/50'
+                                            } transition-all duration-300`}>
                                             <CardContent className="p-4 text-center">
                                                 <div className={`w-12 h-12 mx-auto rounded-xl bg-gradient-to-br ${step.color} flex items-center justify-center mb-3 shadow-sm`}>
                                                     <step.icon className="w-6 h-6 text-white" />
@@ -586,9 +587,9 @@ const AddProduct = () => {
                                                     </Label>
                                                     <div className="flex flex-wrap gap-2">
                                                         {tags.map(tag => (
-                                                            <Badge 
-                                                                key={tag} 
-                                                                variant="secondary" 
+                                                            <Badge
+                                                                key={tag}
+                                                                variant="secondary"
                                                                 className="cursor-pointer hover:bg-destructive hover:text-destructive-foreground transition-colors px-3 py-1"
                                                             >
                                                                 {tag}
@@ -844,8 +845,8 @@ const AddProduct = () => {
                                                         <div className="h-12 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center">
                                                             <TrendingUp className="w-4 h-4 text-green-600 mr-2" />
                                                             <span className="text-green-700 font-semibold">
-                                                                {form.price && form.cost ? 
-                                                                    `${(Number(form.price) - Number(form.cost)).toLocaleString()}đ` : 
+                                                                {form.price && form.cost ?
+                                                                    `${(Number(form.price) - Number(form.cost)).toLocaleString()}đ` :
                                                                     '0đ'
                                                                 }
                                                             </span>
@@ -1025,7 +1026,7 @@ const AddProduct = () => {
                                                                     Sẵn sàng
                                                                 </Badge>
                                                             </div>
-                                                            
+
                                                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                                                 {previewImages.map((img, index) => (
                                                                     <motion.div
@@ -1040,7 +1041,7 @@ const AddProduct = () => {
                                                                             alt={`Ảnh sản phẩm ${index + 1}`}
                                                                             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                                                                         />
-                                                                        
+
                                                                         {/* Overlay */}
                                                                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                                                                             <Button
@@ -1057,7 +1058,7 @@ const AddProduct = () => {
                                                                                 <X className="w-4 h-4" />
                                                                             </Button>
                                                                         </div>
-                                                                        
+
                                                                         {/* Main Image Badge */}
                                                                         {index === 0 && (
                                                                             <Badge className="absolute top-2 left-2 bg-primary shadow-md">

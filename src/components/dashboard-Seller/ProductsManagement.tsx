@@ -554,7 +554,7 @@ export function ProductsManagement() {
                               <div className="w-14 h-14 rounded-lg border bg-muted overflow-hidden shadow-sm">
                                 {product.image ? (
                                   <img 
-                                    src={getImageUrl(product.image) || ''} 
+                                    src={product.image} 
                                     alt={product.name}
                                     className="w-full h-full object-cover"
                                     onError={(e) => {
@@ -735,7 +735,7 @@ export function ProductsManagement() {
                           <div className="w-full h-64 rounded-lg border bg-muted overflow-hidden">
                             {selectedProduct.image ? (
                               <img 
-                                src={getImageUrl(selectedProduct.image) || ''} 
+                                src={selectedProduct.image || ''} 
                                 alt={selectedProduct.name}
                                 className="w-full h-full object-cover"
                                 onError={(e) => {
