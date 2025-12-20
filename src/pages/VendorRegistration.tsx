@@ -115,6 +115,7 @@ const VendorRegistration = () => {
     if (pendingFiles.license_image) {
       const formData = new FormData();
       formData.append("file", pendingFiles.license_image);
+      formData.append("type", "license_image");
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/upload.php`, {
         method: "POST",
         body: formData,
@@ -136,6 +137,7 @@ const VendorRegistration = () => {
     if (pendingFiles.idcard_image) {
       const formData = new FormData();
       formData.append("file", pendingFiles.idcard_image);
+      formData.append("type", "idcard_image");
       const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/upload.php`, {
         method: "POST",
         body: formData,
