@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 import {
   Heart,
@@ -95,11 +96,13 @@ const Community = () => {
 
   const { user } = useAuth();
   const [posts, setPosts] = useState<Post[]>([]);
+  const [myPendingPosts, setMyPendingPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   const [isCreatePostOpen, setIsCreatePostOpen] = useState(false);
   const [isCreateQuestionOpen, setIsCreateQuestionOpen] = useState(false);
+  const [isPendingPostsModalOpen, setIsPendingPostsModalOpen] = useState(false);
 
   const [likeLoadingId, setLikeLoadingId] = useState<number | null>(null);
   const [saveLoadingId, setSaveLoadingId] = useState<number | null>(null);
@@ -235,6 +238,64 @@ const Community = () => {
         });
 
         setPosts(formatted);
+
+        // Fetch user's pending posts
+        try {
+          const pendingRes = await fetch(
+            `${BACKEND_URL}/api/community/posts/my_posts.php?status=pending`,
+            {
+              headers: {
+                Authorization: "Bearer " + token,
+              },
+            }
+          );
+
+          if (pendingRes.ok) {
+            let pendingJson;
+            try {
+              pendingJson = await pendingRes.json();
+            } catch (parseError) {
+              console.error("Failed to parse pending posts JSON:", parseError);
+              setMyPendingPosts([]);
+            }
+
+            if (pendingJson && pendingJson.success && Array.isArray(pendingJson.posts)) {
+              const pendingFormatted: Post[] = pendingJson.posts.map((p: any) => ({
+                id: Number(p.id),
+                type: "sharing" as PostType,
+                user: {
+                  name: p.author?.name || "Bạn",
+                  avatar: p.author?.avatar || null,
+                  verified: false,
+                  followers: 0,
+                },
+                title: p.title || "",
+                content: p.content || "",
+                images: Array.isArray(p.images) ? p.images : [],
+                likes: Number(p.likes || 0),
+                comments: Number(p.comments || 0),
+                shares: Number(p.shares || 0),
+                saves: Number(p.saves || 0),
+                views: Number(p.views || 0),
+                time: formatTime(p.created_at),
+                tags: p.tags || [],
+                featuredProducts: [],
+                isLive: false,
+                liked: Boolean(p.is_liked),
+                isSaved: Boolean(p.is_saved),
+              }));
+
+              setMyPendingPosts(pendingFormatted);
+            } else {
+              setMyPendingPosts([]);
+            }
+          } else {
+            setMyPendingPosts([]);
+          }
+        } catch (err) {
+          console.error("Failed to fetch pending posts:", err);
+          setMyPendingPosts([]);
+        }
       } catch (err) {
         console.error(err);
         setError("Không tải được bài viết cộng đồng. Vui lòng thử lại sau.");
@@ -255,7 +316,7 @@ const Community = () => {
           `${BACKEND_URL}/api/community/users/online.php?limit=20`
         );
         const data = await res.json();
-        
+
         if (data.success && Array.isArray(data.users)) {
           setOnlineUsers(data.users);
         }
@@ -265,10 +326,10 @@ const Community = () => {
     };
 
     fetchOnlineUsers();
-    
+
     // Refresh every 30 seconds
     const interval = setInterval(fetchOnlineUsers, 30000);
-    
+
     return () => clearInterval(interval);
   }, [token]);
 
@@ -276,7 +337,7 @@ const Community = () => {
     const t = localStorage.getItem("vibeventure_token");
     setToken(t);
   }, [user]);
-  
+
   if (!token) {
     return (
       <div className="min-h-screen bg-background relative overflow-hidden">
@@ -288,7 +349,7 @@ const Community = () => {
         </div>
 
         <main className="mx-auto max-w-[1600px] px-4 py-6 relative z-10">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
@@ -357,7 +418,7 @@ const Community = () => {
 
                   {/* Text content */}
                   <div className="space-y-4">
-                    <motion.h2 
+                    <motion.h2
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.6, duration: 0.5 }}
@@ -365,7 +426,7 @@ const Community = () => {
                     >
                       Chào mừng đến với Cộng đồng
                     </motion.h2>
-                    <motion.p 
+                    <motion.p
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.7, duration: 0.5 }}
@@ -376,7 +437,7 @@ const Community = () => {
                   </div>
 
                   {/* Feature highlights */}
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.8, duration: 0.5 }}
@@ -397,7 +458,7 @@ const Community = () => {
                   </motion.div>
 
                   {/* CTA Buttons */}
-                  <motion.div 
+                  <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.9, duration: 0.5 }}
@@ -423,7 +484,7 @@ const Community = () => {
                   </motion.div>
 
                   {/* Additional info */}
-                  <motion.p 
+                  <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 1, duration: 0.5 }}
@@ -465,10 +526,10 @@ const Community = () => {
         prev.map((p) =>
           p.id === postId
             ? {
-                ...p,
-                liked,
-                likes: liked ? p.likes + 1 : Math.max(0, p.likes - 1),
-              }
+              ...p,
+              liked,
+              likes: liked ? p.likes + 1 : Math.max(0, p.likes - 1),
+            }
             : p
         )
       );
@@ -507,10 +568,10 @@ const Community = () => {
         prev.map((p) =>
           p.id === postId
             ? {
-                ...p,
-                isSaved: saved,
-                saves: saved ? p.saves + 1 : Math.max(0, p.saves - 1),
-              }
+              ...p,
+              isSaved: saved,
+              saves: saved ? p.saves + 1 : Math.max(0, p.saves - 1),
+            }
             : p
         )
       );
@@ -561,52 +622,48 @@ const Community = () => {
     }
   };
   const handlePostCreated = (newPost: Post) => {
-    setPosts((prev) => [newPost, ...prev]);
+    // Ensure the avatar URL is correctly set for the new post
+    const avatarUrl = user?.avatar ? user.avatar : "/images/default-avatar.png";
+
+    setMyPendingPosts((prev) => [
+      {
+        ...newPost,
+        type: "sharing",
+        user: {
+          name: user?.name || "Bạn",
+          avatar: avatarUrl,
+          verified: false,
+          followers: 0,
+        },
+        time: formatTime(new Date().toISOString()),
+        likes: 0,
+        comments: 0,
+        shares: 0,
+        saves: 0,
+        views: 0,
+        liked: false,
+        isSaved: false,
+      },
+      ...prev,
+    ]);
   };
 
   const handleQuestionCreated = (newQuestion: Post) => {
     setPosts((prev) => [newQuestion, ...prev]);
   };
 
+
   const getPostTypeIcon = (type: PostType) => {
     switch (type) {
       case "question":
         return <HelpCircle className="w-4 h-4 text-accent" />;
       case "livestream":
-        return (
-          <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse" />
-        );
+        return <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse" />;
       case "tutorial":
         return <BookOpen className="w-4 h-4 text-green-500" />;
       default:
         return null;
     }
-  };
-
-  const getPostTypeBadge = (post: Post) => {
-    if (post.type === "question") {
-      return (
-        <Badge variant="outline" className="text-xs border-accent text-accent">
-          Câu hỏi
-        </Badge>
-      );
-    }
-    if (post.type === "livestream" && post.isLive) {
-      return (
-        <Badge className="text-xs bg-red-500 animate-pulse">🔴 LIVE</Badge>
-      );
-    }
-    if (post.type === "tutorial") {
-      return (
-        <Badge
-          variant="outline"
-          className="text-xs border-green-500 text-green-500"
-        >
-          Hướng dẫn
-        </Badge>
-      );
-    }
-    return null;
   };
 
   return (
@@ -727,6 +784,37 @@ const Community = () => {
                 </div>
               )}
 
+              {myPendingPosts.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <Card className="bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-orange-200 dark:border-orange-900/50">
+                    <div className="p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                          <svg className="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 className="font-semibold text-orange-900 dark:text-orange-100">Bài viết chờ duyệt</h3>
+                          <p className="text-sm text-orange-700 dark:text-orange-300">Bạn có {myPendingPosts.length} bài viết đang chờ duyệt</p>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsPendingPostsModalOpen(true)}
+                      >
+                        Chi tiết
+                      </Button>
+                    </div>
+                  </Card>
+                </motion.div>
+              )}
+
               {!loading &&
                 !error &&
                 posts.map((post, index) => (
@@ -742,7 +830,7 @@ const Community = () => {
                           <Avatar className="w-12 h-12">
                             <AvatarImage
                               src={
-                                post.user.avatar || "/images/default-avatar.png"
+                                post.user.avatar || "/images/avatars/Avt-Default.png"
                               }
                             />
 
@@ -767,11 +855,11 @@ const Community = () => {
                               </div>
                             )}
                             {getPostTypeIcon(post.type)}
-                            {getPostTypeBadge(post)}
+                            {/* {getPostTypeBadge(post)} */}
                           </div>
                           <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                             {post.time && <span>{post.time}</span>}
-                           
+
                           </div>
                         </div>
                       </div>
@@ -921,7 +1009,7 @@ const Community = () => {
 
                         {post.featuredProducts && post.featuredProducts.length > 0 && (
                           <div className="bg-gradient-to-br from-accent/5 to-accent/10 rounded-xl border border-accent/20 overflow-hidden">
-                            <div 
+                            <div
                               className="flex items-center justify-between p-4 cursor-pointer hover:bg-accent/5 transition-all"
                               onClick={() => setExpandedProductsPostId(
                                 expandedProductsPostId === post.id ? null : post.id
@@ -942,7 +1030,7 @@ const Community = () => {
                                 <ChevronRight className="w-5 h-5 text-muted-foreground" />
                               </motion.div>
                             </div>
-                            
+
                             <motion.div
                               initial={false}
                               animate={{
@@ -1003,16 +1091,14 @@ const Community = () => {
                               size="sm"
                               disabled={likeLoadingId === post.id}
                               onClick={() => handleToggleLike(post.id)}
-                              className={`gap-2 text-muted-foreground flex-1 sm:flex-none justify-center hover:bg-red-500/10 transition-smooth ${
-                                post.liked
+                              className={`gap-2 text-muted-foreground flex-1 sm:flex-none justify-center hover:bg-red-500/10 transition-smooth ${post.liked
                                   ? "text-red-500"
                                   : "hover:text-red-500"
-                              }`}
+                                }`}
                             >
                               <Heart
-                                className={`w-4 h-4 ${
-                                  post.liked ? "fill-red-500" : ""
-                                }`}
+                                className={`w-4 h-4 ${post.liked ? "fill-red-500" : ""
+                                  }`}
                               />
                               {post.likes}
                             </Button>
@@ -1051,9 +1137,8 @@ const Community = () => {
                               ${post.isSaved ? "text-yellow-500" : ""}`}
                             >
                               <Bookmark
-                                className={`w-4 h-4 ${
-                                  post.isSaved ? "fill-current" : ""
-                                }`}
+                                className={`w-4 h-4 ${post.isSaved ? "fill-current" : ""
+                                  }`}
                               />
                             </Button>
                           </div>
@@ -1105,18 +1190,15 @@ const Community = () => {
                             className="w-10 h-10 rounded-full object-cover shadow-md"
                           />
                         ) : (
-                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 via-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-semibold shadow-md">
-                            {member.name.charAt(0)}
-                          </div>
+                          <img src="/images/avatars/Avt-Default.png" className="w-10 h-10 rounded-full" />
                         )}
-                        <span 
-                          className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background shadow-sm ${
-                            member.status === 'online' 
-                              ? 'bg-green-500' 
+                        <span
+                          className={`absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background shadow-sm ${member.status === 'online'
+                              ? 'bg-green-500'
                               : member.status === 'away'
-                              ? 'bg-gray-400'
-                              : 'bg-gray-400'
-                          }`}
+                                ? 'bg-gray-400'
+                                : 'bg-gray-400'
+                            }`}
                         ></span>
                       </div>
                       <div className="flex-1 min-w-0">
@@ -1147,6 +1229,86 @@ const Community = () => {
         onClose={() => setIsCreateQuestionOpen(false)}
         onQuestionCreated={handleQuestionCreated}
       />
+
+      <Dialog open={isPendingPostsModalOpen} onOpenChange={setIsPendingPostsModalOpen}>
+        <DialogContent className="max-w-2xl p-0 overflow-hidden">
+          {/* HEADER */}
+          <DialogHeader className="px-6 py-4 border-b bg-muted/40">
+            <DialogTitle className="text-lg font-semibold flex items-center gap-2">
+              ⏳ Bài viết chờ duyệt
+            </DialogTitle>
+            <DialogDescription>
+              Các bài viết đang chờ quản trị viên phê duyệt
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* BODY */}
+          <div className="max-h-[65vh] overflow-y-auto px-6 py-4 space-y-4">
+            {myPendingPosts.length === 0 && (
+              <div className="text-center text-muted-foreground py-10">
+                Không có bài viết nào đang chờ duyệt
+              </div>
+            )}
+
+            {myPendingPosts.map((post) => (
+              <Card
+                key={post.id}
+                className="rounded-xl border hover:shadow-sm transition"
+              >
+                {/* USER INFO */}
+                <div className="flex items-center gap-3 px-4 pt-4">
+                  <img
+                    src={post.user.avatar || "/images/avatars/Avt-Default.png"}
+                    alt={post.user.name}
+                    className="w-10 h-10 rounded-full object-cover border"
+                  />
+
+                  <div className="flex-1">
+                    <div className="font-medium leading-none">
+                      {post.user.name}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {post.time}
+                    </div>
+                  </div>
+
+                  <span className="text-xs px-2 py-1 rounded-full bg-orange-100 text-orange-600">
+                    Chờ duyệt
+                  </span>
+                </div>
+
+                {/* CONTENT */}
+                <div className="px-4 py-3 text-sm leading-relaxed">
+                  {post.content}
+                </div>
+
+                {/* IMAGES */}
+                {post.images?.length > 0 && (
+                  <div className="grid grid-cols-2 gap-2 px-4 pb-4">
+                    {post.images.map((img, idx) => (
+                      <img
+                        key={idx}
+                        src={img}
+                        alt={`Ảnh ${idx + 1}`}
+                        className="h-36 w-full rounded-lg object-cover hover:opacity-90 transition"
+                      />
+                    ))}
+                  </div>
+                )}
+              </Card>
+            ))}
+          </div>
+
+          {/* FOOTER */}
+          <DialogFooter className="px-6 py-4 border-t bg-muted/40">
+            <Button variant="secondary" onClick={() => setIsPendingPostsModalOpen(false)}>
+              Đóng
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+
       {lightboxOpen && (
         <div
           className="fixed inset-0 bg-black/95 z-[9999] flex items-center justify-center animate-in fade-in duration-200"

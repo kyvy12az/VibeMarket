@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,12 +16,27 @@ import {
   MapPin,
   Mail,
   Building,
-  X
+  X,
+  ArrowRight,
+  Loader2,
+  ShieldCheck,
+  Calendar,
+  Sparkles,
+  CheckCircle2,
+  Package,
+  Zap,
+  BarChart3,
+  Users,
+  ChevronRight,
+  Briefcase,
+  Info,
+  Building2
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { Separator } from "@radix-ui/react-separator";
 
 const VendorRegistration = () => {
   const [registrationStatus, setRegistrationStatus] = useState<'none' | 'pending' | 'approved' | 'rejected'>('none');
@@ -87,7 +102,7 @@ const VendorRegistration = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate các trường bắt buộc
+    // Validate required fields
     if (
       !form.store_name.trim() ||
       !form.business_type.trim() ||
@@ -100,7 +115,7 @@ const VendorRegistration = () => {
     ) {
       toast({
         title: "Thiếu thông tin",
-        description: "Vui lòng nhập đầy đủ các trường bắt buộc và tải lên đầy đủ hình ảnh.",
+        description: "Vui lòng nhập đầy đủ các trường bắt buộc và tải lên hình ảnh cần thiết.",
         variant: "destructive",
       });
       return;
@@ -108,160 +123,239 @@ const VendorRegistration = () => {
 
     setLoading(true);
 
-    // Upload ảnh nếu chưa upload
+    // Upload images if not already uploaded
     let licenseImageUrl = form.license_image;
     let idcardImageUrl = form.idcard_image;
 
-    if (pendingFiles.license_image) {
-      const formData = new FormData();
-      formData.append("file", pendingFiles.license_image);
-      formData.append("type", "license_image");
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/upload.php`, {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      if (data.url) {
-        licenseImageUrl = data.url;
-      } else {
-        toast({
-          title: "Upload ảnh thất bại",
-          description: "Không thể upload giấy phép kinh doanh.",
-          variant: "destructive",
-        });
-        setLoading(false);
-        return;
-      }
-    }
+    const uploadFile = async (file: File, type: string) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("type", type);
+        const token = localStorage.getItem('vibeventure_token') || localStorage.getItem('token');
+        const headers: Record<string,string> = {};
+        if (token) headers['Authorization'] = `Bearer ${token.replace('Bearer ', '')}`;
 
-    if (pendingFiles.idcard_image) {
-      const formData = new FormData();
-      formData.append("file", pendingFiles.idcard_image);
-      formData.append("type", "idcard_image");
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/upload.php`, {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      if (data.url) {
-        idcardImageUrl = data.url;
-      } else {
-        toast({
-          title: "Upload ảnh thất bại",
-          description: "Không thể upload CMND/CCCD.",
-          variant: "destructive",
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/upload.php`, {
+          method: "POST",
+          headers,
+          body: formData,
         });
-        setLoading(false);
-        return;
-      }
-    }
 
-    // Gửi đăng ký vendor
-    const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/vendor/register.php`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        user_id: user.id,
-        ...form,
-        license_image: licenseImageUrl,
-        idcard_image: idcardImageUrl,
-      })
-    });
-    const data = await res.json();
-    setLoading(false);
-    if (data.success) {
-      toast({
-        title: "Đăng ký thành công",
-        description: "Hồ sơ của bạn đã được gửi đi và đang chờ xét duyệt.",
-        variant: "success",
+        let data: any = null;
+        try {
+          data = await res.json();
+        } catch (err) {
+          const text = await res.text();
+          throw new Error(`Upload failed: ${res.status} ${text}`);
+        }
+
+        if (data && data.success && data.paths && data.paths.length > 0) {
+          return data.paths[0];
+        } else {
+          throw new Error(data?.message || "Tải lên thất bại");
+        }
+    };
+
+    try {
+      if (pendingFiles.license_image) {
+        licenseImageUrl = await uploadFile(pendingFiles.license_image, "license_image");
+      }
+
+      if (pendingFiles.idcard_image) {
+        idcardImageUrl = await uploadFile(pendingFiles.idcard_image, "idcard_image");
+      }
+
+      // Submit vendor registration
+      const token = localStorage.getItem('vibeventure_token') || localStorage.getItem('token');
+      const regHeaders: Record<string,string> = { "Content-Type": "application/json" };
+      if (token) regHeaders['Authorization'] = `Bearer ${token.replace('Bearer ', '')}`;
+
+      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/vendor/register.php`, {
+        method: "POST",
+        headers: regHeaders,
+        body: JSON.stringify({
+          user_id: user.id,
+          ...form,
+          license_image: licenseImageUrl,
+          idcard_image: idcardImageUrl,
+        }),
       });
-      setRegistrationStatus("pending");
-    } else {
+
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch (err) {
+        const text = await res.text();
+        throw new Error(`Register failed: ${res.status} ${text}`);
+      }
+      setLoading(false);
+      if (data.success) {
+        toast({
+          title: "Đăng ký thành công",
+          description: "Hồ sơ của bạn đã được gửi đi và đang chờ xét duyệt.",
+          variant: "success",
+        });
+        setRegistrationStatus("pending");
+        setSellerInfo({
+          store_name: form.store_name,
+          business_type: form.business_type,
+          tax_id: form.tax_id,
+          establish_year: form.establish_year,
+          description: form.description,
+          phone: form.phone,
+          email: form.email,
+          business_address: form.business_address,
+          created_at: new Date().toISOString(),
+        });
+      } else {
+        throw new Error(data.message || "Đã có lỗi xảy ra. Vui lòng thử lại.");
+      }
+    } catch (error) {
       toast({
-        title: "Đăng ký thất bại",
-        description: data.message || "Đã có lỗi xảy ra. Vui lòng thử lại.",
+        title: "Lỗi",
+        description: error.message,
         variant: "destructive",
       });
+      setLoading(false);
     }
   };
 
-  const RequirementItem = ({ icon: Icon, title, description, completed = false }: {
-    icon: any;
-    title: string;
-    description: string;
-    completed?: boolean;
-  }) => (
-    <div className="flex items-start gap-4 p-4 border border-border rounded-lg">
-      <div className={`w-10 h-10 rounded-full flex items-center justify-center ${completed ? 'bg-green-100 text-green-600' : 'bg-muted text-muted-foreground'
-        }`}>
-        {completed ? <CheckCircle className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
+  const RequirementItem = ({ icon: Icon, title, description }) => (
+    <motion.div
+      whileHover={{ y: -5 }}
+      className="flex gap-4 p-4 rounded-2xl bg-background border border-foreground/5 shadow-sm hover:shadow-md transition-all"
+    >
+      <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+        <Icon className="w-6 h-6 text-primary" />
       </div>
       <div>
-        <h4 className="font-medium mb-1">{title}</h4>
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <h4 className="font-bold text-sm mb-1">{title}</h4>
+        <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
       </div>
-    </div>
+    </motion.div>
   );
 
   if (registrationStatus === 'pending') {
+    const infoItems = [
+      { label: "Tên doanh nghiệp", value: sellerInfo?.store_name, icon: Store },
+      { label: "Loại hình", value: sellerInfo?.business_type, icon: ShieldCheck },
+      { label: "Mã số thuế", value: sellerInfo?.tax_id, icon: FileText },
+      {
+        label: "Ngày gửi hồ sơ",
+        value: sellerInfo?.created_at ? new Date(sellerInfo.created_at).toLocaleDateString("vi-VN") : "",
+        icon: Calendar
+      },
+      { label: "Số điện thoại", value: sellerInfo?.phone, icon: Phone },
+      { label: "Email liên hệ", value: sellerInfo?.email, icon: Mail },
+    ];
+
     return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="container max-w-3xl">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
           >
-            <Card>
-              <CardHeader className="text-center">
-                <div className="w-16 h-16 bg-yellow-100 text-yellow-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Clock className="w-8 h-8" />
-                </div>
-                <CardTitle className="text-2xl">Đăng ký đang được xem xét</CardTitle>
-                <p className="text-muted-foreground mt-2">
-                  Cảm ơn bạn đã gửi đăng ký trở thành vendor. Chúng tôi đang xem xét hồ sơ của bạn.
+            <Card className="border shadow-[0_20px_50px_rgba(0,0,0,0.1)] bg-background/60 backdrop-blur-2xl overflow-hidden relative">
+              {/* Hiệu ứng tia sáng trang trí */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 blur-[50px] rounded-full -mr-16 -mt-16" />
+
+              <CardHeader className="pt-12 pb-8 text-center relative z-10">
+                <motion.div
+                  animate={{
+                    rotate: [0, 5, -5, 0],
+                    scale: [1, 1.05, 1]
+                  }}
+                  transition={{ duration: 4, repeat: Infinity }}
+                  className="w-24 h-24 bg-gradient-to-tr from-amber-500 to-orange-400 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-amber-500/20 rotate-3"
+                >
+                  <Clock className="w-12 h-12 text-white" />
+                </motion.div>
+
+                <Badge variant="secondary" className="mb-4 px-4 py-1 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-none uppercase tracking-widest text-[10px] font-bold">
+                  Đang xử lý hồ sơ
+                </Badge>
+
+                <CardTitle className="text-3xl font-black tracking-tight mb-3">
+                  Hệ thống đang xem xét
+                </CardTitle>
+                <p className="text-muted-foreground max-w-md mx-auto leading-relaxed">
+                  Chào <span className="text-foreground font-semibold">{sellerInfo?.store_name}</span>, hồ sơ của bạn đã được tiếp nhận và đang trong quá trình thẩm định.
                 </p>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="bg-muted/50 p-4 rounded-lg">
-                  <h3 className="font-medium mb-3">Thông tin đã gửi:</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <span className="text-muted-foreground">Tên doanh nghiệp:</span>
-                      <p className="font-medium">{sellerInfo?.store_name || ""}</p>
+
+              <CardContent className="px-8 pb-12 relative z-10">
+                {/* Timeline đơn giản */}
+                <div className="flex justify-between max-w-xs mx-auto mb-10">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-green-500 flex items-center justify-center text-white shadow-lg shadow-green-500/20">
+                      <ShieldCheck className="w-4 h-4" />
                     </div>
-                    <div>
-                      <span className="text-muted-foreground">Loại hình:</span>
-                      <p className="font-medium">{sellerInfo?.business_type || ""}</p>
+                    <span className="text-[10px] font-bold uppercase opacity-60">Gửi đơn</span>
+                  </div>
+                  <div className="flex-1 h-[2px] bg-gradient-to-r from-green-500 to-amber-500 mt-4 mx-2 opacity-30" />
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-amber-500 flex items-center justify-center text-white shadow-lg shadow-amber-500/20 animate-pulse">
+                      <Loader2 className="w-4 h-4 animate-spin" />
                     </div>
-                    <div>
-                      <span className="text-muted-foreground">Mã số thuế:</span>
-                      <p className="font-medium">{sellerInfo?.tax_id || ""}</p>
+                    <span className="text-[10px] font-bold uppercase">Đang duyệt</span>
+                  </div>
+                  <div className="flex-1 h-[2px] bg-muted mt-4 mx-2" />
+                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
+                      <Store className="w-4 h-4" />
                     </div>
-                    <div>
-                      <span className="text-muted-foreground">Ngày gửi:</span>
-                      <p className="font-medium">{sellerInfo?.created_at ? new Date(sellerInfo.created_at).toLocaleDateString('vi-VN') : ""}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Số điện thoại:</span>
-                      <p className="font-medium">{sellerInfo?.phone || ""}</p>
-                    </div>
-                    <div>
-                      <span className="text-muted-foreground">Email:</span>
-                      <p className="font-medium">{sellerInfo?.email || ""}</p>
-                    </div>
-                    <div className="md:col-span-2">
-                      <span className="text-muted-foreground">Địa chỉ:</span>
-                      <p className="font-medium">{sellerInfo?.business_address || ""}</p>
-                    </div>
-                    <div className="md:col-span-2">
-                      <span className="text-muted-foreground">Mô tả:</span>
-                      <p className="font-medium">{sellerInfo?.description || ""}</p>
+                    <span className="text-[10px] font-bold uppercase opacity-40">Mở shop</span>
+                  </div>
+                </div>
+
+                {/* Thông tin chi tiết */}
+                <div className="bg-secondary/30 rounded-3xl p-6 border border-foreground/5 mb-8">
+                  <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-6 flex items-center gap-2">
+                    <FileText className="w-4 h-4" /> Chi tiết đăng ký
+                  </h3>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-12 text-sm">
+                    {infoItems.map((item, index) => (
+                      <div key={index} className="group flex flex-col gap-1">
+                        <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                          <item.icon className="w-3.5 h-3.5" />
+                          <span className="text-[11px] font-medium uppercase tracking-tight">{item.label}</span>
+                        </div>
+                        <p className="font-semibold text-foreground/90 pl-5.5">{item.value || "---"}</p>
+                      </div>
+                    ))}
+
+                    <Separator className="md:col-span-2 opacity-50" />
+
+                    <div className="md:col-span-2 flex flex-col gap-1">
+                      <div className="flex items-center gap-2 text-muted-foreground mb-1">
+                        <MapPin className="w-3.5 h-3.5" />
+                        <span className="text-[11px] font-medium uppercase tracking-tight">Địa chỉ kinh doanh</span>
+                      </div>
+                      <p className="font-semibold text-foreground/90 leading-snug">
+                        {sellerInfo?.business_address || "Chưa cung cấp địa chỉ"}
+                      </p>
                     </div>
                   </div>
                 </div>
-                <Badge className="w-fit mx-auto" variant="outline">
-                  Thời gian xem xét: 3-5 ngày làm việc
-                </Badge>
+
+                {/* Thông báo footer */}
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 rounded-2xl border border-amber-500/20 bg-amber-500/5">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-amber-500/10 rounded-lg">
+                      <Clock className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-bold text-amber-900 dark:text-amber-200">Thời gian dự kiến</p>
+                      <p className="text-[11px] text-amber-700/70">Từ 3 đến 5 ngày làm việc (trừ T7, CN)</p>
+                    </div>
+                  </div>
+                  <button className="text-xs font-bold flex items-center gap-2 text-amber-700 hover:text-amber-800 transition-colors uppercase tracking-widest">
+                    Hỗ trợ trực tuyến <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
               </CardContent>
             </Card>
           </motion.div>
@@ -271,42 +365,118 @@ const VendorRegistration = () => {
   }
 
   if (registrationStatus === 'approved') {
+    const benefits = [
+      { title: "Đăng bán sản phẩm", desc: "Không giới hạn số lượng", icon: Package, color: "text-blue-500" },
+      { title: "Quản lý đơn hàng", desc: "Hệ thống tự động hóa", icon: Zap, color: "text-amber-500" },
+      { title: "Báo cáo chi tiết", desc: "Theo dõi doanh thu 24/7", icon: BarChart3, color: "text-emerald-500" },
+      { title: "Tiếp cận khách hàng", desc: "Hàng triệu người dùng", icon: Users, color: "text-rose-500" },
+    ];
+
     return (
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="container max-w-3xl">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5, type: "spring" }}
           >
-            <Card>
-              <CardHeader className="text-center">
-                <div className="w-16 h-16 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CheckCircle className="w-8 h-8" />
-                </div>
-                <CardTitle className="text-2xl">Chúc mừng! Đăng ký đã được duyệt</CardTitle>
-                <p className="text-muted-foreground mt-2">
-                  Tài khoản vendor của bạn đã được kích hoạt. Bạn có thể bắt đầu bán hàng ngay bây giờ.
+            <Card className="border shadow-[0_30px_60px_rgba(0,0,0,0.12)] bg-background/70 backdrop-blur-3xl overflow-hidden relative">
+              {/* Hiệu ứng trang trí phía sau */}
+              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-emerald-400 via-green-500 to-teal-400" />
+              <div className="absolute -top-24 -left-24 w-64 h-64 bg-emerald-500/10 blur-[100px] rounded-full" />
+
+              <CardHeader className="pt-16 pb-8 text-center relative z-10">
+                <motion.div
+                  initial={{ rotate: -20, scale: 0 }}
+                  animate={{ rotate: 0, scale: 1 }}
+                  transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                  className="relative w-28 h-28 mx-auto mb-8"
+                >
+                  {/* Vòng tròn hào quang */}
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.2, 0.5] }}
+                    transition={{ duration: 3, repeat: Infinity }}
+                    className="absolute inset-0 bg-emerald-500/20 rounded-full blur-xl"
+                  />
+                  <div className="relative bg-gradient-to-tr from-emerald-500 to-green-400 w-full h-full rounded-full flex items-center justify-center shadow-2xl shadow-emerald-500/40">
+                    <CheckCircle2 className="w-14 h-14 text-white" />
+                  </div>
+                  {/* Icon trang trí xung quanh */}
+                  <motion.div
+                    animate={{ y: [0, -10, 0] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="absolute -top-2 -right-2 bg-background p-1.5 rounded-lg shadow-md"
+                  >
+                    <Sparkles className="w-5 h-5 text-amber-500" />
+                  </motion.div>
+                </motion.div>
+
+                <Badge variant="outline" className="mb-4 px-4 py-1 border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 uppercase tracking-[0.2em] text-[10px] font-black">
+                  Tài khoản đã kích hoạt
+                </Badge>
+
+                <CardTitle className="text-4xl font-black tracking-tight mb-4 bg-gradient-to-br from-foreground to-foreground/70 bg-clip-text text-transparent">
+                  Chào mừng Vendor mới!
+                </CardTitle>
+                <p className="text-muted-foreground max-w-md mx-auto leading-relaxed">
+                  Chúc mừng <span className="text-emerald-600 font-bold">{sellerInfo?.store_name}</span>. Hồ sơ của bạn đã được phê duyệt xuất sắc. Cánh cửa kinh doanh đã sẵn sàng chào đón bạn!
                 </p>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-                  <h3 className="font-medium text-green-800 mb-2">Quyền lợi vendor:</h3>
-                  <ul className="text-sm text-green-700 space-y-1">
-                    <li>• Đăng bán sản phẩm không giới hạn</li>
-                    <li>• Quản lý đơn hàng và khách hàng</li>
-                    <li>• Báo cáo doanh thu chi tiết</li>
-                    <li>• Hỗ trợ marketing và khuyến mãi</li>
-                  </ul>
+
+              <CardContent className="px-10 pb-16 relative z-10">
+                {/* Grid quyền lợi được thiết kế lại */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10">
+                  {benefits.map((benefit, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.4 + index * 0.1 }}
+                      className="flex items-center gap-4 p-4 rounded-2xl bg-secondary/40 border border-foreground/5 hover:bg-secondary/60 transition-colors group"
+                    >
+                      <div className={`p-3 rounded-xl bg-background shadow-sm group-hover:scale-110 transition-transform`}>
+                        <benefit.icon className={`w-5 h-5 ${benefit.color}`} />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold">{benefit.title}</h4>
+                        <p className="text-[11px] text-muted-foreground leading-tight">{benefit.desc}</p>
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
 
-                <Button
-                  className="w-full"
-                  size="lg"
-                  onClick={() => navigate('/vendor-management')}
+                {/* Box hành động chính */}
+                <motion.div
+                  whileHover={{ y: -2 }}
+                  className="relative group"
                 >
-                  <Store className="w-5 h-5 mr-2" />
-                  Đi đến Dashboard Vendor
-                </Button>
+                  <div className="absolute -inset-1 bg-gradient-to-r from-emerald-500 to-green-600 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-1000 group-hover:duration-200" />
+                  <Button
+                    className="relative w-full h-16 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xl flex items-center justify-center gap-3 transition-all overflow-hidden"
+                    size="lg"
+                    onClick={() => navigate('/vendor-management')}
+                  >
+                    <motion.div
+                      className="flex items-center gap-2 text-lg font-bold"
+                      whileHover={{ x: 5 }}
+                    >
+                      <Store className="w-6 h-6" />
+                      Bắt đầu kinh doanh ngay
+                      <ArrowRight className="w-5 h-5" />
+                    </motion.div>
+
+                    {/* Hiệu ứng ánh sáng chạy qua nút */}
+                    <motion.div
+                      className="absolute top-0 -left-[100%] w-[50%] h-full bg-white/20 skew-x-[-25deg]"
+                      animate={{ left: ["100%", "-100%"] }}
+                      transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                    />
+                  </Button>
+                </motion.div>
+
+                <p className="text-center mt-6 text-[11px] text-muted-foreground uppercase tracking-widest font-medium opacity-60">
+                  Bạn cần hỗ trợ? <span className="underline cursor-pointer hover:text-emerald-600">Liên hệ đội ngũ Vendor Success</span>
+                </p>
               </CardContent>
             </Card>
           </motion.div>
@@ -317,304 +487,326 @@ const VendorRegistration = () => {
 
   return (
     <form onSubmit={handleSubmit}>
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
-          {/* Header */}
+      <div className="min-h-screen bg-background pb-20">
+        <div className="container mx-auto px-4 py-12 max-w-5xl">
+
+          {/* Header Section */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-center mb-8"
+            className="text-center mb-16"
           >
-            <div className="w-16 h-16 bg-gradient-hero rounded-full flex items-center justify-center mx-auto mb-4">
-              <Store className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-3xl font-bold mb-2">Đăng ký trở thành Vendor</h1>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Tham gia cộng đồng bán hàng của VibeMarket và tiếp cận hàng triệu khách hàng tiềm năng
+            <Badge variant="outline" className="mb-4 px-4 py-1 border-primary/30 bg-primary/5 text-primary uppercase tracking-[0.2em] text-[10px] font-black">
+              Vendor Partnership
+            </Badge>
+            <h1 className="text-4xl md:text-5xl font-black tracking-tighter mb-4">
+              Bắt đầu hành trình <span className="text-primary">Kinh doanh</span>
+            </h1>
+            <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
+              Tham gia cộng đồng VibeMarket để tiếp cận hàng triệu khách hàng và hệ thống quản lý bán hàng chuyên nghiệp.
             </p>
           </motion.div>
 
-          {/* Requirements */}
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>Yêu cầu để trở thành Vendor</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <RequirementItem
-                icon={Building}
-                title="Giấy phép kinh doanh"
-                description="Cần có giấy phép kinh doanh hợp lệ hoặc đăng ký hộ kinh doanh"
-              />
-              <RequirementItem
-                icon={FileText}
-                title="Chứng minh thư/CCCD"
-                description="Bản sao chứng minh thư hoặc căn cước công dân còn hiệu lực"
-              />
-              <RequirementItem
-                icon={MapPin}
-                title="Địa chỉ kinh doanh"
-                description="Có địa chỉ cửa hàng/kho hàng rõ ràng, có thể xác minh"
-              />
-              <RequirementItem
-                icon={Phone}
-                title="Thông tin liên hệ"
-                description="Số điện thoại và email để khách hàng có thể liên hệ"
-              />
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
-          {/* Registration Form */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Thông tin đăng ký</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {/* Business Info */}
-              <div className="space-y-4">
-                <h3 className="font-medium text-lg">Thông tin doanh nghiệp</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="store_name">Tên doanh nghiệp/Cửa hàng *</Label>
-                    <Input
-                      id="store_name"
-                      value={form.store_name}
-                      onChange={handleChange}
-                      placeholder="VD: Beauty World Store"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="business_type">Loại hình kinh doanh *</Label>
-                    <Input
-                      id="business_type"
-                      value={form.business_type}
-                      onChange={handleChange}
-                      placeholder="VD: Cửa hàng mỹ phẩm"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="tax_id">Mã số thuế</Label>
-                    <Input
-                      id="tax_id"
-                      value={form.tax_id}
-                      onChange={handleChange}
-                      placeholder="VD: 0123456789"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="establish_year">Năm thành lập</Label>
-                    <Input
-                      id="establish_year"
-                      value={form.establish_year}
-                      onChange={handleChange}
-                      type="number"
-                      placeholder="VD: 2020"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="description">Mô tả doanh nghiệp *</Label>
-                  <Textarea
-                    id="description"
-                    value={form.description}
-                    onChange={handleChange}
-                    rows={4}
-                    placeholder="Mô tả về sản phẩm/dịch vụ chính của cửa hàng..."
+            {/* Cột trái: Yêu cầu & Hỗ trợ */}
+            <div className="lg:col-span-1 space-y-6">
+              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+                <h3 className="text-sm font-bold uppercase tracking-widest mb-6 flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-primary" /> Yêu cầu cơ bản
+                </h3>
+                <div className="space-y-4">
+                  <RequirementItem
+                    icon={Building2}
+                    title="Pháp lý"
+                    description="Giấy phép kinh doanh hoặc hộ kinh doanh cá thể."
+                  />
+                  <RequirementItem
+                    icon={FileText}
+                    title="Định danh"
+                    description="CCCD/CMND người đại diện còn hiệu lực."
+                  />
+                  <RequirementItem
+                    icon={MapPin}
+                    title="Vận hành"
+                    description="Địa chỉ kho hàng hoặc cửa hàng cụ thể."
                   />
                 </div>
-              </div>
 
-              {/* Contact Info */}
-              <div className="space-y-4">
-                <h3 className="font-medium text-lg">Thông tin liên hệ</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="phone">Số điện thoại *</Label>
-                    <Input
-                      id="phone"
-                      value={form.phone}
-                      onChange={handleChange}
-                      placeholder="VD: 0901234567"
-                    />
+                <Card className="mt-8 bg-primary/5 border-primary/10 overflow-hidden relative">
+                  <div className="absolute top-0 right-0 p-2 opacity-10">
+                    <Info className="w-20 h-20" />
                   </div>
-                  <div>
-                    <Label htmlFor="email">Email liên hệ *</Label>
-                    <Input
-                      id="email"
-                      value={form.email}
-                      onChange={handleChange}
-                      type="email"
-                      placeholder="VD: contact@store.com"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="business_address">Địa chỉ kinh doanh *</Label>
-                  <Textarea
-                    id="business_address"
-                    value={form.business_address}
-                    onChange={handleChange}
-                    rows={3}
-                    placeholder="Địa chỉ cụ thể của cửa hàng/kho hàng..."
-                  />
-                </div>
-              </div>
+                  <CardContent className="p-6 relative z-10">
+                    <h4 className="font-bold text-sm mb-2">Cần hỗ trợ đăng ký?</h4>
+                    <p className="text-xs text-muted-foreground mb-4">Đội ngũ chuyên viên của chúng tôi luôn sẵn sàng hướng dẫn bạn hoàn thiện hồ sơ.</p>
+                    <Button variant="link" className="p-0 h-auto text-primary font-bold text-xs uppercase tracking-wider">
+                      Liên hệ ngay <ChevronRight className="w-3 h-3 ml-1" />
+                    </Button>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
 
-              {/* Document Upload */}
-              <div className="space-y-4">
-                <h3 className="font-medium text-lg">Tải lên giấy tờ</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Giấy phép kinh doanh */}
-                  <div className="border-2 border-dashed border-border rounded-lg p-0 h-48 w-full flex items-center justify-center relative overflow-hidden">
-                    <input
-                      type="file"
-                      accept="image/*,application/pdf"
-                      style={{ display: "none" }}
-                      id="license_image_upload"
-                      onChange={e => handleFilePick(e, "license_image")}
-                    />
-                    {form.license_image ? (
-                      <div className="w-full h-full relative group">
-                        {form.license_image.endsWith(".pdf") ? (
-                          <div className="flex flex-col items-center justify-center h-full w-full">
-                            <a
-                              href={form.license_image}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-primary underline"
-                            >
-                              Xem file PDF
-                            </a>
-                          </div>
-                        ) : (
-                          <img
-                            src={form.license_image}
-                            alt="Giấy phép kinh doanh"
-                            className="object-contain w-full h-full"
+            {/* Cột phải: Form đăng ký */}
+            <div className="lg:col-span-2">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2 }}
+              >
+                <Card className="border shadow-[0_20px_50px_rgba(0,0,0,0.08)] bg-background/70 backdrop-blur-xl">
+                  <CardHeader className="pb-0">
+                    <CardTitle className="text-2xl font-bold">Hồ sơ đăng ký</CardTitle>
+                    <CardDescription>Vui lòng cung cấp thông tin chính xác để quá trình duyệt nhanh hơn.</CardDescription>
+                  </CardHeader>
+
+                  <CardContent className="pt-8 space-y-10">
+
+                    {/* Section 1: Business */}
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
+                          <Briefcase className="w-4 h-4 text-foreground/70" />
+                        </div>
+                        <h3 className="font-bold text-lg">Thông tin doanh nghiệp</h3>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="store_name" className="text-xs font-bold uppercase tracking-wide">
+                            Tên cửa hàng *
+                          </Label>
+                          <Input
+                            id="store_name"
+                            value={form.store_name} // Kết nối logic
+                            onChange={handleChange} // Kết nối logic
+                            className="h-12 bg-secondary/30 border-none focus-visible:ring-primary"
+                            placeholder="VD: Vibe Art Studio"
                           />
-                        )}
-                      </div>
-                    ) : pendingFiles.license_image && previewUrls.license_image ? (
-                      <div className="w-full h-full flex flex-col items-center justify-center relative">
-                        <img
-                          src={previewUrls.license_image}
-                          alt="Preview giấy phép kinh doanh"
-                          className="object-contain w-full h-full"
-                        />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          type="button"
-                          className="absolute top-1 right-1 bg-red-500 text-white"
-                          onClick={() => setPendingFiles(f => ({ ...f, license_image: null }))}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <div
-                        className="flex flex-col items-center justify-center w-full h-full cursor-pointer"
-                        onClick={() => document.getElementById("license_image_upload")?.click()}
-                      >
-                        <Upload className="w-8 h-8 text-muted-foreground mb-2" />
-                        <p className="text-sm font-medium mb-1">Giấy phép kinh doanh</p>
-                        <p className="text-xs text-muted-foreground mb-3">PNG, JPG, PDF tối đa 5MB</p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          type="button"
-                        >
-                          Chọn tệp
-                        </Button>
-                      </div>
-                    )}
-                  </div>
+                        </div>
 
-                  {/* CMND/CCCD */}
-                  <div className="border-2 border-dashed border-border rounded-lg p-0 h-48 w-full flex items-center justify-center relative overflow-hidden">
-                    <input
-                      type="file"
-                      accept="image/*,application/pdf"
-                      style={{ display: "none" }}
-                      id="idcard_image_upload"
-                      onChange={e => handleFilePick(e, "idcard_image")}
-                    />
-                    {form.idcard_image ? (
-                      <div className="w-full h-full relative group">
-                        {form.idcard_image.endsWith(".pdf") ? (
-                          <div className="flex flex-col items-center justify-center h-full w-full">
-                            <a
-                              href={form.idcard_image}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-primary underline"
-                            >
-                              Xem file PDF
-                            </a>
-                          </div>
-                        ) : (
-                          <img
-                            src={form.idcard_image}
-                            alt="CMND/CCCD"
-                            className="object-contain w-full h-full"
+                        <div className="space-y-2">
+                          <Label htmlFor="business_type" className="text-xs font-bold uppercase tracking-wide">
+                            Loại hình *
+                          </Label>
+                          <Input
+                            id="business_type"
+                            value={form.business_type} // Kết nối logic
+                            onChange={handleChange} // Kết nối logic
+                            className="h-12 bg-secondary/30 border-none"
+                            placeholder="VD: Thời trang & Phụ kiện"
                           />
-                        )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="tax_id" className="text-xs font-bold uppercase tracking-wide">
+                            Mã số thuế
+                          </Label>
+                          <Input
+                            id="tax_id"
+                            value={form.tax_id} // Kết nối logic
+                            onChange={handleChange} // Kết nối logic
+                            className="h-12 bg-secondary/30 border-none"
+                            placeholder="10 chữ số"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="establish_year" className="text-xs font-bold uppercase tracking-wide">
+                            Năm hoạt động
+                          </Label>
+                          <Input
+                            id="establish_year"
+                            type="number"
+                            value={form.establish_year} // Kết nối logic
+                            onChange={handleChange} // Kết nối logic
+                            className="h-12 bg-secondary/30 border-none"
+                            placeholder="2024"
+                          />
+                        </div>
                       </div>
-                    ) : pendingFiles.idcard_image && previewUrls.idcard_image ? (
-                      <div className="w-full h-full flex flex-col items-center justify-center relative">
-                        <img
-                          src={previewUrls.idcard_image}
-                          alt="Preview CMND/CCCD"
-                          className="object-contain w-full h-full"
+
+                      <div className="space-y-2">
+                        <Label htmlFor="description" className="text-xs font-bold uppercase tracking-wide">
+                          Giới thiệu ngắn *
+                        </Label>
+                        <Textarea
+                          id="description"
+                          value={form.description} // Kết nối logic
+                          onChange={handleChange} // Kết nối logic
+                          className="bg-secondary/30 border-none min-h-[100px] focus-visible:ring-primary"
+                          placeholder="Chia sẻ một chút về câu chuyện thương hiệu của bạn..."
                         />
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          type="button"
-                          className="absolute top-1 right-1 bg-red-500 text-white"
-                          onClick={() => setPendingFiles(f => ({ ...f, idcard_image: null }))}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
                       </div>
-                    ) : (
-                      <div
-                        className="flex flex-col items-center justify-center w-full h-full cursor-pointer"
-                        onClick={() => document.getElementById("idcard_image_upload")?.click()}
-                      >
-                        <Upload className="w-8 h-8 text-muted-foreground mb-2" />
-                        <p className="text-sm font-medium mb-1">CMND/CCCD</p>
-                        <p className="text-xs text-muted-foreground mb-3">PNG, JPG, PDF tối đa 5MB</p>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          type="button"
-                        >
-                          Chọn tệp
-                        </Button>
+                    </div>
+
+                    <Separator className="opacity-50" />
+
+                    {/* Section 2: Contact */}
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
+                          <Phone className="w-4 h-4 text-foreground/70" />
+                        </div>
+                        <h3 className="font-bold text-lg">Thông tin liên hệ</h3>
                       </div>
-                    )}
-                  </div>
-                </div>
 
-              </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                          <Label htmlFor="phone" className="text-xs font-bold uppercase tracking-wide">
+                            Số điện thoại *
+                          </Label>
+                          <Input
+                            id="phone"
+                            value={form.phone} // Kết nối logic
+                            onChange={handleChange} // Kết nối logic
+                            className="h-12 bg-secondary/30 border-none focus-visible:ring-primary"
+                            placeholder="090 ••• ••••"
+                          />
+                        </div>
 
-              {/* Terms */}
-              <div className="bg-muted/50 p-4 rounded-lg">
-                <div className="flex items-start gap-3">
-                  <input type="checkbox" id="terms" className="mt-1" />
-                  <label htmlFor="terms" className="text-sm text-muted-foreground">
-                    Tôi đồng ý với <a href="#" className="text-primary underline">Điều khoản dịch vụ</a> và
-                    <a href="#" className="text-primary underline ml-1">Chính sách bán hàng</a> của VibeMarket
-                  </label>
-                </div>
-              </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="email" className="text-xs font-bold uppercase tracking-wide">
+                            Email kinh doanh *
+                          </Label>
+                          <Input
+                            id="email"
+                            type="email"
+                            value={form.email} // Kết nối logic
+                            onChange={handleChange} // Kết nối logic
+                            className="h-12 bg-secondary/30 border-none focus-visible:ring-primary"
+                            placeholder="hello@brand.com"
+                          />
+                        </div>
+                      </div>
 
-              <Button type="submit" disabled={loading} className="w-full" size="lg">
-                <FileText className="w-5 h-5 mr-2" />
-                Gửi đăng ký
-              </Button>
-            </CardContent>
-          </Card>
+                      <div className="space-y-2">
+                        <Label htmlFor="business_address" className="text-xs font-bold uppercase tracking-wide">
+                          Địa chỉ trụ sở *
+                        </Label>
+                        <Input
+                          id="business_address"
+                          value={form.business_address} // Kết nối logic
+                          onChange={handleChange} // Kết nối logic
+                          className="h-12 bg-secondary/30 border-none focus-visible:ring-primary"
+                          placeholder="Số nhà, tên đường, quận/huyện..."
+                        />
+                      </div>
+                    </div>
+
+                    <Separator className="opacity-50" />
+
+                    {/* Section 3: Uploads */}
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center">
+                          <Upload className="w-4 h-4 text-foreground/70" />
+                        </div>
+                        <h3 className="font-bold text-lg">Tài liệu xác minh</h3>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {[
+                          { id: "license_image", label: "Giấy phép kinh doanh" },
+                          { id: "idcard_image", label: "Mặt trước CMND/CCCD" }
+                        ].map((doc) => (
+                          <div key={doc.id} className="relative group">
+                            <Label className="text-[10px] font-black uppercase tracking-[0.15em] text-muted-foreground mb-3 block">
+                              {doc.label} *
+                            </Label>
+
+                            {/* Input gốc bị ẩn */}
+                            <input
+                              type="file"
+                              id={doc.id}
+                              className="hidden"
+                              accept="image/*,application/pdf"
+                              onChange={(e) => handleFilePick(e, doc.id)} // Hàm xử lý file của bạn
+                            />
+
+                            {/* Vùng hiển thị hoặc Click để chọn */}
+                            <div
+                              onClick={() => document.getElementById(doc.id).click()}
+                              className={`
+            relative border-2 border-dashed rounded-2xl transition-all cursor-pointer overflow-hidden
+            h-[200px] flex flex-col items-center justify-center gap-3
+            ${previewUrls[doc.id]
+                                  ? 'border-emerald-500/50 bg-emerald-500/5'
+                                  : 'border-muted-foreground/20 hover:border-primary/50 hover:bg-primary/5'}
+          `}
+                            >
+                              {previewUrls[doc.id] ? (
+                                // GIAO DIỆN KHI ĐÃ CHỌN FILE
+                                <div className="w-full h-full relative group/preview">
+                                  <img
+                                    src={previewUrls[doc.id]}
+                                    alt="Preview"
+                                    className="w-full h-full object-cover"
+                                  />
+                                  {/* Lớp phủ khi hover vào ảnh để xóa */}
+                                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/preview:opacity-100 transition-opacity flex items-center justify-center">
+                                    <Button
+                                      variant="destructive"
+                                      size="sm"
+                                      className="rounded-full"
+                                      onClick={(e) => {
+                                        e.stopPropagation(); // Ngăn việc kích hoạt click vào input
+                                        setPendingFiles(prev => ({ ...prev, [doc.id]: null }));
+                                        setPreviewUrls(prev => ({ ...prev, [doc.id]: null }));
+                                        const inputEl = document.getElementById(doc.id) as HTMLInputElement | null;
+                                        if (inputEl) inputEl.value = '';
+                                      }}
+                                    >
+                                      <X className="w-4 h-4 mr-2" /> Xóa và chọn lại
+                                    </Button>
+                                  </div>
+                                  {/* Badge đánh dấu đã xong */}
+                                  <div className="absolute top-2 right-2 bg-emerald-500 text-white p-1 rounded-full">
+                                    <CheckCircle2 className="w-4 h-4" />
+                                  </div>
+                                </div>
+                              ) : (
+                                // GIAO DIỆN KHI CHƯA CHỌN FILE
+                                <>
+                                  <div className="p-4 bg-background rounded-2xl shadow-sm group-hover:scale-110 transition-transform">
+                                    <Upload className="w-6 h-6 text-primary" />
+                                  </div>
+                                  <div className="text-center px-4">
+                                    <p className="text-sm font-bold">Nhấn để tải lên</p>
+                                    <p className="text-[10px] text-muted-foreground uppercase mt-1 tracking-tight">
+                                      Hỗ trợ PNG, JPG hoặc PDF (Tối đa 5MB)
+                                    </p>
+                                  </div>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Footer Action */}
+                    <div className="pt-6 space-y-6">
+                      <div className="flex items-start gap-3 p-4 rounded-xl bg-secondary/40 border border-foreground/5">
+                        <input type="checkbox" id="terms" className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary" />
+                        <label htmlFor="terms" className="text-xs text-muted-foreground leading-normal">
+                          Tôi cam kết các thông tin cung cấp trên là hoàn toàn chính xác và đồng ý với
+                          <span className="text-primary font-bold mx-1 cursor-pointer">Điều khoản cộng tác</span>
+                          của VibeMarket.
+                        </label>
+                      </div>
+
+                      <Button type="submit" disabled={loading} className="w-full h-14 text-lg font-bold rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] transition-transform">
+                        Gửi hồ sơ đăng ký <ChevronRight className="ml-2 w-5 h-5" />
+                      </Button>
+                    </div>
+
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
+          </div>
         </div>
       </div>
     </form>

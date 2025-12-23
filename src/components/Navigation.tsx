@@ -58,7 +58,7 @@ const menuItems: MenuItem[] = [
         icon: Sparkles,
         hasSubmenu: true,
         submenu: [
-            { to: "/ai-stylist", label: "AI Stylist", icon: Gift },
+            // { to: "/ai-stylist", label: "AI Stylist", icon: Gift },
             { to: "/ai-shopping", label: "AI trợ lý mua sắm", icon: UserCircle },
         ]
     },
@@ -98,7 +98,7 @@ const Navigation = () => {
 
     // Helper function để lấy URL đầy đủ của avatar
     const getAvatarUrl = (avatar: string | null | undefined) => {
-        if (!avatar) return '/images/avatars/default-avatar.jpg';
+        if (!avatar) return '/images/avatars/Avt-Default.png';
         
         // Nếu avatar bắt đầu bằng http/https (Google, Facebook avatar) thì dùng luôn
         if (avatar.startsWith('http://') || avatar.startsWith('https://')) {

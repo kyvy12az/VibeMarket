@@ -41,10 +41,11 @@ import PageTransition from "./components/PageTransition";
 import LoadingOverlay from "./components/LoadingOverlay";
 import { AnimatePresence } from "framer-motion";
 import ScrollToTop from "./components/ScrollToTop";
+import ScrollToTop2 from "./components/common/ScrollToTop";
 import LuckyWheel from "./pages/LuckyWheel";
 import { Toaster as HotToaster } from "react-hot-toast";
 import CallClient from "./pages/CallClient";
-import {EditProduct} from "./components/dashboard-Seller/EditProduct";
+import { EditProduct } from "./components/dashboard-Seller/EditProduct";
 import ReviewOrder from "./pages/ReviewOrder";
 import { StoreDetail } from "./components/store/StoreDetail";
 import AIShoppingAssistant from "./pages/AIShoppingAssistant";
@@ -52,11 +53,20 @@ import PostDetail from "./pages/PostDetail";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PayCallback from "./pages/PayCallback";
 import UserVouchers from "./pages/UserVouchers";
+import ChatBot from "./components/common/ChatBot";
+import OrderTracking from "./pages/OrderTracking";
+import OrderTrackingGoong from "./pages/OrderTrackingGoong";
 
 const queryClient = new QueryClient();
 
 function App() {
   const location = useLocation();
+
+  const isChatBotHidden =
+    location.pathname.startsWith("/vendor-management") ||
+    location.pathname === "/messages" ||
+    location.pathname === "/login" ||
+    location.pathname === "/register";
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -93,27 +103,27 @@ function App() {
                   <Route path="/wallet" element={<WalletPage />} />
                   <Route path="/rewards" element={<RewardsRedemption />} />
                   <Route path="/checkout" element={<Checkout />} />
-                  <Route 
-                    path="/profile" 
+                  <Route
+                    path="/profile"
                     element={
                       <ProtectedRoute>
                         <Profile />
                       </ProtectedRoute>
-                    } 
+                    }
                   />
-                  <Route 
-                    path="/profile/:userId" 
+                  <Route
+                    path="/profile/:userId"
                     element={
                       <ProtectedRoute>
                         <Profile />
                       </ProtectedRoute>
-                    } 
+                    }
                   />
                   <Route path="/orders" element={<OrderManagement />} />
                   <Route path="/orders/:code" element={<OrderDetail />} />
                   <Route path="/orders/:orderId/review" element={<ReviewOrder />} />
                   <Route path="/vendor-registration" element={<VendorRegistration />} />
-                  
+
                   <Route path="/about" element={<About />} />
                   <Route path="/store/:sellerId" element={<StoreDetail />} />
                   {/* <Route path="/vendor-management" element={<ShopManagement />} /> */}
@@ -131,13 +141,14 @@ function App() {
                 </Route>
                 <Route path="/vendor-management/*" element={<ShopDashboard />} />
                 <Route path="/vendor-management/edit-product/:id" element={<EditProduct />} />
-                <Route 
-                  path="/messages" 
+                <Route path="/order-tracking" element={<OrderTracking />} />
+                <Route
+                  path="/messages"
                   element={
                     <ProtectedRoute>
                       <Messages />
                     </ProtectedRoute>
-                  } 
+                  }
                 />
                 <Route
                   path="call/:conversationId/:callType/:callId"
@@ -149,6 +160,10 @@ function App() {
               {/* </AnimatePresence> */}
               {/* </PageTransition> */}
               {/* </BrowserRouter> */}
+
+              {!isChatBotHidden && <ChatBot />}
+              {!isChatBotHidden && <ScrollToTop2 key="scroll-to-top" />}
+
             </TooltipProvider>
           </CartProvider>
         </ThemeProvider>

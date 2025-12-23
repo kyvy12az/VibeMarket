@@ -34,8 +34,7 @@ export default function Checkout() {
     city: "",
     ward: "",
     note: "",
-    paymentMethod: "cod",
-    shippingMethod: "standard"
+    paymentMethod: "cod"
   });
 
   const [product, setProduct] = useState(productData || null);
@@ -54,9 +53,17 @@ export default function Checkout() {
   const [loadingCoupon, setLoadingCoupon] = useState(false);
 
   const subtotal = productsData.reduce((sum, p) => sum + p.price * p.quantity, 0);
-  const shippingFee = formData.shippingMethod === "express" ? 50000 : 25000;
+  const [shippingFee, setShippingFee] = useState<number | null>(null);
+  const [feeLoading, setFeeLoading] = useState(false);
+  const [distanceInfo, setDistanceInfo] = useState<any>(null);
   const discountAmount = appliedCoupon?.discount_amount || 0;
-  const total = subtotal + shippingFee - discountAmount;
+  const customer_address_full = formData.address && formData.ward && formData.city
+    ? `${formData.address}, ${formData.ward}, ${formData.city}`
+    : "";
+  // Updated effectiveShippingFee to only include shippingFee if it is not null
+  const effectiveShippingFee = customer_address_full && shippingFee !== null ? shippingFee : 0;
+  // Updated total calculation to reflect the change in effectiveShippingFee
+  const total = subtotal + effectiveShippingFee - discountAmount;
 
   useEffect(() => {
     if (!productData && location.state?.productId) {
@@ -72,10 +79,14 @@ export default function Checkout() {
 
   // Fetch provinces on mount
   useEffect(() => {
+    console.log('DEBUG: Gọi API danh sách tỉnh (provinces)');
     fetch('https://provinces.open-api.vn/api/v2/p/')
       .then((res) => res.json())
-      .then((data) => setProvinces(data))
-      .catch((err) => console.error('Error fetching provinces:', err));
+      .then((data) => {
+        console.log('DEBUG: provinces response', data?.length ?? 'no-data');
+        setProvinces(data);
+      })
+      .catch((err) => console.error('Lỗi khi lấy danh sách tỉnh:', err));
   }, []);
 
   // Fetch wards when province changes
@@ -83,17 +94,18 @@ export default function Checkout() {
     if (selectedProvince) {
       fetch(`https://provinces.open-api.vn/api/v2/p/${selectedProvince}?depth=2`)
         .then((res) => res.json())
-        .then((data) => {
-          // API v2 trả về trực tiếp mảng wards (đã gộp từ tất cả districts)
-          if (data.wards && Array.isArray(data.wards)) {
-            setWards(data.wards);
-          } else {
-            setWards([]);
-          }
-          setSelectedWard("");
-          handleInputChange("ward", "");
-        })
-        .catch((err) => console.error('Error fetching wards:', err));
+          .then((data) => {
+            console.log('DEBUG: wards response for province', selectedProvince, data);
+            // API v2 trả về trực tiếp mảng wards (đã gộp từ tất cả districts)
+            if (data.wards && Array.isArray(data.wards)) {
+              setWards(data.wards);
+            } else {
+              setWards([]);
+            }
+            setSelectedWard("");
+            handleInputChange("ward", "");
+          })
+          .catch((err) => console.error('Lỗi khi lấy wards:', err));
     } else {
       setWards([]);
       setSelectedWard("");
@@ -105,7 +117,7 @@ export default function Checkout() {
     fetchAvailableCoupons();
   }, [productsData]);
 
-  const fetchAvailableCoupons = async () => {
+    const fetchAvailableCoupons = async () => {
     if (!productsData.length) return;
 
     const sellerId = productsData[0]?.seller_id;
@@ -124,7 +136,7 @@ export default function Checkout() {
           .map((coupon: any) => {
             // Calculate potential discount for sorting
             let potentialDiscount = 0;
-            const orderTotal = subtotal + shippingFee;
+            const orderTotal = subtotal + (customer_address_full ? shippingFee : 0);
 
             if (coupon.min_purchase && orderTotal < coupon.min_purchase) {
               potentialDiscount = 0; // Can't use this coupon
@@ -144,7 +156,7 @@ export default function Checkout() {
         setAvailableCoupons(activeCoupons);
       }
     } catch (error) {
-      console.error('Error fetching coupons:', error);
+      console.error('Lỗi khi lấy coupon:', error);
     }
   };
 
@@ -156,7 +168,7 @@ export default function Checkout() {
 
     setLoadingCoupon(true);
     const sellerId = productsData[0]?.seller_id;
-    const orderTotal = subtotal + shippingFee;
+    const orderTotal = subtotal + (customer_address_full ? shippingFee : 0);
 
     try {
       const response = await fetch(
@@ -233,6 +245,74 @@ export default function Checkout() {
     return true;
   };
 
+  // Fetch dynamic shipping fee from backend calculate_fee.php
+  useEffect(() => {
+    // Need a full customer address to calculate
+    const customer_address = formData.address && formData.ward && formData.city
+      ? `${formData.address}, ${formData.ward}, ${formData.city}`
+      : "";
+
+    // Try to get seller address from products data if available
+    const seller_address = productsData?.[0]?.seller_address || productsData?.[0]?.seller?.address || import.meta.env.VITE_STORE_ADDRESS || "";
+
+    if (!customer_address) {
+      console.warn('DEBUG: customer_address thiếu, bỏ qua tính phí:', { customer_address });
+      // cannot calculate without customer address — use fallback fee
+      setShippingFee(0);
+      setDistanceInfo(null);
+      return;
+    }
+    if (!seller_address) {
+      console.warn('DEBUG: seller_address rỗng — sẽ gửi seller_id để backend lookup business_address');
+    }
+
+    const controller = new AbortController();
+    const fetchFee = async () => {
+      setFeeLoading(true);
+      try {
+        const seller_id_payload = productsData?.[0]?.seller_id || null;
+        const payload = { seller_id: seller_id_payload, seller_address, customer_address };
+        console.log('DEBUG: Gửi yêu cầu tính phí vận chuyển đến backend', payload);
+        const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/shipping/calculate_fee.php`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
+
+        const text = await res.text();
+        let data = null;
+        try {
+          data = JSON.parse(text);
+        } catch (parseErr) {
+          console.error('Lỗi parse JSON từ calculate_fee.php:', parseErr, 'raw:', text);
+        }
+
+        console.log('DEBUG: calculate_fee.php trả về:', data ?? text);
+
+        if (data && data.success && typeof data.shipping_fee !== 'undefined') {
+          console.log('DEBUG: Phí vận chuyển tính được:', data.shipping_fee, 'khoảng cách:', data.distance_km);
+          setShippingFee(Number(data.shipping_fee));
+          setDistanceInfo({ distance_km: data.distance_km, duration: data.duration, note: data.note });
+        } else {
+          console.warn('DEBUG: calculate_fee không trả phí hợp lệ, không đặt phí vận chuyển', data);
+          setShippingFee(null);
+          setDistanceInfo(null);
+        }
+      } catch (err) {
+        console.error('Lỗi khi gọi calculate_fee.php:', err);
+        // on network/error, do not set a default fee
+        setShippingFee(null);
+        setDistanceInfo(null);
+      } finally {
+        setFeeLoading(false);
+      }
+    };
+
+    fetchFee();
+    return () => controller.abort();
+  }, [formData.address, formData.ward, formData.city, productsData]);
+
   const handleSubmit = async () => {
     if (isProcessing) return;
 
@@ -271,10 +351,9 @@ export default function Checkout() {
     const seller_id = productsData[0]?.seller_id || 1;
     const customer_id = user?.id || null;
     const address = `${formData.address}, ${formData.ward}, ${formData.city}`;
-    const subtotal = productsData.reduce((sum, p) => sum + p.price * p.quantity, 0);
-    const shippingFee = formData.shippingMethod === "express" ? 50000 : 25000;
-    const discountAmount = appliedCoupon?.discount_amount || 0;
-    const total = subtotal + shippingFee - discountAmount;
+    // Use the computed `subtotal`, `shippingFee` (state) and `discountAmount` from outer scope
+    const discountAmountLocal = appliedCoupon?.discount_amount || 0;
+    const total = subtotal + effectiveShippingFee - discountAmountLocal;
 
     const orderData = {
       customer_id,
@@ -285,10 +364,10 @@ export default function Checkout() {
       payment_method: formData.paymentMethod,
       products,
       total,
-      shipping_fee: shippingFee,
+      shipping_fee: effectiveShippingFee,
       email: formData.email,
       coupon_id: appliedCoupon?.id || null,
-      discount_amount: discountAmount,
+      discount_amount: discountAmountLocal,
     };
 
     try {
@@ -297,7 +376,15 @@ export default function Checkout() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(orderData),
       });
-      const data = await res.json();
+      console.log('DEBUG: Gửi order.create với payload:', orderData);
+      const text = await res.text();
+      let data = null;
+      try {
+        data = JSON.parse(text);
+      } catch (e) {
+        console.error('Lỗi parse JSON từ create.php:', e, 'raw:', text);
+      }
+      console.log('DEBUG: create.php trả về:', data ?? text);
 
       if (!data.success) {
         toast.error(data.message || "Có lỗi xảy ra!");
@@ -761,83 +848,7 @@ export default function Checkout() {
                       </motion.div>
 
                       <Separator className="my-6" />
-
-                      <div className="space-y-3">
-                        <Label className="flex items-center gap-2 text-base">
-                          <Truck className="w-5 h-5" />
-                          Phương thức vận chuyển
-                        </Label>
-                        <RadioGroup
-                          value={formData.shippingMethod}
-                          onValueChange={(value) => handleInputChange("shippingMethod", value)}
-                          className="space-y-3"
-                        >
-                          <motion.div 
-                            whileHover={{ scale: 1.02 }}
-                            className={`relative flex items-center space-x-3 p-4 border-2 rounded-xl transition-all cursor-pointer ${
-                              formData.shippingMethod === "standard" 
-                                ? "border-primary bg-primary/5 shadow-md" 
-                                : "border-border hover:border-primary/50 hover:bg-muted/50"
-                            }`}
-                          >
-                            <RadioGroupItem value="standard" id="standard" />
-                            <div className="flex-1">
-                              <Label htmlFor="standard" className="flex items-center justify-between cursor-pointer">
-                                <div className="flex items-center gap-3">
-                                  <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
-                                    <Truck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                                  </div>
-                                  <div>
-                                    <p className="font-semibold">Giao hàng tiêu chuẩn</p>
-                                    <div className="flex items-center gap-2 mt-1">
-                                      <Clock className="w-3 h-3 text-muted-foreground" />
-                                      <span className="text-xs text-muted-foreground">3-5 ngày làm việc</span>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <p className="font-bold text-primary">25.000₫</p>
-                                  <Badge variant="secondary" className="mt-1">Phổ biến</Badge>
-                                </div>
-                              </Label>
-                            </div>
-                          </motion.div>
-
-                          <motion.div 
-                            whileHover={{ scale: 1.02 }}
-                            className={`relative flex items-center space-x-3 p-4 border-2 rounded-xl transition-all cursor-pointer ${
-                              formData.shippingMethod === "express" 
-                                ? "border-orange-500 bg-orange-50 dark:bg-orange-950/30 shadow-md" 
-                                : "border-border hover:border-orange-400 hover:bg-muted/50"
-                            }`}
-                          >
-                            <RadioGroupItem value="express" id="express" />
-                            <div className="flex-1">
-                              <Label htmlFor="express" className="flex items-center justify-between cursor-pointer">
-                                <div className="flex items-center gap-3">
-                                  <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
-                                    <Truck className="w-5 h-5 text-orange-600 dark:text-orange-400" />
-                                  </div>
-                                  <div>
-                                    <p className="font-semibold flex items-center gap-2">
-                                      Giao hàng nhanh
-                                      <Sparkles className="w-4 h-4 text-orange-500" />
-                                    </p>
-                                    <div className="flex items-center gap-2 mt-1">
-                                      <Clock className="w-3 h-3 text-muted-foreground" />
-                                      <span className="text-xs text-muted-foreground">1-2 ngày làm việc</span>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="text-right">
-                                  <p className="font-bold text-orange-600 dark:text-orange-400">50.000₫</p>
-                                  <Badge variant="outline" className="mt-1 border-orange-300 text-orange-600">Nhanh</Badge>
-                                </div>
-                              </Label>
-                            </div>
-                          </motion.div>
-                        </RadioGroup>
-                      </div>
+                      
                     </CardContent>
                   </Card>
                 )}
@@ -1377,7 +1388,21 @@ export default function Checkout() {
                         <Truck className="w-4 h-4" />
                         Phí vận chuyển
                       </span>
-                      <span className="font-medium">{shippingFee.toLocaleString()}₫</span>
+                      <span className="font-medium">
+                        {!customer_address_full ? (
+                          <span className="text-sm text-muted-foreground">Chọn địa chỉ để tính phí</span>
+                        ) : feeLoading ? (
+                          <span className="inline-flex items-center gap-2">
+                            <svg className="animate-spin h-4 w-4 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                            </svg>
+                            <span className="text-sm">Đang tải...</span>
+                          </span>
+                        ) : (
+                          <span>{shippingFee?.toLocaleString() || "Liên hệ để biết giá"}đ</span>
+                        )}
+                      </span>
                     </div>
                     {appliedCoupon && (
                       <div className="flex justify-between text-sm">

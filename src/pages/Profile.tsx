@@ -96,7 +96,7 @@ const Profile = () => {
     name: "Nguyễn Kỳ Vỹ",
     email: "kyvydev@gmail.com",
     phone: "0901234567",
-    avatar: "/images/avatars/Avt-Vy.jpg",
+    avatar: userData?.avatar || "/images/avatars/Avt-Default.png", // Default avatar path
     bio: "Yêu thích mua sắm và chia sẻ những sản phẩm tuyệt vời với cộng đồng.",
     address: "Cổ Thành, Triệu Phong, Quảng Trị",
     joinDate: "Tháng 3, 2023",
@@ -110,8 +110,6 @@ const Profile = () => {
       following: 89,
     }
   };
-
-
 
   const categoryData = [
     { name: "Làm đẹp", value: 35, amount: 8750000, color: "hsl(var(--primary))" },
@@ -489,7 +487,7 @@ const Profile = () => {
                     >
                       <Avatar className="w-32 h-32 border-4 border-background shadow-2xl ring-4 ring-primary/20">
                         <AvatarImage 
-                          src={avatarPreview || (mockUser.avatar?.startsWith('/uploads/') ? `${BACKEND_URL}${mockUser.avatar}` : mockUser.avatar)} 
+                          src={avatarPreview || (mockUser.avatar?.startsWith('/uploads/') ? `${BACKEND_URL}${mockUser.avatar}` : mockUser.avatar || '/images/avatars/Avt-Default.png')} 
                           alt={mockUser.name} 
                         />
                         <AvatarFallback className="text-3xl bg-gradient-to-br from-primary to-purple-600 text-white">
@@ -526,7 +524,7 @@ const Profile = () => {
                                 <div className="flex flex-col items-center gap-4">
                                   <Avatar className="w-40 h-40 border-4 border-primary/20 shadow-2xl">
                                     <AvatarImage 
-                                      src={avatarPreview || (mockUser.avatar?.startsWith('/uploads/') ? `${BACKEND_URL}${mockUser.avatar}` : mockUser.avatar)} 
+                                      src={avatarPreview || (mockUser.avatar?.startsWith('/uploads/') ? `${BACKEND_URL}${mockUser.avatar}` : mockUser.avatar || '/images/avatars/Avt-Default.png')} 
                                       alt="Preview" 
                                     />
                                     <AvatarFallback className="text-5xl">{mockUser.name[0]}</AvatarFallback>

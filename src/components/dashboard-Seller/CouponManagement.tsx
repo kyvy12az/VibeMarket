@@ -49,6 +49,13 @@ import {
   DollarSign,
   Calendar,
   Package,
+  Download,
+  ChevronRight,
+  ArrowUpRight,
+  BarChart3,
+  Clock,
+  Activity,
+  MoreHorizontal,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
@@ -327,200 +334,336 @@ export function CouponManagement() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Quản lý mã giảm giá</h1>
-          <p className="text-muted-foreground mt-1">
-            Tạo và quản lý mã giảm giá cho sản phẩm của bạn
-          </p>
+      <div className="relative mb-10">
+        {/* Phần trang trí nền mờ (Optional - tạo chiều sâu) */}
+        <div className="absolute -left-4 -top-4 w-24 h-24 bg-indigo-500/5 blur-3xl rounded-full" />
+
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-10">
+          <div className="space-y-3">
+            {/* Breadcrumb nhỏ tinh tế */}
+            <nav className="flex items-center gap-2 text-[11px] font-bold text-slate-400 uppercase tracking-[0.2em]">
+              <span>Marketing</span>
+              <ChevronRight className="w-3 h-3" />
+              <span className="text-indigo-600">Mã giảm giá</span>
+            </nav>
+
+            <div className="flex items-center gap-4">
+              {/* Icon đại diện với Glassmorphism */}
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white shadow-sm border border-slate-100 group-hover:scale-110 transition-transform">
+                <Ticket className="h-6 w-6 text-indigo-600" />
+              </div>
+
+              <div>
+                <h1 className="text-4xl font-black tracking-tight text-slate-900 italic">
+                  <span className="text-blue-300">Quản lý </span>
+                  <span className="bg-gradient-to-r from-indigo-600 to-violet-500 bg-clip-text text-transparent italic font-black">Ưu đãi</span>
+                </h1>
+                <p className="text-slate-500 font-medium mt-1 flex items-center gap-2">
+                  Thiết lập và tối ưu hóa các chương trình khuyến mãi của bạn
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Khu vực nút bấm Action */}
+          <div className="flex items-center gap-3">
+            {/* Nút phụ - Xuất file */}
+            <Button
+              variant="outline"
+              className="hidden sm:flex border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold rounded-2xl px-5 h-12 transition-all active:scale-95"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Xuất báo cáo
+            </Button>
+
+            {/* Nút chính - Tạo mã mới */}
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button
+                onClick={() => setIsAddDialogOpen(true)}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-[0_10px_20px_-5px_rgba(79,70,229,0.3)] rounded-2xl px-7 h-12 gap-2 transition-all duration-300 group"
+              >
+                <div className="bg-white/20 p-1 rounded-lg group-hover:rotate-90 transition-transform duration-300">
+                  <Plus className="w-4 h-4" />
+                </div>
+                <span className="font-bold tracking-wide text-sm uppercase">Tạo mã giảm giá</span>
+              </Button>
+            </motion.div>
+          </div>
         </div>
-        <Button onClick={() => setIsAddDialogOpen(true)} className="gap-2">
-          <Plus className="w-4 h-4" />
-          Tạo mã giảm giá
-        </Button>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Tổng mã giảm giá</CardTitle>
-            <Ticket className="w-4 h-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{coupons.length}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Đang hoạt động</CardTitle>
-            <Ticket className="w-4 h-4 text-green-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {coupons.filter((c) => c.status === "active").length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Đã hết hạn</CardTitle>
-            <Ticket className="w-4 h-4 text-red-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {coupons.filter((c) => c.status === "expired").length}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Lượt sử dụng</CardTitle>
-            <Ticket className="w-4 h-4 text-blue-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {coupons.reduce((sum, c) => sum + c.used_count, 0)}
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+        {[
+          {
+            label: "Tổng mã giảm giá",
+            value: coupons.length,
+            icon: Ticket,
+            // Light: indigo-600, Dark: indigo-400
+            color: "text-indigo-600 dark:text-indigo-400",
+            // Light: indigo-50, Dark: indigo-500/10 (trong suốt hơn)
+            bg: "bg-indigo-50 dark:bg-indigo-500/10",
+            trend: "+12% tháng này",
+            borderColor: "group-hover:border-indigo-500/50 dark:group-hover:border-indigo-400/50"
+          },
+          {
+            label: "Đang hoạt động",
+            value: coupons.filter((c) => c.status === "active").length,
+            icon: Activity,
+            color: "text-emerald-600 dark:text-emerald-400",
+            bg: "bg-emerald-50 dark:bg-emerald-500/10",
+            trend: "Đang chạy",
+            borderColor: "group-hover:border-emerald-500/50 dark:group-hover:border-emerald-400/50"
+          },
+          {
+            label: "Đã hết hạn",
+            value: coupons.filter((c) => c.status === "expired").length,
+            icon: Clock,
+            color: "text-rose-600 dark:text-rose-400",
+            bg: "bg-rose-50 dark:bg-rose-500/10",
+            trend: "-2 mã hôm nay",
+            borderColor: "group-hover:border-rose-500/50 dark:group-hover:border-rose-400/50"
+          },
+          {
+            label: "Lượt sử dụng",
+            value: coupons.reduce((sum, c) => sum + c.used_count, 0),
+            icon: BarChart3,
+            color: "text-amber-600 dark:text-amber-400",
+            bg: "bg-amber-50 dark:bg-amber-500/10",
+            trend: "Tổng tích lũy",
+            borderColor: "group-hover:border-amber-500/50 dark:group-hover:border-amber-400/50"
+          }
+        ].map((stat, index) => (
+          <motion.div
+            key={index}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+          >
+            <Card className={`relative overflow-hidden bg-background border-slate-200/60 shadow-sm transition-all duration-300 ${stat.borderColor} group`}>
+              {/* Trang trí nhẹ ở góc card */}
+              <div className={`absolute -right-2 -top-2 w-16 h-16 rounded-full ${stat.bg} blur-2xl opacity-0 group-hover:opacity-100 transition-opacity`} />
+
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">
+                      {stat.label}
+                    </p>
+                    <div className="flex items-baseline gap-2">
+                      <h2 className="text-3xl font-black tracking-tight text-foreground">
+                        {stat.value.toLocaleString()}
+                      </h2>
+                    </div>
+                  </div>
+
+                  {/* Icon Container */}
+                  <div className={`h-12 w-12 rounded-2xl ${stat.bg} flex items-center justify-center ${stat.color} shadow-inner transition-transform group-hover:scale-110 duration-300`}>
+                    <stat.icon className="w-6 h-6" />
+                  </div>
+                </div>
+
+                {/* Dòng trạng thái nhỏ phía dưới (tăng vẻ chuyên nghiệp) */}
+                <div className="mt-4 pt-4 border-t border-slate-50 flex items-center justify-between">
+                  <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${stat.bg} ${stat.color}`}>
+                    {stat.trend}
+                  </span>
+                  <ArrowUpRight className="w-3 h-3 text-slate-300" />
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
       </div>
 
       {/* Search and Filter */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Danh sách mã giảm giá</CardTitle>
-            <Button variant="outline" size="sm" onClick={fetchCoupons} className="gap-2">
-              <RefreshCw className="w-4 h-4" />
-              Làm mới
-            </Button>
+      <Card className="bg-background border-slate-200/60 dark:border-slate-800/60 shadow-xl shadow-slate-200/20 dark:shadow-none rounded-[2rem] overflow-hidden">
+        <CardHeader className="border-b border-slate-100/50 dark:border-slate-800/50 bg-slate-50/30 dark:bg-slate-900/20 p-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <CardTitle className="text-2xl font-black tracking-tight flex items-center gap-3">
+                Danh sách mã giảm giá
+                <Badge variant="secondary" className="rounded-lg font-bold bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-none">
+                  {filteredCoupons.length} Mã
+                </Badge>
+              </CardTitle>
+              <p className="text-muted-foreground text-sm mt-1 font-medium">
+                Quản lý và theo dõi hiệu suất các chương trình ưu đãi
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="relative group">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-indigo-500 transition-colors" />
+                <Input
+                  placeholder="Tìm kiếm mã hoặc mô tả..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10 pr-4 w-full md:w-[300px] bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 rounded-xl focus-visible:ring-indigo-500/20 focus-visible:border-indigo-500 h-11 transition-all"
+                />
+              </div>
+
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={fetchCoupons}
+                className="rounded-xl h-11 w-11 hover:bg-slate-50 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-800 transition-all active:scale-90"
+              >
+                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-indigo-500' : 'text-slate-500'}`} />
+              </Button>
+            </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Tìm kiếm mã giảm giá..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-          </div>
 
+        <CardContent className="p-0"> {/* P-0 để bảng tràn viền đẹp hơn */}
           {loading ? (
-            <div className="text-center py-8">
-              <RefreshCw className="w-8 h-8 animate-spin mx-auto text-muted-foreground" />
-              <p className="text-muted-foreground mt-2">Đang tải...</p>
+            <div className="flex flex-col items-center justify-center py-24 gap-4">
+              <div className="relative">
+                <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin" />
+                <Ticket className="w-5 h-5 text-indigo-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+              </div>
+              <p className="text-slate-500 font-bold animate-pulse uppercase tracking-widest text-xs">Đang đồng bộ dữ liệu...</p>
             </div>
           ) : filteredCoupons.length === 0 ? (
-            <div className="text-center py-12">
-              <Ticket className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-              <p className="text-muted-foreground">Chưa có mã giảm giá nào</p>
+            <div className="flex flex-col items-center justify-center py-32 bg-slate-50/30 dark:bg-transparent">
+              <div className="w-20 h-20 bg-slate-100 dark:bg-slate-900 rounded-[2.5rem] flex items-center justify-center mb-6 ring-8 ring-slate-50 dark:ring-slate-900/50">
+                <Ticket className="w-10 h-10 text-slate-300 dark:text-slate-700" />
+              </div>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100">Không tìm thấy mã nào</h3>
+              <p className="text-slate-500 mt-2 max-w-[250px] text-center text-sm font-medium">
+                Thử thay đổi từ khóa tìm kiếm hoặc tạo mã giảm giá mới.
+              </p>
             </div>
           ) : (
-            <div className="rounded-md border">
+            <div className="overflow-x-auto">
               <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Mã giảm giá</TableHead>
-                    <TableHead>Loại</TableHead>
-                    <TableHead>Giá trị</TableHead>
-                    <TableHead>Sản phẩm</TableHead>
-                    <TableHead>Thời gian</TableHead>
-                    <TableHead>Lượt dùng</TableHead>
-                    <TableHead>Trạng thái</TableHead>
-                    <TableHead className="text-right">Thao tác</TableHead>
+                <TableHeader className="bg-slate-50/50 dark:bg-slate-900/50">
+                  <TableRow className="border-b border-slate-100 dark:border-slate-800 hover:bg-transparent">
+                    <TableHead className="py-5 pl-8 font-bold text-slate-500 dark:text-slate-400 uppercase text-[10px] tracking-[0.1em]">Mã ưu đãi</TableHead>
+                    <TableHead className="font-bold text-slate-500 dark:text-slate-400 uppercase text-[10px] tracking-[0.1em]">Loại & Giá trị</TableHead>
+                    <TableHead className="font-bold text-slate-500 dark:text-slate-400 uppercase text-[10px] tracking-[0.1em]">Sản phẩm áp dụng</TableHead>
+                    <TableHead className="font-bold text-slate-500 dark:text-slate-400 uppercase text-[10px] tracking-[0.1em]">Hiệu lực</TableHead>
+                    <TableHead className="font-bold text-slate-500 dark:text-slate-400 uppercase text-[10px] tracking-[0.1em]">Sử dụng</TableHead>
+                    <TableHead className="font-bold text-slate-500 dark:text-slate-400 uppercase text-[10px] tracking-[0.1em]">Trạng thái</TableHead>
+                    <TableHead className="text-right pr-8 font-bold text-slate-500 dark:text-slate-400 uppercase text-[10px] tracking-[0.1em]">Thao tác</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   <AnimatePresence mode="popLayout">
-                    {filteredCoupons.map((coupon) => (
+                    {filteredCoupons.map((coupon, idx) => (
                       <motion.tr
                         key={coupon.id}
-                        initial={{ opacity: 0, y: 20 }}
+                        initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        className="group"
+                        transition={{ delay: idx * 0.05 }}
+                        className="group border-b border-slate-50 dark:border-slate-800/50 hover:bg-slate-50/80 dark:hover:bg-indigo-500/5 transition-colors"
                       >
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            <Ticket className="w-4 h-4 text-primary" />
-                            <span className="font-mono font-semibold">{coupon.code}</span>
+                        <TableCell className="py-5 pl-8">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-500/20 font-mono font-black text-sm shadow-sm">
+                              %
+                            </div>
+                            <div>
+                              <span className="font-mono font-black text-slate-900 dark:text-slate-100 text-base tracking-wider uppercase group-hover:text-indigo-600 transition-colors">
+                                {coupon.code}
+                              </span>
+                              <p className="text-[11px] text-slate-400 font-medium truncate max-w-[150px]">
+                                {coupon.description || "Không có mô tả"}
+                              </p>
+                            </div>
                           </div>
-                          {coupon.description && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {coupon.description}
-                            </p>
-                          )}
                         </TableCell>
+
                         <TableCell>
-                          {coupon.discount_type === "percentage" ? (
-                            <Badge variant="outline" className="gap-1">
-                              <Percent className="w-3 h-3" />
-                              Phần trăm
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="gap-1">
-                              <DollarSign className="w-3 h-3" />
-                              Cố định
-                            </Badge>
-                          )}
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-1.5 font-black text-slate-900 dark:text-slate-100">
+                              {coupon.discount_type === "percentage" ? (
+                                <Percent className="w-3.5 h-3.5 text-indigo-500" />
+                              ) : (
+                                <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
+                              )}
+                              {formatDiscount(coupon)}
+                            </div>
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
+                              {coupon.min_purchase > 0 ? `Đơn từ ${coupon.min_purchase.toLocaleString()}₫` : "Mọi đơn hàng"}
+                            </span>
+                          </div>
                         </TableCell>
-                        <TableCell className="font-semibold">
-                          {formatDiscount(coupon)}
-                          {coupon.max_discount && coupon.discount_type === "percentage" && (
-                            <p className="text-xs text-muted-foreground">
-                              Tối đa: {coupon.max_discount.toLocaleString("vi-VN")}₫
-                            </p>
-                          )}
-                          {coupon.min_purchase && (
-                            <p className="text-xs text-muted-foreground">
-                              Đơn tối thiểu: {coupon.min_purchase.toLocaleString("vi-VN")}₫
-                            </p>
-                          )}
-                        </TableCell>
+
                         <TableCell>
                           {coupon.product_name ? (
-                            <Badge variant="secondary" className="gap-1">
-                              <Package className="w-3 h-3" />
-                              {coupon.product_name}
-                            </Badge>
+                            <div className="flex items-center gap-2 max-w-[180px]">
+                              <div className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg group-hover:bg-white dark:group-hover:bg-slate-700 transition-colors">
+                                <Package className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                              </div>
+                              <span className="text-sm font-bold text-slate-600 dark:text-slate-300 truncate">
+                                {coupon.product_name}
+                              </span>
+                            </div>
                           ) : (
-                            <span className="text-muted-foreground text-sm">Tất cả</span>
+                            <Badge variant="outline" className="text-[10px] font-black uppercase border-slate-200 dark:border-slate-800 text-slate-400">
+                              Tất cả SP
+                            </Badge>
                           )}
                         </TableCell>
+
                         <TableCell>
-                          <div className="flex items-center gap-1 text-sm">
-                            <Calendar className="w-3 h-3 text-muted-foreground" />
-                            <span>{new Date(coupon.start_date).toLocaleDateString("vi-VN")}</span>
-                          </div>
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <Calendar className="w-3 h-3" />
-                            <span>{new Date(coupon.end_date).toLocaleDateString("vi-VN")}</span>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-300">
+                              <Calendar className="w-3 h-3 text-indigo-500" />
+                              {new Date(coupon.start_date).toLocaleDateString("vi-VN")}
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-400">
+                              <div className="w-3 h-[1px] bg-slate-300 dark:bg-slate-700" />
+                              {new Date(coupon.end_date).toLocaleDateString("vi-VN")}
+                            </div>
                           </div>
                         </TableCell>
+
                         <TableCell>
-                          {coupon.used_count} / {coupon.usage_limit || "∞"}
+                          <div className="flex flex-col gap-1.5 w-24">
+                            <div className="flex justify-between text-[10px] font-black uppercase tracking-tighter">
+                              <span className="text-indigo-600 dark:text-indigo-400">{coupon.used_count} dùng</span>
+                              <span className="text-slate-400">{coupon.usage_limit || "∞"}</span>
+                            </div>
+                            {/* Thanh progress nhỏ xịn xò */}
+                            <div className="h-1.5 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${coupon.usage_limit ? (coupon.used_count / coupon.usage_limit) * 100 : 100}%` }}
+                                className={`h-full rounded-full ${coupon.status === 'expired' ? 'bg-slate-300' : 'bg-gradient-to-r from-indigo-500 to-violet-500'}`}
+                              />
+                            </div>
+                          </div>
                         </TableCell>
-                        <TableCell>{getStatusBadge(coupon.status)}</TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
+
+                        <TableCell>
+                          {/* Render Status Badge tinh tế hơn */}
+                          <div className="flex items-center">
+                            {getStatusBadge(coupon.status)}
+                          </div>
+                        </TableCell>
+
+                        <TableCell className="text-right pr-8">
+                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all duration-300 -translate-x-2 group-hover:translate-x-0">
                             <Button
                               variant="ghost"
-                              size="sm"
+                              size="icon"
                               onClick={() => openEditDialog(coupon)}
+                              className="h-9 w-9 rounded-xl hover:bg-white dark:hover:bg-slate-800 hover:text-indigo-600 transition-all shadow-none hover:shadow-md border-none"
                             >
                               <Edit className="w-4 h-4" />
                             </Button>
                             <Button
                               variant="ghost"
-                              size="sm"
+                              size="icon"
                               onClick={() => openDeleteDialog(coupon)}
+                              className="h-9 w-9 rounded-xl hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-600 transition-all shadow-none border-none"
                             >
-                              <Trash2 className="w-4 h-4 text-destructive" />
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-9 w-9 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 border-none">
+                              <MoreHorizontal className="w-4 h-4 text-slate-400" />
                             </Button>
                           </div>
                         </TableCell>

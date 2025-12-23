@@ -25,6 +25,9 @@ import {
   ChevronLeft,
   ChevronRight,
   CornerDownRight,
+  Plus,
+  MessageSquare,
+  Trash2,
 } from "lucide-react";
 import CommentItem from "@/components/CommentItem";
 
@@ -97,6 +100,15 @@ const PostDetailPage = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const token = localStorage.getItem("vibeventure_token") ?? "";
 
+  const normalizeAvatar = (av?: string | null) => {
+    const def = "/images/avatars/Avt-Default.png";
+    if (!av) return def;
+    // already absolute or root-relative
+    if (av.startsWith("http") || av.startsWith("/")) return av;
+    // otherwise prefix BACKEND_URL
+    return `${BACKEND_URL.replace(/\/$/, "")}/${av.replace(/^\//, "")}`;
+  };
+
   const parseComment = (c: any): Comment => ({
     id: Number(c.id),
     content: c.content,
@@ -105,8 +117,8 @@ const PostDetailPage = () => {
     liked: Number(c.is_liked) > 0,
     parent_id: c.parent_id ? Number(c.parent_id) : null,
     user: {
-      name: c.user?.name,
-      avatar: c.user?.avatar,
+      name: c.user?.name || "Người dùng ẩn danh",
+      avatar: normalizeAvatar(c.user?.avatar),
       verified: false,
     },
     replies: Array.isArray(c.replies)
@@ -155,6 +167,18 @@ const PostDetailPage = () => {
     });
   };
 
+  // Remove a comment (top-level or nested reply) by id from the comments tree
+  const removeCommentById = (commentsList: Comment[], targetId: number): Comment[] => {
+    return commentsList
+      .map((c) => {
+        if (c.replies && c.replies.length > 0) {
+          return { ...c, replies: removeCommentById(c.replies, targetId) };
+        }
+        return c;
+      })
+      .filter((c) => c.id !== targetId);
+  };
+
   useEffect(() => {
     const fetchPostDetail = async () => {
       try {
@@ -187,7 +211,7 @@ const PostDetailPage = () => {
           type: "review",
           user: {
             name: p.author?.name || "Người dùng ẩn danh",
-            avatar: p.author?.avatar,
+            avatar: normalizeAvatar(p.author?.avatar),
             verified: false,
             followers: 0,
           },
@@ -363,7 +387,7 @@ const PostDetailPage = () => {
         liked: false,
         user: {
           name: userData.name,
-          avatar: userData.avatar,
+            avatar: normalizeAvatar(userData.avatar),
         },
         replies: [],
       };
@@ -423,7 +447,7 @@ const PostDetailPage = () => {
           liked: false,
           user: {
             name: c.user.name,
-            avatar: c.user.avatar,
+            avatar: normalizeAvatar(c.user.avatar),
           },
           replies: [],
         },
@@ -446,17 +470,46 @@ const PostDetailPage = () => {
   };
 
   const askDelete = (id: number) => {
-    toast.warning("Xóa bình luận?", {
-      description: "Hành động này không thể hoàn tác.",
-      action: {
-        label: "Xóa",
-        onClick: () => handleDeleteComment(id),
-      },
-      cancel: {
-        label: "Hủy",
-        onClick: () => console.log("Đã hủy xóa"),
-      },
+    toast.custom((t) => (
+      <div className="bg-white dark:bg-zinc-900 border border-red-100 dark:border-red-900/30 shadow-2xl rounded-2xl p-4 flex items-start gap-4 w-[350px]">
+        {/* Icon Cảnh báo với hiệu ứng Pulse */}
+        <div className="flex-shrink-0 w-10 h-10 bg-red-50 dark:bg-red-500/10 rounded-full flex items-center justify-center relative">
+          <div className="absolute inset-0 rounded-full bg-red-400 animate-ping opacity-20" />
+          <Trash2 className="w-5 h-5 text-red-500 relative z-10" />
+        </div>
+
+        {/* Nội dung text */}
+        <div className="flex-1">
+          <h4 className="text-sm font-black text-slate-900 dark:text-zinc-100 leading-none mb-1">
+            Xác nhận gỡ bỏ?
+          </h4>
+          <p className="text-[12px] text-slate-500 dark:text-zinc-400 leading-relaxed">
+            Bình luận này sẽ bị xóa vĩnh viễn khỏi hệ thống.
+          </p>
+
+          {/* Nút bấm hành động */}
+          <div className="flex justify-end gap-2 mt-4">
+            <button
+              onClick={() => toast.dismiss(t)}
+              className="px-3 py-1.5 text-[11px] font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-zinc-800 rounded-lg transition-colors"
+            >
+              Hủy bỏ
+            </button>
+            <button
+              onClick={() => {
+                handleDeleteComment(id);
+                toast.dismiss(t);
+              }}
+              className="px-4 py-1.5 text-[11px] font-bold bg-red-500 hover:bg-red-600 text-white rounded-lg shadow-lg shadow-red-500/20 transition-all active:scale-95"
+            >
+              Xóa ngay
+            </button>
+          </div>
+        </div>
+      </div>
+    ), {
       position: "top-center",
+      duration: 5000,
     });
   };
 
@@ -493,30 +546,41 @@ const PostDetailPage = () => {
   };
 
   const handleDeleteComment = async (commentId: number) => {
-    if (!token) return alert("Bạn cần đăng nhập");
+    if (!token) {
+      alert("Bạn cần đăng nhập");
+      return;
+    }
 
-    const res = await fetch(
-      `${BACKEND_URL}/api/community/comments/comment_action.php`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + token,
-        },
-        body: JSON.stringify({
-          action: "delete",
-          comment_id: commentId,
-        }),
-      }
-    );
-
-    const json = await res.json();
-
-    if (json.success) {
-      setComments((prev) => prev.filter((c) => c.id !== commentId));
-      setPostDetail((prev) =>
-        prev ? { ...prev, comments: prev.comments - 1 } : prev
+    try {
+      const res = await fetch(
+        `${BACKEND_URL}/api/community/comments/comment_action.php`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + token,
+          },
+          body: JSON.stringify({
+            action: "delete",
+            comment_id: commentId,
+          }),
+        }
       );
+
+      const json = await res.json();
+
+      if (json.success) {
+        setComments((prevComments) => removeCommentById(prevComments, commentId));
+        setPostDetail((prev) =>
+          prev ? { ...prev, comments: Math.max(0, prev.comments - 1) } : prev
+        );
+        toast.success("Bình luận đã được xóa thành công");
+      } else {
+        toast.error("Không thể xóa bình luận. Vui lòng thử lại.");
+      }
+    } catch (err) {
+      console.error("Lỗi khi xóa bình luận:", err);
+      toast.error("Đã xảy ra lỗi khi xóa bình luận.");
     }
   };
 
@@ -567,10 +631,10 @@ const PostDetailPage = () => {
       setPostDetail((prev) =>
         prev
           ? {
-              ...prev,
-              liked,
-              likes: liked ? prev.likes + 1 : Math.max(0, prev.likes - 1),
-            }
+            ...prev,
+            liked,
+            likes: liked ? prev.likes + 1 : Math.max(0, prev.likes - 1),
+          }
           : prev
       );
     } catch (err) {
@@ -602,10 +666,10 @@ const PostDetailPage = () => {
       setPostDetail((prev) =>
         prev
           ? {
-              ...prev,
-              isSaved: saved,
-              saves: saved ? prev.saves + 1 : Math.max(0, prev.saves - 1),
-            }
+            ...prev,
+            isSaved: saved,
+            saves: saved ? prev.saves + 1 : Math.max(0, prev.saves - 1),
+          }
           : prev
       );
     } catch (err) {
@@ -656,144 +720,96 @@ const PostDetailPage = () => {
     const images = postDetail?.images || [];
     const count = images.length;
     if (count === 0) return null;
-    const imgClass =
-      "w-full h-full object-contain cursor-pointer hover:opacity-90 transition-opacity duration-300";
-    const wrapperClass =
-      "relative overflow-hidden flex items-center justify-center rounded-xl bg-neutral-100/50 dark:bg-neutral-800/30";
 
+    // Lớp chung cho ảnh để tạo cảm giác sang trọng
+    const imgClass =
+      "w-full h-full object-cover cursor-pointer transition-all duration-500 group-hover:scale-105";
+
+    // Wrapper với bo góc lớn và hiệu ứng shadow nhẹ
+    const wrapperClass =
+      "relative overflow-hidden rounded-[1.5rem] bg-slate-100 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-700/50 group";
+
+    // Thành phần ảnh đơn lẻ để tái sử dụng
+    const ImageItem = ({ src, index, className = "" }) => (
+      <div className={`${wrapperClass} ${className}`}>
+        <img
+          src={src}
+          alt={`post-img-${index}`}
+          className={imgClass}
+          onClick={() => openLightbox(index)}
+        />
+        {/* Lớp phủ gradient nhẹ khi hover */}
+        <div className="absolute inset-0 bg-black/5 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+      </div>
+    );
+
+    // Layout dựa trên số lượng ảnh
     if (count === 1) {
       return (
-        <div className={`mt-4 w-full h-[500px] ${wrapperClass}`}>
-          <img
-            src={images[0]}
-            alt="img-0"
-            className={imgClass}
-            onClick={() => openLightbox(0)}
-          />
+        <div className="mt-6 w-full max-h-[600px] aspect-[16/10]">
+          <ImageItem src={images[0]} index={0} />
         </div>
       );
     }
+
     if (count === 2) {
       return (
-        <div className="mt-4 grid grid-cols-2 gap-2 h-[400px]">
-          {images.map((img, idx) => (
-            <div key={idx} className={wrapperClass}>
-              <img
-                src={img}
-                alt={`img-${idx}`}
-                className={imgClass}
-                onClick={() => openLightbox(idx)}
-              />
-            </div>
-          ))}
+        <div className="mt-6 grid grid-cols-2 gap-3 aspect-[16/9]">
+          <ImageItem src={images[0]} index={0} />
+          <ImageItem src={images[1]} index={1} />
         </div>
       );
     }
+
     if (count === 3) {
       return (
-        <div className="mt-4 grid grid-cols-2 gap-2 h-[500px]">
-          <div className={wrapperClass}>
-            <img
-              src={images[0]}
-              alt="img-0"
-              className={imgClass}
-              onClick={() => openLightbox(0)}
-            />
-          </div>
-          <div className="grid grid-rows-2 gap-2 h-full">
-            <div className={wrapperClass}>
-              <img
-                src={images[1]}
-                alt="img-1"
-                className={imgClass}
-                onClick={() => openLightbox(1)}
-              />
-            </div>
-            <div className={wrapperClass}>
-              <img
-                src={images[2]}
-                alt="img-2"
-                className={imgClass}
-                onClick={() => openLightbox(2)}
-              />
-            </div>
+        <div className="mt-6 grid grid-cols-3 gap-3 aspect-[16/9]">
+          <ImageItem src={images[0]} index={0} className="col-span-2" />
+          <div className="grid grid-rows-2 gap-3">
+            <ImageItem src={images[1]} index={1} />
+            <ImageItem src={images[2]} index={2} />
           </div>
         </div>
       );
     }
+
     if (count === 4) {
       return (
-        <div className="mt-4 grid grid-cols-2 grid-rows-2 gap-2 h-[500px]">
-          {images.map((img, idx) => (
-            <div key={idx} className={wrapperClass}>
-              <img
-                src={img}
-                alt={`img-${idx}`}
-                className={imgClass}
-                onClick={() => openLightbox(idx)}
-              />
-            </div>
+        <div className="mt-6 grid grid-cols-2 grid-rows-2 gap-3 aspect-square max-h-[600px]">
+          {images.slice(0, 4).map((img, idx) => (
+            <ImageItem key={idx} src={img} index={idx} />
           ))}
         </div>
       );
     }
+
+    // Trường hợp 5 ảnh trở lên
     return (
-      <div className="mt-4 flex flex-col gap-2 h-[700px]">
-        <div className="grid grid-cols-2 gap-2 h-1/2">
-          <div className={wrapperClass}>
-            <img
-              src={images[0]}
-              alt="img-0"
-              className={imgClass}
-              onClick={() => openLightbox(0)}
-            />
-          </div>
-          <div className={wrapperClass}>
-            <img
-              src={images[1]}
-              alt="img-1"
-              className={imgClass}
-              onClick={() => openLightbox(1)}
-            />
-          </div>
-        </div>
-        <div className="grid grid-cols-3 gap-2 h-1/2">
-          <div className={wrapperClass}>
-            <img
-              src={images[2]}
-              alt="img-2"
-              className={imgClass}
-              onClick={() => openLightbox(2)}
-            />
-          </div>
-          <div className={wrapperClass}>
-            <img
-              src={images[3]}
-              alt="img-3"
-              className={imgClass}
-              onClick={() => openLightbox(3)}
-            />
-          </div>
-          <div className={`${wrapperClass} group`}>
-            <img
-              src={images[4]}
-              alt="img-4"
-              className={imgClass}
-              onClick={() => openLightbox(4)}
-            />
-            {count > 5 && (
-              <div
-                className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center cursor-pointer hover:bg-black/70 transition-colors backdrop-blur-[2px]"
-                onClick={() => openLightbox(4)}
-              >
-                <span className="text-white text-2xl md:text-3xl font-bold">
-                  +{count - 5}
-                </span>
-                <span className="text-white/90 text-xs md:text-sm font-medium">
-                  Xem thêm
-                </span>
-              </div>
-            )}
+      <div className="mt-6 grid grid-cols-6 grid-rows-2 gap-3 aspect-[16/10]">
+        {/* 2 ảnh lớn bên trên */}
+        <ImageItem src={images[0]} index={0} className="col-span-3" />
+        <ImageItem src={images[1]} index={1} className="col-span-3" />
+
+        {/* 3 ảnh nhỏ bên dưới */}
+        <ImageItem src={images[2]} index={2} className="col-span-2" />
+        <ImageItem src={images[3]} index={3} className="col-span-2" />
+
+        {/* Ảnh cuối kèm lớp phủ Glassmorphism */}
+        <div className={`${wrapperClass} col-span-2`}>
+          <img src={images[4]} alt="img-4" className={imgClass} />
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-[4px] flex flex-col items-center justify-center cursor-pointer hover:bg-black/50 transition-all group-hover:scale-105"
+            onClick={() => openLightbox(4)}
+          >
+            <div className="bg-white/20 p-3 rounded-full mb-2 border border-white/30 shadow-xl">
+              <Plus className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-white text-xl font-black tracking-tighter">
+              +{count - 4} ẢNH
+            </span>
+            <span className="text-white/70 text-[10px] font-bold uppercase tracking-[0.2em] mt-1">
+              Xem tất cả
+            </span>
           </div>
         </div>
       </div>
@@ -949,16 +965,14 @@ const PostDetailPage = () => {
                   <div className="flex justify-between gap-2">
                     <Button
                       variant="ghost"
-                      className={`flex-1 gap-2 h-10 hover:text-red-500 hover:bg-red-500/10 ${
-                        postDetail.liked ? "text-red-500" : ""
-                      }`}
+                      className={`flex-1 gap-2 h-10 hover:text-red-500 hover:bg-red-500/10 ${postDetail.liked ? "text-red-500" : ""
+                        }`}
                       disabled={likeLoading}
                       onClick={handleToggleLike}
                     >
                       <Heart
-                        className={`w-5 h-5 ${
-                          postDetail.liked ? "fill-red-500" : ""
-                        }`}
+                        className={`w-5 h-5 ${postDetail.liked ? "fill-red-500" : ""
+                          }`}
                       />
                       <span className="hidden sm:inline">Thích</span>
                     </Button>
@@ -971,16 +985,14 @@ const PostDetailPage = () => {
                     </Button>
                     <Button
                       variant="ghost"
-                      className={`flex-1 gap-2 hover:text-yellow-500 hover:bg-yellow-500/10 h-10 ${
-                        postDetail.isSaved ? "text-yellow-500" : ""
-                      }`}
+                      className={`flex-1 gap-2 hover:text-yellow-500 hover:bg-yellow-500/10 h-10 ${postDetail.isSaved ? "text-yellow-500" : ""
+                        }`}
                       disabled={saveLoading}
                       onClick={handleToggleSave}
                     >
                       <Bookmark
-                        className={`w-5 h-5 ${
-                          postDetail.isSaved ? "fill-current" : ""
-                        }`}
+                        className={`w-5 h-5 ${postDetail.isSaved ? "fill-current" : ""
+                          }`}
                       />
                       <span className="hidden sm:inline">Lưu</span>
                     </Button>
@@ -997,79 +1009,126 @@ const PostDetailPage = () => {
                 </div>
               </Card>
 
-              <div className="bg-background rounded-xl border border-border p-6">
-                <h3 className="font-bold text-xl mb-6 flex items-center gap-2">
-                  Bình luận <Badge variant="secondary">{comments.length}</Badge>
-                </h3>
+              <div className="bg-white dark:bg-zinc-950 rounded-3xl border border-slate-200/60 dark:border-zinc-800/60 shadow-sm overflow-hidden">
+                {/* --- HEADER --- */}
+                <div className="px-8 py-6 border-b border-slate-100 dark:border-zinc-900 flex items-center justify-between bg-slate-50/50 dark:bg-zinc-900/30">
+                  <h3 className="font-black text-lg tracking-tight flex items-center gap-3 text-slate-900 dark:text-zinc-100">
+                    <MessageSquare className="w-5 h-5 text-primary" />
+                    Cộng đồng thảo luận
+                  </h3>
+                  <Badge
+                    variant="secondary"
+                    className="rounded-full px-3 py-1 bg-background shadow-sm border-slate-200/50 text-primary font-bold"
+                  >
+                    {comments.length} bình luận
+                  </Badge>
+                </div>
 
-                <div className="flex gap-4 mb-7">
-                  <Avatar className="w-10 h-10">
-                    <AvatarImage src={userAvatar} />
-                    <AvatarFallback>{userName?.[0]}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 space-y-2">
-                    <textarea
-                      className="w-full bg-secondary/30 border border-border rounded-xl p-4 min-h-[10px] focus:outline-none focus:ring-2 focus:ring-primary/60 resize-none text-sm transition-all"
-                      placeholder="Chia sẻ suy nghĩ của bạn về bài viết này..."
-                      value={newComment}
-                      onChange={(e) => setNewComment(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSubmitComment();
-                        }
-                      }}
-                    />
-                    <div className="flex justify-end">
-                      <Button
-                        className="gap-2 bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 text-white"
-                        onClick={handleSubmitComment}
-                        disabled={!newComment.trim()}
-                      >
-                        <Send className="w-4 h-4" /> Gửi bình luận
-                      </Button>
+                <div className="p-8">
+                  {/* --- INPUT AREA (THE COMPOSER) --- */}
+                  <div className="group relative flex gap-4 mb-10">
+                    <div className="flex flex-col items-center gap-2">
+                      <Avatar className="w-12 h-12 border-2 border-white dark:border-zinc-900 shadow-md">
+                        <AvatarImage src={normalizeAvatar(userAvatar)} className="object-cover" />
+                        <AvatarFallback className="bg-gradient-to-br from-indigo-500 to-purple-500 text-white font-bold">
+                          {userName?.[0]}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="w-0.5 h-full bg-slate-100 dark:bg-zinc-900 rounded-full" />
                     </div>
+
+                    <div className="flex-1">
+                      <div className="relative overflow-hidden rounded-2xl border border-slate-200 dark:border-zinc-800 focus-within:border-indigo-500/50 focus-within:ring-4 focus-within:ring-indigo-500/5 transition-all duration-300 bg-slate-50/30 dark:bg-zinc-900/20">
+                        <textarea
+                          className="w-full bg-transparent p-4 min-h-[110px] focus:outline-none resize-none text-sm text-slate-700 dark:text-zinc-300 placeholder:text-slate-400 dark:placeholder:text-zinc-500 leading-relaxed"
+                          placeholder="Chia sẻ suy nghĩ của bạn về bài viết này..."
+                          value={newComment}
+                          onChange={(e) => setNewComment(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSubmitComment();
+                            }
+                          }}
+                        />
+
+                        <div className="px-4 py-3 border-t border-slate-100 dark:border-zinc-900 flex justify-between items-center bg-white/50 dark:bg-zinc-900/40">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            Nhấn Enter để gửi
+                          </span>
+                          <Button
+                            className="rounded-xl px-5 h-9 bg-slate-900 dark:bg-white text-white dark:text-black hover:scale-105 transition-all duration-300 shadow-lg shadow-slate-200 dark:shadow-none font-bold text-xs gap-2"
+                            onClick={handleSubmitComment}
+                            disabled={!newComment.trim()}
+                          >
+                            <Send className="w-3.5 h-3.5" /> Gửi bình luận
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* --- LIST AREA --- */}
+                  <div className="space-y-6">
+                    {comments.length > 0 ? (
+                      comments.map((comment) => (
+                          <CommentItem
+                          key={comment.id}
+                          comment={comment}
+                          replyingTo={replyingTo}
+                          replyContent={replyContent}
+                          onChangeReplyingTo={setReplyingTo}
+                          onChangeReplyContent={setReplyContent}
+                          onLikeComment={handleLikeComment}
+                          onSubmitReply={handleSubmitReply}
+                          onEditComment={handleEditComment}
+                          onAskDelete={askDelete}
+                            userName={userName}
+                            userAvatar={normalizeAvatar(userAvatar)}
+                        />
+                      ))
+                    ) : (
+                      <div className="py-12 flex flex-col items-center justify-center text-slate-400 dark:text-zinc-600 border-2 border-dashed border-slate-100 dark:border-zinc-900 rounded-3xl">
+                        <MessageSquare className="w-10 h-10 mb-3 opacity-20" />
+                        <p className="text-sm font-medium">Chưa có bình luận nào. Hãy là người đầu tiên!</p>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  {comments.map((comment) => (
-                    <CommentItem
-                      key={comment.id}
-                      comment={comment}
-                      replyingTo={replyingTo}
-                      replyContent={replyContent}
-                      onChangeReplyingTo={setReplyingTo}
-                      onChangeReplyContent={setReplyContent}
-                      onLikeComment={handleLikeComment}
-                      onSubmitReply={handleSubmitReply}
-                      onEditComment={handleEditComment}
-                      onAskDelete={askDelete}
-                      userName={userName}
-                      userAvatar={userAvatar}
-                    />
-                  ))}
-                </div>
-
+                {/* --- MODAL EDIT (PREMIUM STYLE) --- */}
                 {editingComment && (
-                  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl w-[400px] space-y-4">
-                      <h3 className="font-bold">Sửa bình luận</h3>
+                  <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-md flex items-center justify-center z-[100] p-4">
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      className="bg-white dark:bg-zinc-900 p-8 rounded-[2rem] border border-slate-200/50 dark:border-zinc-800 shadow-2xl w-full max-w-lg"
+                    >
+                      <h3 className="font-black text-xl mb-2 tracking-tight">Chỉnh sửa phản hồi</h3>
+                      <p className="text-sm text-slate-500 mb-6">Bạn có thể thay đổi nội dung bình luận của mình tại đây.</p>
+
                       <textarea
-                        className="w-full p-3 border rounded-lg"
+                        className="w-full p-4 bg-slate-50 dark:bg-zinc-950 border border-slate-200 dark:border-zinc-800 rounded-2xl min-h-[150px] focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all resize-none text-sm"
                         value={editValue}
                         onChange={(e) => setEditValue(e.target.value)}
                       />
-                      <div className="flex justify-end gap-3">
+
+                      <div className="flex justify-end gap-3 mt-8">
                         <Button
                           variant="ghost"
+                          className="rounded-xl font-bold text-slate-500"
                           onClick={() => setEditingComment(null)}
                         >
-                          Hủy
+                          Hủy bỏ
                         </Button>
-                        <Button onClick={submitEditComment}>Lưu</Button>
+                        <Button
+                          className="rounded-xl bg-gradient-to-r from-primary to-purple-600 text-white px-8 font-bold shadow-lg shadow-indigo-500/20"
+                          onClick={submitEditComment}
+                        >
+                          Cập nhật ngay
+                        </Button>
                       </div>
-                    </div>
+                    </motion.div>
                   </div>
                 )}
               </div>
@@ -1124,3 +1183,4 @@ const PostDetailPage = () => {
 };
 
 export default PostDetailPage;
+

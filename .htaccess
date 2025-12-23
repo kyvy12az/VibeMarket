@@ -2,12 +2,6 @@
 # ✅ InfinityFree SPA + Vite/React Configuration
 # =======================================================
 
-# 🔒 Prevent access to sensitive files
-<FilesMatch "^\.env">
-  Order allow,deny
-  Deny from all
-</FilesMatch>
-
 # Bật rewrite (cho phép xử lý các route frontend)
 <IfModule mod_rewrite.c>
   RewriteEngine On

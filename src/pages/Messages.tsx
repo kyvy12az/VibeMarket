@@ -1802,8 +1802,9 @@ const Chat: React.FC = () => {
                                         >
                                             {!isOwnMessage && showAvatar && (
                                                 <img
-                                                    src={message.sender?.avatar || "/images/avatars/Avt-Default.png"}
+                                                    src={resolveUrl(message.sender?.avatar) || "/images/avatars/Avt-Default.png"}
                                                     alt={message.sender?.name}
+                                                    onError={(e: any) => { e.currentTarget.src = '/images/avatars/Avt-Default.png'; }}
                                                     className="w-8 h-8 rounded-full object-cover flex-shrink-0"
                                                 />
                                             )}

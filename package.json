@@ -13,6 +13,7 @@
   "dependencies": {
     "@ant-design/charts": "^2.6.5",
     "@fancyapps/ui": "^6.1.2",
+    "@goongmaps/goong-js": "^1.0.9",
     "@headlessui/react": "^2.2.9",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.11",
@@ -54,6 +55,7 @@
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "^12.23.24",
     "input-otp": "^1.4.2",
+    "leaflet": "^1.9.4",
     "lucide-react": "^0.462.0",
     "next-themes": "^0.3.0",
     "peerjs": "^1.5.5",
@@ -63,6 +65,7 @@
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.61.1",
     "react-hot-toast": "^2.6.0",
+    "react-leaflet": "^4.2.1",
     "react-resizable-panels": "^2.1.9",
     "react-router-dom": "^6.30.2",
     "react-use": "^17.6.0",

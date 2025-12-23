@@ -19,13 +19,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { 
-  Eye, 
-  Search, 
-  Package, 
-  MapPin, 
-  Clock, 
-  ShoppingCart, 
+import {
+  Eye,
+  Search,
+  Package,
+  MapPin,
+  Clock,
+  ShoppingCart,
   Loader2,
   Filter,
   Download,
@@ -42,7 +42,8 @@ import {
   FileText,
   Calendar,
   RefreshCw,
-  Star
+  Star,
+  ChevronRight
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -80,37 +81,37 @@ interface Order {
 }
 
 const statusConfig = {
-  pending: { 
-    label: "Chờ xử lý", 
-    variant: "secondary" as const, 
+  pending: {
+    label: "Chờ xử lý",
+    variant: "secondary" as const,
     color: "bg-yellow-100 text-yellow-800 border-yellow-200",
     icon: Clock,
     gradient: "from-yellow-400 to-orange-500"
   },
-  processing: { 
-    label: "Đang xử lý", 
-    variant: "default" as const, 
+  processing: {
+    label: "Đang xử lý",
+    variant: "default" as const,
     color: "bg-blue-100 text-blue-800 border-blue-200",
     icon: Package,
     gradient: "from-blue-400 to-indigo-500"
   },
-  shipped: { 
-    label: "Đã gửi", 
-    variant: "default" as const, 
+  shipped: {
+    label: "Đã gửi",
+    variant: "default" as const,
     color: "bg-purple-100 text-purple-800 border-purple-200",
     icon: Truck,
     gradient: "from-purple-400 to-pink-500"
   },
-  delivered: { 
-    label: "Đã giao", 
-    variant: "default" as const, 
+  delivered: {
+    label: "Đã giao",
+    variant: "default" as const,
     color: "bg-green-100 text-green-800 border-green-200",
     icon: CheckCircle,
     gradient: "from-green-400 to-emerald-500"
   },
-  cancelled: { 
-    label: "Đã hủy", 
-    variant: "destructive" as const, 
+  cancelled: {
+    label: "Đã hủy",
+    variant: "destructive" as const,
     color: "bg-red-100 text-red-800 border-red-200",
     icon: XCircle,
     gradient: "from-red-400 to-rose-500"
@@ -134,7 +135,7 @@ export function OrdersManagement() {
 
   const fetchOrders = async (status: string = 'all') => {
     if (!user?.id) return;
-    
+
     setLoading(true);
     try {
       const response = await fetch(
@@ -227,10 +228,10 @@ export function OrdersManagement() {
   const getStatusBadge = (status: string) => {
     const config = statusConfig[status as keyof typeof statusConfig];
     const IconComponent = config.icon;
-    
+
     return (
-      <Badge 
-        variant={config.variant} 
+      <Badge
+        variant={config.variant}
         className={`${config.color} border font-medium gap-1.5 px-3 py-1.5`}
       >
         <IconComponent className="w-3.5 h-3.5" />
@@ -264,6 +265,54 @@ export function OrdersManagement() {
     revenue: orders.reduce((sum, order) => sum + order.seller_total, 0)
   };
 
+  const statItems = [
+    {
+      label: "Tổng đơn hàng",
+      value: stats.total,
+      icon: ShoppingCart,
+      color: "blue",
+      gradient: "from-blue-500 to-cyan-400",
+      change: "+12.5%",
+      desc: "So với tháng trước"
+    },
+    {
+      label: "Chờ xử lý",
+      value: stats.pending,
+      icon: Clock,
+      color: "orange",
+      gradient: "from-orange-500 to-amber-400",
+      change: "+5",
+      desc: "Cần ưu tiên"
+    },
+    {
+      label: "Đang xử lý",
+      value: stats.processing,
+      icon: Package,
+      color: "purple",
+      gradient: "from-purple-500 to-pink-400",
+      change: "+8",
+      desc: "Trong kho/Vận chuyển"
+    },
+    {
+      label: "Đã giao",
+      value: stats.delivered,
+      icon: CheckCircle,
+      color: "emerald",
+      gradient: "from-emerald-500 to-teal-400",
+      change: "+15%",
+      desc: "Hoàn tất thành công"
+    },
+    {
+      label: "Doanh thu",
+      value: `${(stats.revenue / 1_000_000).toFixed(1)}M`,
+      icon: TrendingUp,
+      color: "rose",
+      gradient: "from-rose-500 to-orange-400",
+      change: "+20.8%",
+      desc: "Tăng trưởng ròng"
+    }
+  ];
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -295,119 +344,151 @@ export function OrdersManagement() {
       >
         {/* Background decoration */}
         <div className="absolute inset-0 bg-gradient-to-r from-primary/5 via-purple-500/5 to-pink-500/5 rounded-3xl -z-10" />
-        
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 p-8">
-          <div className="flex items-start gap-6">
-            <motion.div
-              className="p-4 rounded-2xl bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500 shadow-xl"
-              animate={{ 
-                rotate: [0, 5, -5, 0],
-                scale: [1, 1.05, 1]
-              }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            >
-              <ShoppingCart className="w-8 h-8 text-white" />
-            </motion.div>
 
-            <div className="space-y-2">
-              <div>
-                <h1 className="text-4xl md:text-5xl font-black bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500 bg-clip-text text-transparent">
-                  Quản lý đơn hàng
-                </h1>
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                  <p className="text-muted-foreground">Cập nhật real-time</p>
+        <div className="relative overflow-hidden rounded-3xl border border-slate-200/60 dark:border-white/10 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] mb-8">
+
+          {/* Background Decor (Tạo chiều sâu) */}
+          <div className="absolute -top-24 -right-24 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-8">
+
+            {/* Bên trái: Brand & Info */}
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-6 text-center md:text-left">
+
+              {/* Icon Box với hiệu ứng Floating */}
+              <motion.div
+                className="relative flex-shrink-0"
+                animate={{ y: [0, -8, 0] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-600 to-purple-600 blur-xl opacity-40 animate-pulse" />
+                <div className="relative p-5 rounded-[2rem] bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 shadow-2xl border border-white/20">
+                  <ShoppingCart className="w-9 h-9 text-white" />
+                </div>
+              </motion.div>
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-center md:justify-start gap-2">
+                  <span className="px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-[10px] font-bold uppercase tracking-[0.15em] border border-blue-500/20">
+                    E-Commerce
+                  </span>
+                  <ChevronRight className="w-3 h-3 text-slate-400" />
+                  <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-slate-500">
+                    Operations
+                  </span>
+                </div>
+
+                <div className="space-y-1">
+                  <h1 className="text-4xl md:text-5xl font-black tracking-tighter text-slate-900 dark:text-white">
+                    Quản lý <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-500">Đơn hàng</span>
+                  </h1>
+                  <div className="flex items-center justify-center md:justify-start gap-3 mt-2">
+                    <div className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </div>
+                    <p className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                      Hệ thống đang đồng bộ real-time
+                    </p>
+                  </div>
                 </div>
               </div>
-              <p className="text-lg text-muted-foreground max-w-2xl">
-                🚀 Theo dõi và xử lý các đơn hàng nhanh chóng, hiệu quả với hệ thống quản lý thông minh
-              </p>
             </div>
-          </div>
 
-          <div className="flex items-center gap-3">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="gap-2"
-              onClick={refreshData}
-              disabled={refreshing}
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-              Làm mới
-            </Button>
-            <Button variant="outline" size="sm" className="gap-2">
-              <Download className="w-4 h-4" />
-              Xuất báo cáo
-            </Button>
-            <Button variant="outline" size="sm" className="gap-2">
-              <Filter className="w-4 h-4" />
-              Lọc nâng cao
-            </Button>
+            {/* Bên phải: Actions Center */}
+            <div className="flex flex-wrap items-center justify-center lg:justify-end gap-3">
+
+              {/* Nút Làm mới (Ghost style) */}
+              <Button
+                variant="ghost"
+                className="h-12 px-5 rounded-2xl bg-slate-100/50 dark:bg-slate-800/50 hover:bg-white dark:hover:bg-slate-800 border border-slate-200/50 dark:border-white/5 transition-all active:scale-95 group"
+                onClick={refreshData}
+                disabled={refreshing}
+              >
+                <RefreshCw className={`w-4 h-4 mr-2 transition-transform duration-500 group-hover:rotate-180 ${refreshing ? 'animate-spin text-blue-500' : 'text-slate-500'}`} />
+                <span className="font-bold text-slate-600 dark:text-slate-300">Làm mới</span>
+              </Button>
+
+              {/* Nút Xuất báo cáo (Glass style) */}
+              <Button
+                variant="outline"
+                className="h-12 px-5 rounded-2xl border-slate-200 dark:border-white/10 hover:bg-slate-50 dark:hover:bg-slate-800 transition-all active:scale-95"
+              >
+                <Download className="w-4 h-4 mr-2 text-slate-500" />
+                <span className="font-bold text-slate-600 dark:text-slate-300">Xuất báo cáo</span>
+              </Button>
+
+              {/* Nút Lọc nâng cao (Primary style) */}
+              <Button
+                className="h-12 px-6 rounded-2xl bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90 shadow-xl shadow-slate-200 dark:shadow-none transition-all active:scale-95 group"
+              >
+                <Filter className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
+                <span className="font-bold">Lọc nâng cao</span>
+                <div className="ml-2 px-1.5 py-0.5 rounded-md bg-white/20 dark:bg-slate-900/10 text-[10px]">
+                  F
+                </div>
+              </Button>
+            </div>
+
           </div>
         </div>
       </motion.div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-        {[
-          {
-            label: "Tổng đơn hàng",
-            value: stats.total,
-            icon: ShoppingCart,
-            color: "from-blue-500 to-cyan-500",
-            change: "+12.5%"
-          },
-          {
-            label: "Chờ xử lý",
-            value: stats.pending,
-            icon: Clock,
-            color: "from-yellow-500 to-orange-500",
-            change: "+5"
-          },
-          {
-            label: "Đang xử lý",
-            value: stats.processing,
-            icon: Package,
-            color: "from-purple-500 to-pink-500",
-            change: "+8"
-          },
-          {
-            label: "Đã giao",
-            value: stats.delivered,
-            icon: CheckCircle,
-            color: "from-green-500 to-emerald-500",
-            change: "+15%"
-          },
-          {
-            label: "Doanh thu",
-            value: `${(stats.revenue / 1_000_000).toFixed(1)}M`,
-            icon: TrendingUp,
-            color: "from-emerald-500 to-teal-500",
-            change: "+20.8%"
-          }
-        ].map((stat, index) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+        {statItems.map((stat, index) => (
           <motion.div
             key={index}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4, delay: index * 0.1 }}
-            whileHover={{ y: -4, scale: 1.02 }}
+            transition={{ duration: 0.5, delay: index * 0.1 }}
+            whileHover={{ y: -6, transition: { duration: 0.2 } }}
+            className="group"
           >
-            <Card className="border shadow-sm hover:shadow-md transition-all duration-300">
+            <Card className="relative overflow-hidden border-none bg-background backdrop-blur-xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-none ring-1 ring-slate-200/50 dark:ring-white/10 transition-all duration-300 group-hover:ring-${stat.color}-500/50">
+
+              {/* Hiệu ứng Glow nền */}
+              <div className={`absolute -right-4 -top-4 w-24 h-24 bg-${stat.color}-500/10 blur-3xl rounded-full group-hover:bg-${stat.color}-500/20 transition-colors`} />
+
               <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`p-3 rounded-xl bg-gradient-to-br ${stat.color} shadow-sm`}>
+                <div className="flex items-center justify-between mb-5">
+                  {/* Icon Container với Gradient & Shadow */}
+                  <div className={`relative p-3 rounded-2xl bg-gradient-to-br ${stat.gradient} shadow-lg shadow-${stat.color}-500/30 group-hover:scale-110 transition-transform duration-300`}>
                     <stat.icon className="w-5 h-5 text-white" />
                   </div>
-                  <div className="flex items-center gap-1 text-xs text-green-600 font-medium">
-                    <ArrowUpRight className="w-3 h-3" />
-                    {stat.change}
+
+                  {/* Badge tăng trưởng */}
+                  <div className="flex flex-col items-end">
+                    <div className={`flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400`}>
+                      <ArrowUpRight className="w-3 h-3" />
+                      {stat.change}
+                    </div>
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-                  <p className="text-sm text-muted-foreground">{stat.label}</p>
+
+                <div className="space-y-1 relative z-10">
+                  <h3 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white">
+                    {stat.value}
+                  </h3>
+                  <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    {stat.label}
+                  </p>
+                </div>
+
+                {/* Sub-description mờ ẩn hiện khi hover */}
+                <p className="mt-4 text-[10px] text-slate-400 dark:text-slate-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                  {stat.desc}
+                </p>
+
+                {/* Thanh tiến trình trang trí ở đáy */}
+                <div className="absolute bottom-0 left-0 w-full h-1 bg-slate-100 dark:bg-slate-800">
+                  <motion.div
+                    className={`h-full bg-gradient-to-r ${stat.gradient}`}
+                    initial={{ width: 0 }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: 1, delay: 0.5 + index * 0.1 }}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -417,161 +498,171 @@ export function OrdersManagement() {
 
       {/* Orders Table */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
       >
-        <Card className="border shadow-sm">
-          <CardHeader className="border-b bg-muted/20">
-            <div className="flex flex-col sm:flex-row justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500">
-                  <FileText className="w-5 h-5 text-white" />
+        {/* Card chính sử dụng bg-background/70 cho hiệu ứng Glassmorphism */}
+        <Card className="overflow-hidden border-border bg-background/70 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.04)] ring-1 ring-border/50">
+
+          {/* Header với border-border */}
+          <CardHeader className="p-8 border-b border-border">
+            <div className="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-6">
+              <div className="flex items-center gap-5">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-primary blur-lg opacity-20 animate-pulse" />
+                  <div className="relative p-3 rounded-2xl bg-gradient-to-br from-primary to-primary/80 shadow-lg shadow-primary/20">
+                    <FileText className="w-6 h-6 text-primary-foreground" />
+                  </div>
                 </div>
-                <div>
-                  <CardTitle className="text-lg">Danh sách đơn hàng</CardTitle>
-                  <p className="text-sm text-muted-foreground">Quản lý tất cả đơn hàng của cửa hàng</p>
+                <div className="space-y-1">
+                  <CardTitle className="text-2xl font-black tracking-tight text-foreground">Trung tâm Đơn hàng</CardTitle>
+                  <p className="text-sm font-medium text-muted-foreground">Quản lý và vận hành luồng giao dịch của cửa hàng</p>
                 </div>
               </div>
-              <div className="relative w-full sm:w-80">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+
+              {/* Ô tìm kiếm sử dụng bg-muted/50 */}
+              <div className="relative w-full xl:w-96 group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
                 <Input
-                  placeholder="Tìm kiếm theo mã đơn hàng hoặc tên khách hàng..."
+                  placeholder="Tìm mã đơn, tên hoặc số điện thoại..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 border-border focus:border-primary"
+                  className="h-12 pl-12 pr-4 bg-muted/50 border-none rounded-2xl focus-visible:ring-2 focus-visible:ring-primary/20 transition-all font-medium text-foreground placeholder:text-muted-foreground"
                 />
               </div>
             </div>
           </CardHeader>
-          
+
           <CardContent className="p-0">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <div className="px-6 pt-4">
-                <TabsList className="grid w-full grid-cols-6 bg-muted/50">
-                  <TabsTrigger value="all" className="gap-2">
-                    Tất cả 
-                    <Badge variant="secondary" className="text-xs">
-                      {getStatusCount('all')}
-                    </Badge>
-                  </TabsTrigger>
-                  <TabsTrigger value="pending" className="gap-2">
-                    Chờ xử lý
-                    <Badge variant="secondary" className="text-xs">
-                      {getStatusCount('pending')}
-                    </Badge>
-                  </TabsTrigger>
-                  <TabsTrigger value="processing" className="gap-2">
-                    Đang xử lý
-                    <Badge variant="secondary" className="text-xs">
-                      {getStatusCount('processing')}
-                    </Badge>
-                  </TabsTrigger>
-                  <TabsTrigger value="shipped" className="gap-2">
-                    Đã gửi
-                    <Badge variant="secondary" className="text-xs">
-                      {getStatusCount('shipped')}
-                    </Badge>
-                  </TabsTrigger>
-                  <TabsTrigger value="delivered" className="gap-2">
-                    Đã giao
-                    <Badge variant="secondary" className="text-xs">
-                      {getStatusCount('delivered')}
-                    </Badge>
-                  </TabsTrigger>
-                  <TabsTrigger value="cancelled" className="gap-2">
-                    Đã hủy
-                    <Badge variant="secondary" className="text-xs">
-                      {getStatusCount('cancelled')}
-                    </Badge>
-                  </TabsTrigger>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+              {/* TabsList sử dụng bg-muted/80 */}
+              <div className="px-8 pt-6">
+                <TabsList className="flex w-fit h-auto p-1.5 bg-muted/80 rounded-2xl border border-border">
+                  {[
+                    { id: 'all', label: 'Tất cả' },
+                    { id: 'pending', label: 'Chờ xử lý' },
+                    { id: 'processing', label: 'Đang xử lý' },
+                    { id: 'shipped', label: 'Đã gửi' },
+                    { id: 'delivered', label: 'Đã giao' },
+                    { id: 'cancelled', label: 'Đã hủy' }
+                  ].map((tab) => (
+                    <TabsTrigger
+                      key={tab.id}
+                      value={tab.id}
+                      className="px-6 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider data-[state=active]:bg-background data-[state=active]:shadow-sm data-[state=active]:text-primary transition-all gap-2"
+                    >
+                      {tab.label}
+                      <span className={`px-1.5 py-0.5 rounded-md text-[10px] ${activeTab === tab.id ? 'bg-primary/10 text-primary' : 'bg-muted-foreground/20 text-muted-foreground'}`}>
+                        {getStatusCount(tab.id)}
+                      </span>
+                    </TabsTrigger>
+                  ))}
                 </TabsList>
               </div>
 
-              <TabsContent value={activeTab} className="mt-0">
+              <TabsContent value={activeTab} className="mt-6">
                 <div className="overflow-x-auto">
                   <Table>
                     <TableHeader>
-                      <TableRow className="bg-muted/20">
-                        <TableHead className="font-semibold">Mã đơn hàng</TableHead>
-                        <TableHead className="font-semibold">Khách hàng</TableHead>
-                        <TableHead className="font-semibold">Sản phẩm</TableHead>
-                        <TableHead className="font-semibold">Tổng tiền</TableHead>
-                        <TableHead className="font-semibold">Trạng thái</TableHead>
-                        <TableHead className="font-semibold">Ngày đặt</TableHead>
-                        <TableHead className="font-semibold text-right">Thao tác</TableHead>
+                      <TableRow className="border-none bg-muted/30">
+                        <TableHead className="py-5 pl-8 font-bold text-muted-foreground uppercase text-[11px] tracking-widest">Mã đơn hàng</TableHead>
+                        <TableHead className="font-bold text-muted-foreground uppercase text-[11px] tracking-widest">Thông tin khách hàng</TableHead>
+                        <TableHead className="font-bold text-muted-foreground uppercase text-[11px] tracking-widest text-center">Số lượng</TableHead>
+                        <TableHead className="font-bold text-muted-foreground uppercase text-[11px] tracking-widest">Giá trị đơn</TableHead>
+                        <TableHead className="font-bold text-muted-foreground uppercase text-[11px] tracking-widest text-center">Trạng thái</TableHead>
+                        <TableHead className="font-bold text-muted-foreground uppercase text-[11px] tracking-widest">Thời gian</TableHead>
+                        <TableHead className="pr-8 text-right"></TableHead>
                       </TableRow>
                     </TableHeader>
+
                     <TableBody>
-                      <AnimatePresence>
+                      <AnimatePresence mode="popLayout">
                         {filterOrders().length === 0 ? (
                           <TableRow>
-                            <TableCell colSpan={7} className="text-center py-12">
-                              <div className="space-y-3">
-                                <div className="w-16 h-16 mx-auto rounded-full bg-muted flex items-center justify-center">
-                                  <ShoppingCart className="w-8 h-8 text-muted-foreground" />
+                            <TableCell colSpan={7} className="h-96 text-center">
+                              <motion.div
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                className="flex flex-col items-center justify-center space-y-4"
+                              >
+                                <div className="p-6 rounded-full bg-muted">
+                                  <ShoppingCart className="w-12 h-12 text-muted-foreground/50" />
                                 </div>
-                                <div>
-                                  <p className="font-medium text-foreground">Chưa có đơn hàng nào</p>
-                                  <p className="text-sm text-muted-foreground">
-                                    Các đơn hàng sẽ hiển thị ở đây khi khách hàng đặt mua
-                                  </p>
+                                <div className="space-y-1">
+                                  <p className="text-lg font-bold text-foreground">Trống trải quá...</p>
+                                  <p className="text-sm text-muted-foreground">Không tìm thấy đơn hàng nào trong mục này.</p>
                                 </div>
-                              </div>
+                              </motion.div>
                             </TableCell>
                           </TableRow>
                         ) : (
                           filterOrders().map((order, index) => (
                             <motion.tr
                               key={order.id}
-                              initial={{ opacity: 0, y: 10 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: -10 }}
-                              transition={{ delay: index * 0.05 }}
-                              className="hover:bg-muted/30 transition-colors"
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              exit={{ opacity: 0, scale: 0.95 }}
+                              transition={{ duration: 0.3, delay: index * 0.03 }}
+                              className="group hover:bg-primary/5 transition-all border-b border-border/50"
                             >
-                              <TableCell className="font-medium">
-                                <div className="font-mono text-sm bg-muted px-2 py-1 rounded inline-block">
-                                  {order.code}
-                                </div>
+                              <TableCell className="py-6 pl-8">
+                                <span className="font-mono text-xs font-bold px-3 py-1.5 rounded-lg bg-muted text-foreground border border-border">
+                                  #{order.code}
+                                </span>
                               </TableCell>
+
                               <TableCell>
-                                <div className="space-y-1">
-                                  <div className="font-medium text-foreground">{order.customer_name}</div>
-                                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                    <Phone className="w-3 h-3" />
-                                    {order.phone}
+                                <div className="flex items-center gap-4">
+                                  <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-muted to-background flex items-center justify-center font-bold text-muted-foreground border border-border shadow-sm">
+                                    {order.customer_name.charAt(0)}
+                                  </div>
+                                  <div className="space-y-0.5">
+                                    <div className="font-bold text-foreground group-hover:text-primary transition-colors">
+                                      {order.customer_name}
+                                    </div>
+                                    <div className="flex items-center text-[11px] text-muted-foreground font-medium">
+                                      <Phone className="w-3 h-3 mr-1" />
+                                      {order.phone}
+                                    </div>
                                   </div>
                                 </div>
                               </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <Package className="w-4 h-4 text-muted-foreground" />
-                                  <span className="font-medium">{order.total_quantity}</span>
-                                  <span className="text-muted-foreground text-sm">sản phẩm</span>
+
+                              <TableCell className="text-center">
+                                <div className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-muted text-[12px] font-bold text-foreground">
+                                  {order.total_quantity} <span className="ml-1 font-medium text-muted-foreground italic text-[10px]">món</span>
                                 </div>
                               </TableCell>
+
                               <TableCell>
-                                <div className="font-bold text-primary">
-                                  {order.seller_total.toLocaleString('vi-VN')}đ
+                                <div className="text-[15px] font-black text-foreground">
+                                  {order.seller_total.toLocaleString('vi-VN')}
+                                  <span className="ml-0.5 text-[10px] font-bold text-primary uppercase">đ</span>
                                 </div>
                               </TableCell>
-                              <TableCell>{getStatusBadge(order.status)}</TableCell>
+
+                              <TableCell className="text-center">
+                                <div className="flex justify-center">
+                                  {getStatusBadge(order.status)}
+                                </div>
+                              </TableCell>
+
                               <TableCell>
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                  <Calendar className="w-3 h-3" />
+                                <div className="flex items-center gap-2 text-[12px] font-medium text-muted-foreground">
+                                  <Calendar className="w-3.5 h-3.5 opacity-40" />
                                   {formatDate(order.created_at)}
                                 </div>
                               </TableCell>
-                              <TableCell className="text-right">
+
+                              <TableCell className="pr-8 text-right">
                                 <Button
-                                  variant="outline"
+                                  variant="ghost"
                                   size="sm"
                                   onClick={() => setSelectedOrder(order)}
-                                  className="gap-2 hover:bg-primary hover:text-primary-foreground transition-colors"
+                                  className="h-10 w-10 p-0 rounded-xl hover:bg-primary hover:text-primary-foreground transition-all shadow-none"
                                 >
-                                  <Eye className="w-4 h-4" />
-                                  Chi tiết
+                                  <Eye className="w-5 h-5" />
                                 </Button>
                               </TableCell>
                             </motion.tr>
@@ -580,6 +671,17 @@ export function OrdersManagement() {
                       </AnimatePresence>
                     </TableBody>
                   </Table>
+                </div>
+
+                {/* Footer của bảng sử dụng bg-muted/20 và border-border */}
+                <div className="p-6 border-t border-border bg-muted/20">
+                  <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
+                    <span>Hiển thị {filterOrders().length} đơn hàng gần nhất</span>
+                    <div className="flex items-center gap-4">
+                      <button className="hover:text-primary transition-colors cursor-not-allowed opacity-30">Trước</button>
+                      <button className="hover:text-primary transition-colors">Tiếp theo</button>
+                    </div>
+                  </div>
                 </div>
               </TabsContent>
             </Tabs>
@@ -752,7 +854,7 @@ export function OrdersManagement() {
                               <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
                                 {item.color && (
                                   <span className="flex items-center gap-1">
-                                    <div 
+                                    <div
                                       className="w-3 h-3 rounded-full border border-border"
                                       style={{ backgroundColor: item.color }}
                                     />
@@ -803,14 +905,14 @@ export function OrdersManagement() {
 
                   {/* Action Buttons */}
                   <div className="flex justify-end gap-3 pt-4 border-t">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       onClick={() => setSelectedOrder(null)}
                       className="gap-2"
                     >
                       Đóng
                     </Button>
-                    
+
                     {selectedOrder.status === "pending" && (
                       <Button
                         className="bg-gradient-to-r from-blue-500 to-indigo-500 hover:opacity-90 gap-2"
@@ -821,7 +923,7 @@ export function OrdersManagement() {
                         Xác nhận đơn hàng
                       </Button>
                     )}
-                    
+
                     {selectedOrder.status === "processing" && (
                       <Button
                         className="bg-gradient-to-r from-purple-500 to-pink-500 hover:opacity-90 gap-2"
@@ -832,7 +934,7 @@ export function OrdersManagement() {
                         Đánh dấu đã gửi
                       </Button>
                     )}
-                    
+
                     {selectedOrder.status === "shipped" && (
                       <Button
                         className="bg-gradient-to-r from-green-500 to-emerald-500 hover:opacity-90 gap-2"

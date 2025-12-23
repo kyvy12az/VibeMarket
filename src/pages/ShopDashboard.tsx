@@ -7,7 +7,6 @@ import { ProductsManagement } from "@/components/dashboard-Seller/ProductsManage
 import { ShopAnalytics } from "@/components/dashboard-Seller/ShopAnalytics";
 import AddProduct from "@/components/dashboard-Seller/AddProduct";
 import { ShopSettings } from "@/components/dashboard-Seller/ShopSettings";
-import ShopChatManagement from "@/components/dashboard-Seller/ShopChatManagement";
 import { CouponManagement } from "@/components/dashboard-Seller/CouponManagement";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -35,7 +34,6 @@ const ShopDashboard = () => {
               <Route path="product-management" element={<ProductsManagement />} />
               <Route path="add-product" element={<AddProduct />} />
               <Route path="coupons" element={<CouponManagement />} />
-              <Route path="messages" element={<ShopChatManagement />} />
               <Route path="statistics" element={<ShopAnalytics />} />
               <Route path="setting" element={<ShopSettings />} />
               <Route path="*" element={<Navigate to="/vendor-management" replace />} />

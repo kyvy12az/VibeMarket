@@ -1,244 +1,185 @@
-import { motion } from "framer-motion";
-import { HeartHandshake, Sparkles, ArrowRight, Users, TrendingUp, Zap } from "lucide-react";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { ArrowRight, Users, Zap, ShieldCheck, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export function AboutHero() {
+  // Hiệu ứng Parallax nhẹ khi cuộn
+  const { scrollY } = useScroll();
+  const y1 = useTransform(scrollY, [0, 500], [0, -50]);
+  const y2 = useTransform(scrollY, [0, 500], [0, 50]);
   return (
-    <section className="relative py-8 px-4 sm:px-6 overflow-hidden">
-      {/* Animated Background */}
+    <section className="relative min-h-[90vh] flex items-center py-16 px-4 sm:px-6 overflow-hidden">
+      {/* 1. Nền Mesh Gradient & Noise Texture */}
       <div className="absolute inset-0 -z-10">
-        {/* Base gradient */}
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-primary/5 to-background" />
-        
-        {/* Mesh gradient overlay */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(var(--primary),0.15),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(var(--accent),0.15),transparent_50%)]" />
-        
-        {/* Animated orbs */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(17,24,39,1)_0%,rgba(2,6,23,1)_100%)]" />
+
+        {/* Animated Aurora */}
         <motion.div
-          className="absolute top-1/4 left-1/4 w-96 h-96 bg-gradient-to-tr from-primary/30 via-accent/30 to-transparent rounded-full blur-3xl"
-          animate={{
-            scale: [1, 1.15, 1],
-            opacity: [0.3, 0.45, 0.3],
-          }}
-          transition={{
-            duration: 10,
-            repeat: Infinity,
-            ease: [0.22, 1, 0.36, 1],
-          }}
-          style={{ willChange: 'transform, opacity' }}
-        />
-        <motion.div
-          className="absolute bottom-1/4 right-1/3 w-80 h-80 bg-gradient-to-tl from-accent/40 via-primary/20 to-transparent rounded-full blur-3xl"
           animate={{
             scale: [1, 1.2, 1],
-            opacity: [0.4, 0.5, 0.4],
+            rotate: [0, 45, 0],
           }}
-          transition={{
-            duration: 12,
-            repeat: Infinity,
-            ease: [0.22, 1, 0.36, 1],
-            delay: 1,
+          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+          className="absolute -top-[20%] -left-[10%] w-[70%] h-[70%] bg-primary/20 rounded-[40%_60%_70%_30%] blur-[120px] opacity-50"
+        />
+        <motion.div
+          animate={{
+            scale: [1.2, 1, 1.2],
+            rotate: [0, -45, 0],
           }}
-          style={{ willChange: 'transform, opacity' }}
+          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+          className="absolute -bottom-[20%] -right-[10%] w-[60%] h-[60%] bg-accent/20 rounded-[30%_70%_40%_60%] blur-[120px] opacity-50"
         />
 
-        {/* Grid pattern overlay */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(var(--primary),0.05)_1px,transparent_1px),linear-gradient(90deg,rgba(var(--primary),0.05)_1px,transparent_1px)] bg-[size:64px_64px] [mask-image:radial-gradient(ellipse_at_center,black_40%,transparent_80%)]" />
+        {/* Subtle Noise Texture overlay */}
+        <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+
+        {/* Grid Dots */}
+        <div className="absolute inset-0 bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:40px_40px] opacity-[0.05]" />
       </div>
 
-      <div className="container mx-auto max-w-7xl">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          {/* Left Content */}
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            className="space-y-8"
-            style={{ willChange: 'transform, opacity' }}
-          >
-            {/* Badge */}
+      <div className="container mx-auto max-w-7xl relative">
+        <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
+
+          {/* CỘT TRÁI: NỘI DUNG */}
+          <div className="relative z-10">
+            {/* Badge hiện đại */}
             <motion.div
-              initial={{ opacity: 0, y: 15 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.15, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-primary/10 via-accent/10 to-primary/10 border border-primary/20 backdrop-blur-sm shadow-lg"
-              style={{ willChange: 'transform, opacity' }}
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 backdrop-blur-md mb-8"
             >
-              <Sparkles className="h-5 w-5 text-primary animate-pulse" />
-              <span className="text-sm font-semibold bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
-                Về VibeMarket
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+              </span>
+              <span className="text-xs font-bold tracking-[0.2em] uppercase text-zinc-400">
+                Khát vọng vươn tầm Việt
               </span>
             </motion.div>
 
-            {/* Main Heading */}
-            <div className="space-y-4">
-              <motion.h1
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="text-5xl sm:text-6xl lg:text-7xl font-bold leading-tight"
-              >
-                <span className="block bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                  Kết nối
-                </span>
-                <span className="block bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent mt-2">
-                  Thương hiệu Việt
-                </span>
-              </motion.h1>
+            {/* Heading với Text-Clipping Gradient */}
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="text-6xl sm:text-7xl lg:text-8xl font-black leading-[0.9] tracking-tighter mb-8"
+            >
+              <span className="block text-white">Định hình</span>
+              <span className="block bg-gradient-to-r from-primary to-purple-600 bg-clip-text text-transparent italic">
+                Vibe Việt.
+              </span>
+            </motion.h1>
 
-              <motion.div
-                initial={{ opacity: 0, scaleX: 0 }}
-                animate={{ opacity: 1, scaleX: 1 }}
-                transition={{ delay: 0.5, duration: 0.8 }}
-                className="h-1.5 w-24 bg-gradient-to-r from-primary to-accent rounded-full"
-              />
-            </div>
-
-            {/* Description */}
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              className="text-lg sm:text-xl text-muted-foreground leading-relaxed max-w-xl"
+              transition={{ delay: 0.3 }}
+              className="text-lg text-zinc-400 leading-relaxed max-w-lg mb-10"
             >
-              Nơi kết nối đam mê thời trang Việt với cộng đồng sáng tạo, 
-              giúp thương hiệu địa phương tỏa sáng và lan tỏa phong cách riêng.
+              VibeMarket không chỉ là nền tảng thương mại, mà là cầu nối văn hóa sáng tạo,
+              nơi mỗi Local Brand kể câu chuyện bản sắc qua ngôn ngữ thời trang hiện đại.
             </motion.p>
 
-            {/* Stats Grid */}
+            {/* CTA với hiệu ứng Glow */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 }}
-              className="grid grid-cols-3 gap-4 pt-6"
+              transition={{ delay: 0.4 }}
+              className="flex flex-wrap items-center gap-5"
             >
+              <Button size="xl" className="relative group overflow-hidden rounded-full bg-white text-black hover:bg-white/90 px-10 h-14 font-bold shadow-[0_0_20px_rgba(255,255,255,0.1)]">
+                <span className="relative z-10 flex items-center gap-2">
+                  Bắt đầu ngay <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-primary/20 to-accent/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+              </Button>
+
+              <Button variant="ghost" className="rounded-full text-white hover:bg-white/5 h-14 px-8 border border-white/10 backdrop-blur-sm">
+                Tìm hiểu thêm
+              </Button>
+            </motion.div>
+
+            {/* Stats hiện đại kiểu Bento */}
+            <div className="grid grid-cols-3 gap-4 mt-16">
               {[
-                { icon: Users, label: "10K+", sublabel: "Người dùng" },
-                { icon: TrendingUp, label: "500+", sublabel: "Thương hiệu" },
-                { icon: Zap, label: "50K+", sublabel: "Sản phẩm" },
-              ].map((stat, index) => (
+                { label: "Partner Brands", value: "500+", icon: ShieldCheck },
+                { label: "Community", value: "100K", icon: Users },
+                { label: "Success Rate", value: "98%", icon: Star },
+              ].map((stat, i) => (
                 <motion.div
-                  key={index}
-                  initial={{ opacity: 0, scale: 0.8 }}
+                  key={i}
+                  initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.8 + index * 0.1 }}
-                  className="group relative p-4 rounded-2xl bg-gradient-to-br from-card/80 to-card/40 backdrop-blur-sm border border-border/50 hover:border-primary/50 transition-all duration-300 hover:shadow-lg hover:shadow-primary/10"
+                  transition={{ delay: 0.5 + i * 0.1 }}
+                  className="p-4 rounded-2xl bg-white/[0.03] border border-white/5 hover:bg-white/[0.06] transition-colors"
                 >
-                  <stat.icon className="w-6 h-6 text-primary mb-2 group-hover:scale-110 transition-transform" />
-                  <div className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                    {stat.label}
-                  </div>
-                  <div className="text-xs text-muted-foreground">{stat.sublabel}</div>
+                  <stat.icon className="w-5 h-5 text-primary mb-3" />
+                  <div className="text-xl font-bold text-white leading-none">{stat.value}</div>
+                  <div className="text-[10px] uppercase tracking-wider text-zinc-500 mt-1">{stat.label}</div>
                 </motion.div>
               ))}
-            </motion.div>
+            </div>
+          </div>
 
-            {/* CTA Buttons */}
+          {/* CỘT PHẢI: VISUAL COMPOSITION */}
+          <div className="relative lg:h-[600px] flex items-center justify-center">
+            {/* Main Image Frame */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.9 }}
-              className="flex flex-wrap items-center gap-4 pt-4"
+              style={{ y: y1 }}
+              className="relative z-20 w-[80%] aspect-[4/5] rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl"
             >
-              <Button
-                size="lg"
-                className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 shadow-lg hover:shadow-xl transition-all duration-300 group"
-              >
-                Khám phá ngay
-                <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </Button>
-
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-2 hover:border-primary hover:bg-primary/5 group"
-              >
-                <HeartHandshake className="mr-2 h-4 w-4 group-hover:scale-110 transition-transform" />
-                Tham gia cộng đồng
-              </Button>
+              <img
+                src="/images/about-main.jpg"
+                alt="Brand Vibe"
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-60" />
             </motion.div>
-          </motion.div>
 
-          {/* Right Image Section */}
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, ease: "easeOut", delay: 0.4 }}
-            className="relative"
-          >
-            {/* Main Image Container */}
-            <div className="relative group">
-              {/* Decorative elements */}
-              <div className="absolute -inset-4 bg-gradient-to-r from-primary/20 via-accent/20 to-primary/20 rounded-3xl blur-2xl opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
-              
-              {/* Image card */}
-              <div className="relative rounded-3xl overflow-hidden border border-border/50 bg-card/80 backdrop-blur-sm shadow-2xl">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10" />
-                
-                <motion.img
-                  src="/images/about-illustration.png"
-                  alt="VibeMarket Illustration"
-                  className="relative w-full h-auto object-cover"
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ duration: 0.5 }}
-                />
-
-                {/* Overlay gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-              </div>
-
-              {/* Floating cards */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.2, duration: 0.6 }}
-                className="absolute -bottom-6 -left-6 p-4 rounded-2xl bg-card/90 backdrop-blur-md border border-border/50 shadow-xl"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                    <Sparkles className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold">Thương hiệu uy tín</div>
-                    <div className="text-xs text-muted-foreground">100% chính hãng</div>
-                  </div>
+            {/* Floating Card 1: Experience */}
+            <motion.div
+              style={{ y: y2 }}
+              className="absolute -right-4 top-20 z-30 p-6 rounded-3xl bg-white/10 backdrop-blur-2xl border border-white/20 shadow-2xl max-w-[200px]"
+            >
+              <div className="flex flex-col gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-lg shadow-primary/40">
+                  <Zap className="w-5 h-5 text-white" />
                 </div>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 1.4, duration: 0.6 }}
-                className="absolute -top-6 -right-6 p-4 rounded-2xl bg-card/90 backdrop-blur-md border border-border/50 shadow-xl"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center">
-                    <TrendingUp className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-semibold">Tăng trưởng nhanh</div>
-                    <div className="text-xs text-muted-foreground">+150% năm 2024</div>
-                  </div>
+                <p className="text-sm font-bold text-white leading-snug">
+                  Trải nghiệm mua sắm thế hệ mới
+                </p>
+                <div className="flex -space-x-2">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="w-6 h-6 rounded-full border-2 border-slate-900 bg-zinc-700" />
+                  ))}
+                  <div className="w-6 h-6 rounded-full border-2 border-slate-900 bg-primary flex items-center justify-center text-[8px] font-bold text-white">+12k</div>
                 </div>
-              </motion.div>
-            </div>
-
-            {/* Decorative dots */}
-            <div className="absolute -z-10 -top-8 -right-8 w-32 h-32 opacity-20">
-              <div className="grid grid-cols-4 gap-3">
-                {[...Array(16)].map((_, i) => (
-                  <motion.div
-                    key={i}
-                    className="w-2 h-2 rounded-full bg-primary"
-                    initial={{ opacity: 0, scale: 0 }}
-                    animate={{ opacity: 0.3, scale: 1 }}
-                    transition={{ delay: 1 + i * 0.05, duration: 0.3 }}
-                  />
-                ))}
               </div>
+            </motion.div>
+
+            {/* Floating Card 2: Quality */}
+            <motion.div
+              initial={{ x: 20, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              transition={{ delay: 0.8 }}
+              className="absolute -left-10 bottom-20 z-30 px-6 py-4 rounded-2xl bg-slate-900/80 backdrop-blur-xl border border-primary/30 shadow-xl"
+            >
+              <div className="flex items-center gap-4">
+                <div className="text-3xl font-black text-white italic">100%</div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-zinc-400">
+                  Cam kết<br />Chính hãng
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Abstract Decorative Circles */}
+            <div className="absolute inset-0 -z-10 flex items-center justify-center">
+              <div className="w-[120%] h-[120%] border border-white/5 rounded-full animate-[spin_20s_linear_infinite]" />
+              <div className="absolute w-[90%] h-[90%] border border-white/5 rounded-full animate-[spin_15s_linear_infinite_reverse]" />
             </div>
-          </motion.div>
+          </div>
+
         </div>
       </div>
     </section>

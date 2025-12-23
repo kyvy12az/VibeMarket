@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useParams } from "react-router-dom";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,32 +14,23 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   ArrowLeft,
-  Save,
   Loader2,
   Package,
-  X,
   Image as ImageIcon,
   Plus,
   Edit3,
   DollarSign,
-  Clock,
-  Star,
   Settings,
   Palette,
-  Tag,
   Sparkles,
-  Truck,
-  Calendar,
   Info,
   Check,
-  AlertCircle,
-  Eye,
-  TrendingUp
+  TrendingUp,
+  Zap
 } from "lucide-react";
 
 interface ProductData {
@@ -337,798 +328,337 @@ export function EditProduct() {
       >
         {/* Background decoration */}
         <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 via-red-500/5 to-pink-500/5 rounded-3xl -z-10" />
-        
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 p-8">
-          <div className="flex items-start gap-6">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => navigate("/vendor-management/product-management")}
-              className="rounded-xl hover:bg-muted border-border"
-            >
-              <ArrowLeft className="w-4 h-4" />
-            </Button>
 
-            <motion.div
-              className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 via-red-500 to-pink-500 shadow-xl"
-              animate={{ 
-                rotate: [0, 5, -5, 0],
-                scale: [1, 1.05, 1]
-              }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            >
-              <Edit3 className="w-8 h-8 text-white" />
-            </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative border-b border-border/40 bg-background/50 backdrop-blur-xl"
+        >
+          {/* Hiệu ứng ánh sáng nền mờ (Ambient Glow) */}
+          <div className="absolute top-0 right-1/4 w-64 h-32 bg-orange-500/10 blur-[100px] -z-10" />
+          <div className="absolute top-0 left-1/4 w-64 h-32 bg-pink-500/10 blur-[100px] -z-10" />
 
-            <div className="space-y-2">
-              <div>
-                <h1 className="text-4xl md:text-5xl font-black bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 bg-clip-text text-transparent">
-                  Chỉnh sửa sản phẩm
-                </h1>
-                <div className="flex items-center gap-2 mt-1">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse" />
-                  <p className="text-muted-foreground">
-                    Cập nhật thông tin: <span className="font-medium text-foreground">{product.name}</span>
-                  </p>
+          <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-8 p-8 max-w-[1600px] mx-auto">
+            <div className="flex flex-col md:flex-row items-start gap-6">
+              {/* Nút Back - Thiết kế tối giản */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => navigate("/vendor-management/product-management")}
+                className="h-12 w-12 rounded-2xl bg-background shadow-sm border border-border/50 hover:bg-muted transition-all active:scale-90"
+              >
+                <ArrowLeft className="w-5 h-5 text-muted-foreground" />
+              </Button>
+
+              <div className="flex gap-5">
+                {/* Icon chính với hiệu ứng Layered Gradient */}
+                <div className="relative shrink-0">
+                  <motion.div
+                    className="absolute inset-0 bg-gradient-to-br from-orange-500 to-pink-500 blur-md opacity-40 rounded-2xl"
+                    animate={{ scale: [1, 1.1, 1] }}
+                    transition={{ duration: 4, repeat: Infinity }}
+                  />
+                  <div className="relative p-4 rounded-2xl bg-gradient-to-br from-orange-500 via-red-500 to-pink-500 shadow-xl shadow-orange-500/20 ring-1 ring-white/20">
+                    <Edit3 className="w-7 h-7 text-white" />
+                  </div>
+                </div>
+
+                {/* Tiêu đề & Breadcrumb nội bộ */}
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-orange-500 bg-orange-500/10 px-2 py-0.5 rounded-md">
+                      Editor Mode
+                    </span>
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+                      ID: {product.id}
+                    </span>
+                  </div>
+
+                  <h1 className="text-3xl md:text-4xl font-black tracking-tighter text-foreground italic italic-no">
+                    Chỉnh sửa <span className="bg-gradient-to-r from-orange-600 via-red-600 to-pink-600 bg-clip-text text-transparent">Sản phẩm</span>
+                  </h1>
+
+                  <div className="flex items-center gap-3">
+                    <p className="text-sm font-medium text-muted-foreground">
+                      Đang chỉnh sửa: <span className="text-foreground font-bold">{product.name}</span>
+                    </p>
+                    <div className="h-1 w-1 rounded-full bg-border" />
+                    <p className="text-xs text-muted-foreground italic">Cập nhật lần cuối: 2 giờ trước</p>
+                  </div>
                 </div>
               </div>
-              <p className="text-lg text-muted-foreground max-w-2xl">
-                🎨 Chỉnh sửa và cập nhật thông tin sản phẩm một cách dễ dàng và chuyên nghiệp
-              </p>
             </div>
-          </div>
 
-          {/* Product Stats */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="text-center p-4 rounded-xl bg-muted/50 border border-border">
-              <div className="text-xl font-bold text-foreground">{product.current_stock}</div>
-              <div className="text-xs text-muted-foreground">Tồn kho</div>
-            </div>
-            <div className="text-center p-4 rounded-xl bg-muted/50 border border-border">
-              <div className="text-xl font-bold text-foreground">{product.sold}</div>
-              <div className="text-xs text-muted-foreground">Đã bán</div>
-            </div>
-            <div className="text-center p-4 rounded-xl bg-muted/50 border border-border">
-              <div className="text-xl font-bold text-primary">{product.price.toLocaleString()}₫</div>
-              <div className="text-xs text-muted-foreground">Giá hiện tại</div>
+            {/* Product Stats - Thiết kế Bento Box mini */}
+            <div className="flex flex-wrap items-center gap-4">
+              {[
+                { label: "Tồn kho", value: product.current_stock, icon: Package, color: "text-blue-500" },
+                { label: "Đã bán", value: product.sold, icon: TrendingUp, color: "text-emerald-500" },
+                { label: "Giá hiện tại", value: `${product.price.toLocaleString()}₫`, icon: DollarSign, color: "text-orange-500", highlight: true }
+              ].map((stat, i) => (
+                <div
+                  key={i}
+                  className={`min-w-[140px] p-4 rounded-2xl border border-border/50 bg-background/50 shadow-sm transition-all hover:border-primary/20 group`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <stat.icon className={`w-3.5 h-3.5 ${stat.color}`} />
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">{stat.label}</span>
+                  </div>
+                  <div className={`text-lg font-black tracking-tight ${stat.highlight ? 'text-primary' : 'text-foreground'}`}>
+                    {stat.value}
+                  </div>
+                  {/* Một thanh progress nhỏ tinh tế phía dưới mỗi card */}
+                  <div className="mt-2 h-0.5 w-full bg-muted rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: "60%" }}
+                      className={`h-full ${stat.color.replace('text', 'bg')}`}
+                    />
+                  </div>
+                </div>
+              ))}
+
+              {/* Nút Action nhanh ngay tại Header */}
+              <div className="ml-2 pl-4 border-l border-border h-12 flex items-center">
+                <Button className="rounded-xl bg-foreground text-background font-bold px-6 shadow-lg shadow-foreground/10 hover:opacity-90 active:scale-95 transition-all">
+                  Lưu thay đổi
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
+        </motion.div>
       </motion.div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        {/* Progress Steps */}
+      <form onSubmit={handleSubmit} className="max-w-[1200px] mx-auto pb-20 space-y-12">
+        {/* 1. Thanh Tiến trình (Progress Steps) - Thiết kế kiểu Floating Dock */}
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="flex justify-center"
+          className="sticky top-6 z-50 flex justify-center"
         >
-          <div className="flex items-center gap-4 p-2 bg-muted/50 rounded-2xl border border-border">
-            {steps.map((step, index) => (
-              <motion.button
-                key={step.id}
-                type="button"
-                onClick={() => setCurrentStep(step.id)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl transition-all duration-300 ${
-                  currentStep === step.id
-                    ? 'bg-gradient-to-r from-primary to-purple-600 text-white shadow-md'
-                    : 'hover:bg-muted'
-                }`}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <step.icon className="w-4 h-4" />
-                <span className="text-sm font-medium hidden sm:block">{step.label}</span>
-              </motion.button>
-            ))}
+          <div className="flex items-center gap-1 p-1.5 bg-background/60 backdrop-blur-xl border border-white/20 rounded-2xl shadow-[0_8px_32px_0_rgba(0,0,0,0.1)] ring-1 ring-black/5">
+            {steps.map((step) => {
+              const isActive = currentStep === step.id;
+              return (
+                <button
+                  key={step.id}
+                  type="button"
+                  onClick={() => setCurrentStep(step.id)}
+                  className={`relative flex items-center gap-2 px-6 py-2.5 rounded-xl transition-all duration-500 group`}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeTab"
+                      className="absolute inset-0 bg-foreground rounded-xl"
+                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                    />
+                  )}
+                  <step.icon className={`relative z-10 w-4 h-4 transition-colors duration-300 ${isActive ? 'text-background' : 'text-muted-foreground group-hover:text-foreground'}`} />
+                  <span className={`relative z-10 text-sm font-bold tracking-tight transition-colors duration-300 hidden sm:block ${isActive ? 'text-background' : 'text-muted-foreground group-hover:text-foreground'}`}>
+                    {step.label}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </motion.div>
 
         <AnimatePresence mode="wait">
-          {/* Basic Info */}
-          {currentStep === "basic" && (
-            <motion.div
-              key="basic"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <Card className="border shadow-sm">
-                <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-cyan-50">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500">
-                      <Package className="w-5 h-5 text-white" />
-                    </div>
-                    <div>
-                      <CardTitle className="text-lg bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">
-                        Thông tin cơ bản
-                      </CardTitle>
-                      <p className="text-sm text-muted-foreground">Tên, mô tả và phân loại sản phẩm</p>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-6 space-y-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="name" className="flex items-center gap-2">
-                        <Edit3 className="w-4 h-4" />
-                        Tên sản phẩm <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="name"
-                        value={formData.name}
-                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                        placeholder="Nhập tên sản phẩm..."
-                        className="border-border focus:border-primary"
-                        required
-                      />
+          {/* 2. Nội dung chính - Sử dụng Bento Grid nhẹ nhàng */}
+          <motion.div
+            key={currentStep}
+            initial={{ opacity: 0, scale: 0.98, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 1.02, y: -10 }}
+            transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            className="grid grid-cols-1 lg:grid-cols-12 gap-8"
+          >
+
+            {/* CỘT TRÁI: FORM CHÍNH (8 COLUMNS) */}
+            <div className="lg:col-span-8 space-y-8">
+              {currentStep === "basic" && (
+                <Card className="bg-background shadow-none space-y-8 p-6">
+                  <section className="space-y-6">
+                    <div className="flex items-center gap-4 mb-2">
+                      <div className="h-8 w-1 bg-primary rounded-full" />
+                      <h2 className="text-2xl font-black tracking-tight">Thông tin định danh</h2>
                     </div>
 
-                    <div className="space-y-2">
-                      <Label htmlFor="brand" className="flex items-center gap-2">
-                        <Star className="w-4 h-4" />
-                        Thương hiệu
-                      </Label>
-                      <Input
-                        id="brand"
-                        value={formData.brand}
-                        onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                        placeholder="Nhập thương hiệu..."
-                        className="border-border focus:border-primary"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="category" className="flex items-center gap-2">
-                      <Package className="w-4 h-4" />
-                      Danh mục <span className="text-red-500">*</span>
-                    </Label>
-                    <Select
-                      value={formData.category}
-                      onValueChange={(value) => setFormData({ ...formData, category: value })}
-                    >
-                      <SelectTrigger className="border-border focus:border-primary">
-                        <SelectValue placeholder="Chọn danh mục..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {categories.map((cat) => (
-                          <SelectItem key={cat} value={cat}>
-                            {cat}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="description" className="flex items-center gap-2">
-                      <Info className="w-4 h-4" />
-                      Mô tả sản phẩm
-                    </Label>
-                    <Textarea
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Nhập mô tả chi tiết về sản phẩm..."
-                      rows={6}
-                      className="border-border focus:border-primary resize-none"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-
-          {/* Pricing & Stock */}
-          {currentStep === "pricing" && (
-            <motion.div
-              key="pricing"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="space-y-6">
-                {/* Pricing Card */}
-                <Card className="border shadow-sm">
-                  <CardHeader className="border-b bg-gradient-to-r from-green-50 to-emerald-50">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500">
-                        <DollarSign className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent">
-                          Giá bán và chiết khấu
-                        </CardTitle>
-                        <p className="text-sm text-muted-foreground">Thiết lập giá và chính sách giảm giá</p>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-6 space-y-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <Label htmlFor="price" className="flex items-center gap-2">
-                          <TrendingUp className="w-4 h-4 text-green-600" />
-                          Giá bán <span className="text-red-500">*</span>
-                        </Label>
-                        <div className="relative">
-                          <Input
-                            id="price"
-                            type="number"
-                            min="0"
-                            value={formData.price}
-                            onChange={(e) => setFormData({ ...formData, price: parseInt(e.target.value) || 0 })}
-                            placeholder="0"
-                            className="border-border focus:border-primary pl-8"
-                            required
-                          />
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">₫</span>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="original_price" className="flex items-center gap-2">
-                          <DollarSign className="w-4 h-4 text-gray-600" />
-                          Giá gốc
-                        </Label>
-                        <div className="relative">
-                          <Input
-                            id="original_price"
-                            type="number"
-                            min="0"
-                            value={formData.original_price}
-                            onChange={(e) => setFormData({ ...formData, original_price: parseInt(e.target.value) || 0 })}
-                            placeholder="0"
-                            className="border-border focus:border-primary pl-8"
-                          />
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">₫</span>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <Label htmlFor="discount" className="flex items-center gap-2">
-                          <Sparkles className="w-4 h-4 text-orange-600" />
-                          Giảm giá (%)
-                        </Label>
-                        <div className="relative">
-                          <Input
-                            id="discount"
-                            type="number"
-                            min="0"
-                            max="100"
-                            value={formData.discount}
-                            onChange={(e) => setFormData({ ...formData, discount: parseInt(e.target.value) || 0 })}
-                            placeholder="0"
-                            className="border-border focus:border-primary pr-8"
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">%</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Flash Sale */}
-                    <div className="p-4 rounded-xl bg-gradient-to-r from-red-50 to-pink-50 border border-red-200">
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                          <Sparkles className="w-5 h-5 text-red-600" />
-                          <Label htmlFor="flash_sale" className="font-medium text-red-800">
-                            Kích hoạt Flash Sale
-                          </Label>
-                        </div>
-                        <Switch
-                          id="flash_sale"
-                          checked={formData.flash_sale}
-                          onCheckedChange={(checked) => setFormData({ ...formData, flash_sale: checked })}
-                        />
-                      </div>
-
-                      {formData.flash_sale && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: "auto" }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="grid grid-cols-1 lg:grid-cols-2 gap-4"
-                        >
-                          <div className="space-y-2">
-                            <Label htmlFor="sale_price">Giá Flash Sale</Label>
-                            <div className="relative">
-                              <Input
-                                id="sale_price"
-                                type="number"
-                                min="0"
-                                value={formData.sale_price}
-                                onChange={(e) => setFormData({ ...formData, sale_price: parseInt(e.target.value) || 0 })}
-                                placeholder="0"
-                                className="border-border focus:border-primary pl-8"
-                              />
-                              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">₫</span>
-                            </div>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="sale_quantity">Số lượng Flash Sale</Label>
-                            <Input
-                              id="sale_quantity"
-                              type="number"
-                              min="0"
-                              value={formData.sale_quantity}
-                              onChange={(e) => setFormData({ ...formData, sale_quantity: parseInt(e.target.value) || 0 })}
-                              placeholder="0"
-                              className="border-border focus:border-primary"
-                            />
-                          </div>
-                        </motion.div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Stock & Shipping */}
-                <Card className="border shadow-sm">
-                  <CardHeader className="border-b bg-muted/20">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-500">
-                        <Package className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg">Tồn kho và vận chuyển</CardTitle>
-                        <p className="text-sm text-muted-foreground">Quản lý số lượng và phí ship</p>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-6 space-y-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                      <div className="space-y-2">
-                        <Label htmlFor="quantity" className="flex items-center gap-2">
-                          <Package className="w-4 h-4" />
-                          Tồn kho ban đầu <span className="text-red-500">*</span>
-                        </Label>
+                        <Label className="text-[11px] uppercase tracking-[0.2em] font-black text-muted-foreground ml-1">Tên sản phẩm</Label>
                         <Input
-                          id="quantity"
-                          type="number"
-                          min="0"
-                          value={formData.quantity}
-                          onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })}
-                          placeholder="0"
-                          className="border-border focus:border-primary"
-                          required
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          className="h-14 px-6 rounded-2xl border-border/50 bg-background shadow-sm focus:ring-4 focus:ring-primary/5 transition-all text-lg font-medium"
+                          placeholder="Ví dụ: Áo Hoodie Oversize Premium"
                         />
-                        <div className="flex items-center gap-4 text-xs text-muted-foreground mt-2">
-                          <div className="flex items-center gap-1">
-                            <div className="w-2 h-2 bg-green-500 rounded-full" />
-                            <span>Tồn kho hiện tại: <strong>{product.current_stock}</strong></span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                            <span>Đã bán: <strong>{product.sold}</strong></span>
-                          </div>
-                        </div>
                       </div>
-
                       <div className="space-y-2">
-                        <Label htmlFor="shipping_fee" className="flex items-center gap-2">
-                          <Truck className="w-4 h-4" />
-                          Phí vận chuyển
-                        </Label>
-                        <div className="relative">
-                          <Input
-                            id="shipping_fee"
-                            type="number"
-                            min="0"
-                            value={formData.shipping_fee}
-                            onChange={(e) => setFormData({ ...formData, shipping_fee: parseInt(e.target.value) || 0 })}
-                            placeholder="0"
-                            className="border-border focus:border-primary pl-8"
-                          />
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">₫</span>
-                        </div>
+                        <Label className="text-[11px] uppercase tracking-[0.2em] font-black text-muted-foreground ml-1">Thương hiệu</Label>
+                        <Input
+                          value={formData.brand}
+                          onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+                          className="h-14 px-6 rounded-2xl border-border/50 bg-background shadow-sm focus:ring-4 focus:ring-primary/5 transition-all text-lg font-medium"
+                          placeholder="Nhãn hiệu của bạn"
+                        />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="status" className="flex items-center gap-2">
-                        <Eye className="w-4 h-4" />
-                        Trạng thái sản phẩm
-                      </Label>
-                      <Select
-                        value={formData.status}
-                        onValueChange={(value) => setFormData({ ...formData, status: value })}
-                      >
-                        <SelectTrigger className="border-border focus:border-primary">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="active">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-green-500 rounded-full" />
-                              Đang bán
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="inactive">
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-red-500 rounded-full" />
-                              Ngừng bán
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Variants */}
-          {currentStep === "variants" && (
-            <motion.div
-              key="variants"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="space-y-6">
-                {/* Sizes */}
-                <Card className="border shadow-sm">
-                  <CardHeader className="border-b bg-gradient-to-r from-purple-50 to-pink-50">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500">
-                        <Package className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">
-                          Kích thước sản phẩm
-                        </CardTitle>
-                        <p className="text-sm text-muted-foreground">Chọn các size có sẵn</p>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <div className="flex flex-wrap gap-3">
-                      {sizes.map((size) => (
-                        <motion.div
-                          key={size}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <Badge
-                            variant={selectedSizes.includes(size) ? "default" : "outline"}
-                            className={`cursor-pointer px-4 py-2 text-sm transition-all ${
-                              selectedSizes.includes(size)
-                                ? 'bg-gradient-to-r from-purple-500 to-pink-500 border-transparent text-white shadow-md'
-                                : 'hover:border-purple-500'
-                            }`}
-                            onClick={() => toggleSize(size)}
-                          >
-                            {selectedSizes.includes(size) && <Check className="w-3 h-3 mr-1" />}
-                            {size}
-                          </Badge>
-                        </motion.div>
-                      ))}
-                    </div>
-                    {selectedSizes.length > 0 && (
-                      <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-                        <p className="text-sm text-muted-foreground">
-                          Đã chọn {selectedSizes.length} size: {selectedSizes.join(", ")}
-                        </p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Colors */}
-                <Card className="border shadow-sm">
-                  <CardHeader className="border-b bg-muted/20">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-500">
-                        <Palette className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg">Màu sắc sản phẩm</CardTitle>
-                        <p className="text-sm text-muted-foreground">Chọn các màu có sẵn</p>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                      {colors.map((color) => (
-                        <motion.div
-                          key={color}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className={`p-3 rounded-xl border-2 cursor-pointer transition-all ${
-                            selectedColors.includes(color)
-                              ? 'border-primary bg-primary/10'
-                              : 'border-border hover:border-primary/50'
-                          }`}
-                          onClick={() => toggleColor(color)}
-                        >
-                          <div className="flex items-center gap-2">
-                            <div 
-                              className="w-5 h-5 rounded-full border-2 border-white shadow-sm"
-                              style={{ backgroundColor: colorMap[color] }}
-                            />
-                            <span className="text-sm font-medium">{color}</span>
-                          </div>
-                          {selectedColors.includes(color) && (
-                            <Check className="w-4 h-4 text-primary mt-1" />
-                          )}
-                        </motion.div>
-                      ))}
-                    </div>
-                    {selectedColors.length > 0 && (
-                      <div className="mt-4 p-3 bg-muted/50 rounded-lg">
-                        <p className="text-sm text-muted-foreground">
-                          Đã chọn {selectedColors.length} màu: {selectedColors.join(", ")}
-                        </p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Tags */}
-                <Card className="border shadow-sm">
-                  <CardHeader className="border-b bg-muted/20">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-gradient-to-br from-orange-500 to-red-500">
-                        <Tag className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg">Tags sản phẩm</CardTitle>
-                        <p className="text-sm text-muted-foreground">Thêm từ khóa để dễ tìm kiếm</p>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="p-6 space-y-4">
-                    <div className="flex gap-2">
-                      <Input
-                        value={tagInput}
-                        onChange={(e) => setTagInput(e.target.value)}
-                        onKeyPress={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
-                        placeholder="Nhập tag và nhấn Enter..."
-                        className="border-border"
-                      />
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        onClick={addTag}
-                        className="px-4"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
-                    
-                    {productTags.length > 0 && (
-                      <div className="space-y-3">
-                        <div className="flex flex-wrap gap-2">
-                          {productTags.map((tag, index) => (
-                            <motion.div
-                              key={tag}
-                              initial={{ opacity: 0, scale: 0.8 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{ delay: index * 0.05 }}
-                            >
-                              <Badge 
-                                variant="secondary" 
-                                className="gap-1 px-3 py-1.5 bg-muted hover:bg-muted/80 transition-colors"
-                              >
-                                {tag}
-                                <X
-                                  className="w-3 h-3 cursor-pointer hover:text-red-500"
-                                  onClick={() => removeTag(tag)}
-                                />
-                              </Badge>
-                            </motion.div>
-                          ))}
+                      <Label className="text-[11px] uppercase tracking-[0.2em] font-black text-muted-foreground ml-1">Mô tả chi tiết</Label>
+                      <div className="relative group">
+                        <Textarea
+                          value={formData.description}
+                          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                          className="min-h-[250px] p-6 rounded-3xl border-border/50 bg-background shadow-sm focus:ring-4 focus:ring-primary/5 transition-all resize-none text-base leading-relaxed"
+                          placeholder="Kể câu chuyện về sản phẩm của bạn..."
+                        />
+                        <div className="absolute bottom-4 right-4 text-[10px] font-bold text-muted-foreground bg-muted px-2 py-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity">
+                          {formData.description.length} ký tự
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          {productTags.length} tag(s) đã thêm
-                        </p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Settings */}
-          {currentStep === "settings" && (
-            <motion.div
-              key="settings"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              transition={{ duration: 0.3 }}
-            >
-              <div className="space-y-6">
-                {/* Release Settings */}
-                <Card className="border shadow-sm">
-                  <CardHeader className="border-b bg-gradient-to-r from-orange-50 to-red-50">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-gradient-to-br from-orange-500 to-red-500">
-                        <Calendar className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
-                          Cài đặt phát hành
-                        </CardTitle>
-                        <p className="text-sm text-muted-foreground">Thiết lập thời gian xuất bản sản phẩm</p>
                       </div>
                     </div>
-                  </CardHeader>
-                  <CardContent className="p-6 space-y-6">
-                    <div className="flex items-center justify-between p-4 rounded-xl bg-muted/50 border border-border">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-primary/10">
-                          <Clock className="w-5 h-5 text-primary" />
+                  </section>
+                </Card>
+              )}
+
+              {currentStep === "pricing" && (
+                <div className="space-y-8">
+                  {/* Pricing Section */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {[
+                      { id: 'price', label: 'Giá bán niêm yết', icon: DollarSign, color: 'text-primary' },
+                      { id: 'original_price', label: 'Giá vốn nhập kho', icon: Info, color: 'text-muted-foreground' },
+                      { id: 'discount', label: 'Chiết khấu (%)', icon: Sparkles, color: 'text-orange-500' }
+                    ].map((item) => (
+                      <div key={item.id} className="p-6 rounded-3xl bg-background border border-border/50 shadow-sm hover:shadow-md transition-all">
+                        <Label className="text-[10px] uppercase tracking-widest font-black text-muted-foreground flex items-center gap-2 mb-4">
+                          <item.icon className={`w-3 h-3 ${item.color}`} /> {item.label}
+                        </Label>
+                        <div className="relative">
+                          <Input
+                            type="number"
+                            value={formData[item.id]}
+                            onChange={(e) => setFormData({ ...formData, [item.id]: parseInt(e.target.value) })}
+                            className="border-none p-0 h-auto text-3xl font-black focus-visible:ring-0 bg-transparent"
+                          />
+                          <span className="absolute right-0 bottom-1 text-xs font-bold text-muted-foreground">
+                            {item.id === 'discount' ? '%' : 'VNĐ'}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Flash Sale Banner - Premium Red Design */}
+                  <div className={`overflow-hidden rounded-3xl border transition-all duration-500 ${formData.flash_sale ? 'border-red-500/50 bg-red-50/50' : 'border-border bg-muted/20 opacity-60'}`}>
+                    <div className="p-8 flex items-center justify-between">
+                      <div className="flex items-center gap-5">
+                        <div className={`p-4 rounded-2xl transition-colors ${formData.flash_sale ? 'bg-red-500 text-white' : 'bg-muted text-muted-foreground'}`}>
+                          <Zap className="w-6 h-6 fill-current" />
                         </div>
                         <div>
-                          <Label htmlFor="is_live" className="font-medium">Phát hành ngay lập tức</Label>
-                          <p className="text-sm text-muted-foreground">Sản phẩm sẽ hiển thị ngay sau khi lưu</p>
+                          <h3 className="font-black text-xl tracking-tight">Chiến dịch Flash Sale</h3>
+                          <p className="text-sm text-muted-foreground">Đẩy mạnh doanh số bằng cách giảm giá trong thời gian ngắn</p>
                         </div>
                       </div>
                       <Switch
-                        id="is_live"
-                        checked={formData.is_live}
-                        onCheckedChange={(checked) => setFormData({ ...formData, is_live: checked })}
+                        checked={formData.flash_sale}
+                        onCheckedChange={(v) => setFormData({ ...formData, flash_sale: v })}
+                        className="data-[state=checked]:bg-red-500"
                       />
                     </div>
+                  </div>
+                </div>
+              )}
 
-                    {!formData.is_live && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="space-y-2"
-                      >
-                        <Label htmlFor="release_date" className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4" />
-                          Ngày phát hành
-                        </Label>
-                        <Input
-                          id="release_date"
-                          type="datetime-local"
-                          value={formData.release_date}
-                          onChange={(e) => setFormData({ ...formData, release_date: e.target.value })}
-                          className="border-border focus:border-primary"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Sản phẩm sẽ được phát hành tự động vào thời gian đã chọn
-                        </p>
-                      </motion.div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Product Images */}
-                <Card className="border shadow-sm">
-                  <CardHeader className="border-b bg-muted/20">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500">
-                        <ImageIcon className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <CardTitle className="text-lg">Hình ảnh sản phẩm</CardTitle>
-                        <p className="text-sm text-muted-foreground">Xem và quản lý hình ảnh hiện tại</p>
-                      </div>
+              {currentStep === "variants" && (
+                <div className="space-y-8">
+                  <Card className="p-8 rounded-[2rem] border-border/50 bg-background shadow-sm">
+                    <h3 className="text-xl font-black mb-6 flex items-center gap-2">
+                      <Palette className="w-5 h-5 text-primary" /> Phân loại màu sắc
+                    </h3>
+                    <div className="flex flex-wrap gap-4">
+                      {colors.map((color) => (
+                        <button
+                          key={color}
+                          type="button"
+                          onClick={() => toggleColor(color)}
+                          className={`group relative flex items-center gap-3 pl-2 pr-5 py-2 rounded-full border-2 transition-all ${selectedColors.includes(color)
+                              ? 'border-foreground bg-foreground text-background scale-105 shadow-lg shadow-black/10'
+                              : 'border-border hover:border-muted-foreground'
+                            }`}
+                        >
+                          <div
+                            className="w-6 h-6 rounded-full border border-white/20"
+                            style={{ backgroundColor: colorMap[color] }}
+                          />
+                          <span className="text-sm font-bold">{color}</span>
+                          {selectedColors.includes(color) && <Check className="w-3 h-3" />}
+                        </button>
+                      ))}
                     </div>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    {product.images.length > 0 ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {product.images.map((img, index) => (
-                          <motion.div 
-                            key={index} 
-                            className="relative aspect-square group"
-                            initial={{ opacity: 0, scale: 0.8 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: index * 0.1 }}
-                          >
-                            <img
-                              src={img}
-                              alt={`Product ${index + 1}`}
-                              className="w-full h-full object-cover rounded-xl border-2 border-border group-hover:border-primary transition-colors shadow-sm"
-                            />
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors rounded-xl" />
-                            {index === 0 && (
-                              <Badge className="absolute top-2 left-2 bg-primary text-primary-foreground">
-                                Chính
-                              </Badge>
-                            )}
-                          </motion.div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12">
-                        <ImageIcon className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                        <p className="text-muted-foreground">Chưa có hình ảnh nào</p>
-                      </div>
-                    )}
-                    <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-                      <div className="flex items-start gap-3">
-                        <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
-                        <div>
-                          <p className="text-sm font-medium text-yellow-800">Lưu ý về hình ảnh</p>
-                          <p className="text-sm text-yellow-700 mt-1">
-                            Để thay đổi hình ảnh sản phẩm, bạn cần tạo sản phẩm mới hoặc liên hệ bộ phận hỗ trợ.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Navigation & Save */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="flex justify-between items-center pt-6 border-t"
-        >
-          <div className="flex gap-3">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => navigate("/vendor-management/product-management")}
-              disabled={saving}
-              className="gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Hủy bỏ
-            </Button>
-          </div>
-
-          <div className="flex gap-3">
-            {/* Step navigation */}
-            <div className="hidden sm:flex gap-2">
-              {steps.map((step, index) => {
-                const currentIndex = steps.findIndex(s => s.id === currentStep);
-                const stepIndex = index;
-                
-                return (
-                  <Button
-                    key={step.id}
-                    type="button"
-                    variant={stepIndex < currentIndex ? "default" : stepIndex === currentIndex ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setCurrentStep(step.id)}
-                    disabled={saving}
-                    className={stepIndex <= currentIndex ? "bg-primary" : ""}
-                  >
-                    {stepIndex < currentIndex ? <Check className="w-4 h-4" /> : <step.icon className="w-4 h-4" />}
-                  </Button>
-                );
-              })}
+                  </Card>
+                </div>
+              )}
             </div>
 
-            <Button
-              type="submit"
-              disabled={saving}
-              className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 hover:opacity-90 gap-2 min-w-[140px]"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Đang lưu...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  Lưu thay đổi
-                </>
-              )}
-            </Button>
-          </div>
-        </motion.div>
+            {/* CỘT PHẢI: WIDGETS & PREVIEW (4 COLUMNS) */}
+            <div className="lg:col-span-4 space-y-6">
+              {/* Hình ảnh sản phẩm - Thiết kế lưới Masonry mini */}
+              <div className="p-6 rounded-[2rem] bg-background border border-border/50 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="font-black tracking-tight">Thư viện ảnh</h3>
+                  <Button variant="ghost" size="sm" className="text-primary font-bold text-xs uppercase tracking-tighter">
+                    Quản lý
+                  </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {product.images.map((img, i) => (
+                    <motion.div
+                      key={i}
+                      whileHover={{ scale: 1.05 }}
+                      className={`relative aspect-[3/4] rounded-2xl overflow-hidden border-2 ${i === 0 ? 'border-primary ring-4 ring-primary/10' : 'border-transparent'}`}
+                    >
+                      <img src={img} className="w-full h-full object-cover" alt="preview" />
+                      {i === 0 && <span className="absolute top-2 left-2 bg-primary text-[10px] font-black text-white px-2 py-1 rounded-lg uppercase">Cover</span>}
+                    </motion.div>
+                  ))}
+                  <button type="button" className="aspect-[3/4] rounded-2xl border-2 border-dashed border-muted hover:border-primary/50 hover:bg-primary/5 transition-all flex flex-col items-center justify-center gap-2">
+                    <Plus className="w-6 h-6 text-muted-foreground" />
+                    <span className="text-[10px] font-black uppercase text-muted-foreground">Thêm ảnh</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Trạng thái & Danh mục */}
+              <div className="p-8 rounded-[2rem] bg-muted/30 border border-border/50 space-y-6">
+                <div className="space-y-3">
+                  <Label className="text-[11px] uppercase tracking-widest font-black text-muted-foreground">Danh mục sản phẩm</Label>
+                  <Select value={formData.category} onValueChange={(v) => setFormData({ ...formData, category: v })}>
+                    <SelectTrigger className="h-12 rounded-xl bg-background border-none shadow-sm font-bold">
+                      <SelectValue placeholder="Chọn danh mục" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl border-none shadow-2xl">
+                      {categories.map(cat => <SelectItem key={cat} value={cat} className="font-medium">{cat}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="pt-6 border-t border-border">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="font-black text-sm">Hiển thị sản phẩm</p>
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-tight">Active on storefront</p>
+                    </div>
+                    <Switch checked={formData.status === 'active'} onCheckedChange={(v) => setFormData({ ...formData, status: v ? 'active' : 'inactive' })} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </AnimatePresence>
       </form>
     </div>
   );

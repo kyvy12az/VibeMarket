@@ -1,0 +1,59 @@
+/* React root full size */
+#root {
+  width: 100%;
+  height: 100%;
+}
+
+/* 🗺️ Map full screen */
+.map-container {
+  position: fixed;        /* 🔥 quan trọng */
+  inset: 0;               /* top:0 right:0 bottom:0 left:0 */
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+  overflow: hidden;       /* Khóa scroll trong map */
+}
+
+/* 📱 Bottom sheet đè lên map */
+.bottom-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+
+  background: rgba(20, 20, 20, 0.85);
+  backdrop-filter: blur(12px);
+
+  border-radius: 20px 20px 0 0;
+  padding: 16px;
+  color: #fff;
+
+  box-shadow: 0 -10px 30px rgba(0,0,0,0.4);
+
+  z-index: 10;            /* cao hơn map */
+  pointer-events: auto;
+
+  touch-action: none;
+}
+
+/* Thanh kéo giống TikTok */
+.handle {
+  width: 40px;
+  height: 5px;
+  background: #666;
+  border-radius: 5px;
+  margin: 0 auto 10px;
+}
+
+/* Marker shipper */
+.shipper-marker {
+  width: 44px;
+  height: 44px;
+  background-image: url('/VibeMarket/public/images/icons/cod.png');
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  pointer-events: none; /* don't block map gestures */
+  will-change: transform;
+  transform-origin: center center;
+}

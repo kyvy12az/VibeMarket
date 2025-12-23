@@ -21,11 +21,14 @@ import {
   CheckCircle2,
   Grid3x3,
   List,
-  Eye
+  Eye,
+  ShoppingBag,
+  ChevronRight
 } from "lucide-react";
 import { useState, useRef } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
+import { AnimatePresence } from "framer-motion";
 
 const BrandProducts = () => {
   const { brandId } = useParams();
@@ -109,7 +112,6 @@ const BrandProducts = () => {
 
   const brand = brands[brandId as keyof typeof brands];
 
-  // ...existing products data...
   const allProducts = {
     "1": [
       { id: 101, name: "Áo sơ mi Premium", category: "Áo", price: 299000, image: "/placeholder.svg", rating: 4.8, sold: 1250, discount: 20, inStock: true },
@@ -177,6 +179,7 @@ const BrandProducts = () => {
     setIsFollowing(!isFollowing);
     toast.success(isFollowing ? "Đã bỏ theo dõi" : "Đã theo dõi thương hiệu");
   };
+  
 
   if (!brand) {
     return (
@@ -193,401 +196,308 @@ const BrandProducts = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Animated Background - Unified Primary Gradient */}
-      <div className="fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-gradient-to-br from-background via-primary/5 to-background" />
-        <motion.div
-          className={`absolute inset-0 bg-gradient-to-br ${brandGradient} opacity-10 blur-3xl`}
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.05, 0.15, 0.05],
-          }}
-          transition={{
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut",
-          }}
-        />
+    <div className="min-h-screen bg-[#050505] text-foreground selection:bg-primary/30">
+      {/* 1. Phông nền hiệu ứng Deep Blur */}
+      <div className="fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/10 blur-[120px] animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-500/10 blur-[120px]" />
       </div>
 
-      <main className="container mx-auto px-4 py-6">
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="space-y-8"
-        >
-          {/* Back Button */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
+      <main className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Navigation & Breadcrumb */}
+        <nav className="flex items-center gap-4 mb-8">
+          <Button
+            variant="ghost"
+            onClick={() => navigate("/local-brand")}
+            className="group rounded-full bg-white/5 hover:bg-white/10 backdrop-blur-md border border-white/10"
           >
-            <Button
-              variant="ghost"
-              onClick={() => navigate("/local-brand")}
-              className="gap-2 hover:bg-primary/10"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Quay lại
-            </Button>
-          </motion.div>
+            <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+            Trang chủ
+          </Button>
+          <div className="flex items-center text-sm text-muted-foreground">
+            <ChevronRight className="w-4 h-4 mx-1" />
+            <span>Thương hiệu</span>
+            <ChevronRight className="w-4 h-4 mx-1" />
+            <span className="text-foreground font-medium">{brand.name}</span>
+          </div>
+        </nav>
 
-          {/* Enhanced Brand Header */}
-          <motion.div
-            ref={headerRef}
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-          >
-            <Card className="relative overflow-hidden border-border/50 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-xl shadow-2xl">
-              {/* Cover Image with Parallax */}
-              <div className="relative h-64 md:h-80 overflow-hidden">
-                <motion.img
-                  src={brand.coverImage}
-                  alt={brand.name}
-                  className="w-full h-full object-cover"
-                  style={{ y: headerY }}
-                />
-                {/* Gradient Overlays - Primary Theme */}
-                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
-                <div className={`absolute inset-0 bg-gradient-to-br ${brandGradient} opacity-30 mix-blend-overlay`} />
-                
-                {/* Verified Badge - Top Right */}
+        {/* 2. Hero Header Section - Thiết kế tạp chí */}
+        <section ref={headerRef} className="relative mb-12">
+          <motion.div style={{ y: headerY }}>
+            <Card className="border-none bg-transparent overflow-visible shadow-none">
+            {/* Cover Image Wrapper */}
+            <div className="relative h-[350px] md:h-[450px] rounded-[2rem] overflow-hidden shadow-2xl shadow-black/50">
+              <motion.img
+                initial={{ scale: 1.1 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 1.5 }}
+                src={brand.coverImage}
+                className="w-full h-full object-cover"
+                alt="cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#050505] via-[#050505]/20 to-transparent" />
+              
+              {/* Overlay Badge */}
+              <div className="absolute top-8 right-8 flex gap-3">
                 {brand.verified && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ delay: 0.5, type: "spring" }}
-                    className="absolute top-6 right-6"
-                  >
-                    <Badge className={`bg-gradient-to-r ${brandGradient} text-white border-0 shadow-lg gap-2 px-4 py-2`}>
-                      <Award className="w-4 h-4" />
-                      Xác thực
-                    </Badge>
-                  </motion.div>
+                  <Badge className="bg-white/10 backdrop-blur-xl border-white/20 text-white px-4 py-2 rounded-full shadow-xl">
+                    <Award className="w-4 h-4 mr-2 text-yellow-400" /> Premium Brand
+                  </Badge>
                 )}
               </div>
+            </div>
 
-              <CardContent className="p-6 md:p-8">
-                <div className="flex flex-col md:flex-row gap-6">
-                  {/* Logo */}
+            {/* Brand Identity Card - Floating */}
+            <div className="relative px-6 md:px-12 -mt-32">
+              <div className="flex flex-col md:flex-row items-end gap-8">
+                {/* Logo with Glow */}
+                <motion.div 
+                  initial={{ y: 20, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  className="relative shrink-0"
+                >
+                  <div className={`absolute -inset-4 bg-gradient-to-tr ${brandGradient} opacity-40 blur-2xl rounded-full`} />
+                  <Avatar className="w-40 h-40 md:w-52 md:h-52 border-[10px] border-[#050505] shadow-2xl rounded-[3rem]">
+                    <AvatarImage src={brand.logo} className="object-cover" />
+                    <AvatarFallback className="text-5xl bg-zinc-900">{brand.name[0]}</AvatarFallback>
+                  </Avatar>
+                </motion.div>
+
+                {/* Info Text */}
+                <div className="flex-1 pb-4">
                   <motion.div
-                    initial={{ scale: 0, rotate: -180 }}
-                    animate={{ scale: 1, rotate: 0 }}
-                    transition={{ type: "spring", duration: 0.8 }}
-                    className="relative -mt-20 md:-mt-24"
+                    initial={{ y: 20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ delay: 0.1 }}
                   >
-                    <div className={`absolute -inset-2 bg-gradient-to-r ${brandGradient} opacity-30 blur-xl rounded-full`} />
-                    <Avatar className="relative w-32 h-32 md:w-40 md:h-40 border-8 border-card shadow-2xl">
-                      <AvatarImage src={brand.logo} alt={brand.name} />
-                      <AvatarFallback className={`text-4xl font-bold text-white bg-gradient-to-br ${brandGradient}`}>
-                        {brand.name[0]}
-                      </AvatarFallback>
-                    </Avatar>
-                  </motion.div>
-
-                  {/* Brand Info */}
-                  <div className="flex-1 space-y-4">
-                    <div>
-                      <div className="flex items-center gap-3 mb-2">
-                        <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
-                          {brand.name}
-                        </h1>
-                      </div>
-                      <Badge variant="secondary" className="text-sm">
+                    <div className="flex items-center gap-4 mb-3">
+                      <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-white">
+                        {brand.name.toUpperCase()}
+                      </h1>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-6 text-zinc-400 font-medium uppercase tracking-widest text-xs">
+                      <span className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-primary" /> {brand.location}
+                      </span>
+                      <span className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-primary" /> Est. {brand.established}
+                      </span>
+                      <Badge variant="outline" className="border-primary/50 text-primary rounded-full">
                         {brand.category}
                       </Badge>
                     </div>
+                  </motion.div>
+                </div>
 
-                    <p className="text-muted-foreground leading-relaxed max-w-3xl">
-                      {brand.description}
+                {/* Action Buttons */}
+                <div className="flex items-center gap-3 pb-4">
+                  <Button 
+                      size="lg"
+                      onClick={handleFollow}
+                    className={`rounded-full px-8 h-14 font-bold transition-all duration-500 ${
+                      isFollowing 
+                      ? 'bg-zinc-800 text-white hover:bg-zinc-700' 
+                      : `bg-gradient-to-r ${brandGradient} text-white shadow-lg shadow-primary/25 hover:scale-105`
+                    }`}
+                  >
+                    {isFollowing ? <CheckCircle2 className="mr-2" /> : <Heart className="mr-2" />}
+                    {isFollowing ? 'Đã theo dõi' : 'Theo dõi'}
+                  </Button>
+                  <Button size="lg" variant="outline" className="rounded-full h-14 w-14 border-white/10 bg-white/5 backdrop-blur-md">
+                    <Share2 className="w-5 h-5" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Stats Row */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12 py-8 border-y border-white/5">
+                {[
+                  { label: "Followers", value: brand.followers, icon: Users },
+                  { label: "Products", value: brand.products, icon: Package },
+                  { label: "Avg. Rating", value: `${brand.rating}/5`, icon: Star },
+                  { label: "Total Sold", value: "12.4K+", icon: TrendingUp },
+                ].map((stat, i) => (
+                  <div key={i} className="text-center md:text-left group cursor-default">
+                    <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500 mb-1 group-hover:text-primary transition-colors">
+                      {stat.label}
                     </p>
-
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {[
-                        { icon: Users, label: "Người theo dõi", value: brand.followers.toLocaleString(), color: "text-primary" },
-                        { icon: Package, label: "Sản phẩm", value: brand.products.toLocaleString(), color: "text-primary" },
-                        { icon: Star, label: "Đánh giá", value: brand.rating + "/5", color: "text-primary" },
-                        { icon: Calendar, label: "Thành lập", value: brand.established, color: "text-primary" },
-                      ].map((stat, idx) => (
-                        <motion.div
-                          key={idx}
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: 0.3 + idx * 0.1 }}
-                          className="p-4 rounded-xl bg-gradient-to-br from-background/50 to-card/30 border border-border/50 backdrop-blur-sm"
-                        >
-                          <div className="flex items-center gap-2 mb-1">
-                            <stat.icon className={`w-4 h-4 ${stat.color}`} />
-                            <span className="text-xs text-muted-foreground">{stat.label}</span>
-                          </div>
-                          <div className="text-xl font-bold">{stat.value}</div>
-                        </motion.div>
-                      ))}
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex flex-wrap gap-3 pt-2">
-                      <Button
-                        size="lg"
-                        className={`gap-2 ${isFollowing ? 'bg-muted hover:bg-muted/80' : `bg-gradient-to-r ${brandGradient} hover:opacity-90`}`}
-                        onClick={handleFollow}
-                      >
-                        {isFollowing ? (
-                          <>
-                            <CheckCircle2 className="w-5 h-5" />
-                            Đang theo dõi
-                          </>
-                        ) : (
-                          <>
-                            <Heart className="w-5 h-5" />
-                            Theo dõi
-                          </>
-                        )}
-                      </Button>
-                      <Button variant="outline" size="lg" className="gap-2">
-                        <Share2 className="w-5 h-5" />
-                        Chia sẻ
-                      </Button>
-                      <Button variant="outline" size="lg" className="gap-2">
-                        <MapPin className="w-5 h-5" />
-                        {brand.location}
-                      </Button>
-                    </div>
+                    <p className="text-2xl font-bold text-white tracking-tight">{stat.value}</p>
                   </div>
-                </div>
-              </CardContent>
+                ))}
+              </div>
+            </div>
             </Card>
           </motion.div>
+        </section>
 
-          {/* Enhanced Filters */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-          >
-            <Card className="border-border/50 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-sm">
-              <CardContent className="p-6">
-                <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
-                  {/* Category Pills */}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Filter className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-sm font-medium text-muted-foreground">Danh mục</span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {categories.map((cat) => (
-                        <motion.div
-                          key={cat}
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <Button
-                            variant={selectedCategory === cat ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => setSelectedCategory(cat)}
-                            className={selectedCategory === cat ? `bg-gradient-to-r ${brandGradient}` : ''}
-                          >
-                            {cat === "all" ? "Tất cả" : cat}
-                          </Button>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
+        {/* 3. Filter Section - Sticky Glassmorphism */}
+        <section className="sticky top-6 z-40 mb-12">
+          <div className="p-4 rounded-3xl bg-zinc-900/50 backdrop-blur-2xl border border-white/5 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6">
+            {/* Category Chips */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 w-full md:w-auto no-scrollbar">
+              <div className="flex items-center gap-2 pr-4 mr-4 border-r border-white/10">
+                <Filter className="w-4 h-4 text-primary" />
+                <span className="text-sm font-bold uppercase tracking-tighter">Bộ lọc</span>
+              </div>
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-6 py-2 rounded-full text-xs font-bold uppercase tracking-widest transition-all whitespace-nowrap ${
+                    selectedCategory === cat 
+                    ? `bg-gradient-to-r ${brandGradient} text-white` 
+                    : 'bg-white/5 text-zinc-400 hover:bg-white/10'
+                  }`}
+                >
+                  {cat === "all" ? "Tất cả" : cat}
+                </button>
+              ))}
+            </div>
 
-                  {/* Sort & View Controls */}
-                  <div className="flex items-center gap-3">
-                    <select
-                      value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
-                      className="px-4 py-2 rounded-lg border border-input bg-background/50 backdrop-blur-sm text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    >
-                      <option value="popular">🔥 Phổ biến nhất</option>
-                      <option value="price-asc">💰 Giá thấp → cao</option>
-                      <option value="price-desc">💎 Giá cao → thấp</option>
-                      <option value="rating">⭐ Đánh giá cao</option>
-                    </select>
+            {/* View Controls */}
+            <div className="flex items-center gap-4 w-full md:w-auto justify-between">
+              <select 
+                className="bg-transparent border-none text-sm font-bold focus:ring-0 cursor-pointer text-zinc-400 hover:text-white transition-colors"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+              >
+                <option value="popular">PHỔ BIẾN NHẤT</option>
+                <option value="newest">MỚI RA MẮT</option>
+                <option value="price-asc">GIÁ: THẤP - CAO</option>
+                <option value="price-desc">GIÁ: CAO - THẤP</option>
+              </select>
 
-                    <div className="flex gap-1 p-1 rounded-lg bg-muted">
-                      <Button
-                        variant={viewMode === "grid" ? "default" : "ghost"}
-                        size="icon"
-                        onClick={() => setViewMode("grid")}
-                        className="h-8 w-8"
-                      >
-                        <Grid3x3 className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant={viewMode === "list" ? "default" : "ghost"}
-                        size="icon"
-                        onClick={() => setViewMode("list")}
-                        className="h-8 w-8"
-                      >
-                        <List className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+              <div className="h-8 w-[1px] bg-white/10 mx-2 hidden md:block" />
 
-                <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between text-sm text-muted-foreground">
-                  <span>Hiển thị {filteredProducts.length} sản phẩm</span>
-                  <div className="flex items-center gap-2">
-                    <TrendingUp className="w-4 h-4" />
-                    <span>{products.reduce((sum, p) => sum + p.sold, 0).toLocaleString()} sản phẩm đã bán</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+              <div className="flex p-1 bg-black/40 rounded-xl border border-white/5">
+                <Button 
+                  variant={viewMode === "grid" ? "secondary" : "ghost"} 
+                  size="icon" 
+                  onClick={() => setViewMode("grid")}
+                  className="h-8 w-8 rounded-lg"
+                >
+                  <Grid3x3 className="w-4 h-4" />
+                </Button>
+                <Button 
+                  variant={viewMode === "list" ? "secondary" : "ghost"} 
+                  size="icon" 
+                  onClick={() => setViewMode("list")}
+                  className="h-8 w-8 rounded-lg"
+                >
+                  <List className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
 
-          {/* Enhanced Products Grid */}
-          <div className={`grid gap-6 ${
-            viewMode === "grid" 
-              ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" 
-              : "grid-cols-1"
-          }`}>
-            {filteredProducts.map((product, index) => (
+        {/* 4. Products Grid - Premium Cards */}
+        <div className={`grid gap-8 ${
+          viewMode === "grid" 
+          ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4" 
+          : "grid-cols-1"
+        }`}>
+          <AnimatePresence mode='popLayout'>
+            {products.map((product, idx) => (
               <motion.div
                 key={product.id}
-                initial={{ opacity: 0, y: 30 }}
+                layout
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.05 }}
-                whileHover={{ y: -8 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                transition={{ duration: 0.4, delay: idx * 0.05 }}
               >
-                <Card className="group relative overflow-hidden border-border/50 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-sm hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 h-full flex flex-col">
-                  <div className="relative overflow-hidden">
-                    <div className="aspect-square relative">
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
-                      
-                      <div className={`absolute inset-0 bg-gradient-to-t ${brandGradient} opacity-0 group-hover:opacity-20 transition-opacity duration-500`} />
-                      
-                      <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileHover={{ opacity: 1, y: 0 }}
-                        className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                      >
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          className="gap-2 backdrop-blur-md bg-background/80"
-                          onClick={() => navigate(`/product/${product.id}`)}
-                        >
-                          <Eye className="w-4 h-4" />
-                          Xem nhanh
-                        </Button>
-                      </motion.div>
-                    </div>
-
-                    <div className="absolute top-3 left-3 flex flex-col gap-2">
-                      {product.discount > 0 && (
-                        <Badge className="bg-gradient-to-r from-red-500 to-orange-500 text-white border-0 shadow-lg">
-                          -{product.discount}%
-                        </Badge>
-                      )}
-                      {!product.inStock && (
-                        <Badge variant="secondary" className="backdrop-blur-md bg-background/80">
-                          Hết hàng
-                        </Badge>
-                      )}
-                      {product.sold > 1000 && (
-                        <Badge className={`bg-gradient-to-r ${brandGradient} text-white border-0`}>
-                          <Sparkles className="w-3 h-3 mr-1" />
-                          Hot
-                        </Badge>
-                      )}
-                    </div>
-
-                    <motion.div
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
-                      className="absolute top-3 right-3"
-                    >
-                      <Button
-                        size="icon"
-                        variant="secondary"
-                        className="rounded-full backdrop-blur-md bg-background/80 hover:bg-primary hover:text-primary-foreground"
-                      >
-                        <Heart className="w-4 h-4" />
+                <Card className="group relative bg-zinc-900/40 border-white/5 overflow-hidden rounded-[2rem] hover:bg-zinc-800/50 transition-all duration-500 hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] border-t-white/10">
+                  {/* Image Container */}
+                  <div className="relative aspect-[3/4] overflow-hidden">
+                    <img
+                      src={product.image}
+                      alt={product.name}
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    />
+                    
+                    {/* Hover Actions Overlay */}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-[2px] flex items-center justify-center gap-3">
+                      <Button size="icon" variant="white" className="rounded-full hover:scale-110 transition-transform">
+                        <Heart className="w-5 h-5 text-black" />
                       </Button>
-                    </motion.div>
+                      <Button 
+                        onClick={() => navigate(`/product/${product.id}`)}
+                        className="rounded-full bg-white text-black hover:bg-white/90 px-6 font-bold"
+                      >
+                        CHI TIẾT
+                      </Button>
+                    </div>
+
+                    {/* Product Tags */}
+                    <div className="absolute top-4 left-4 flex flex-col gap-2">
+                      {product.discount > 0 && (
+                        <div className="bg-red-500 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg">
+                          -{product.discount}%
+                        </div>
+                      )}
+                      {product.isNew && (
+                        <div className="bg-white text-black text-[10px] font-black px-3 py-1 rounded-full shadow-lg">
+                          NEW DROP
+                        </div>
+                      )}
+                    </div>
                   </div>
 
-                  <CardContent className="p-4 space-y-3 flex-1 flex flex-col">
-                    <div className="flex-1 space-y-2">
-                      <Badge variant="secondary" className="text-xs">
-                        {product.category}
-                      </Badge>
-                      <h3 className="font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                  {/* Product Info */}
+                  <CardContent className="p-6">
+                    <div className="mb-4">
+                      <p className="text-[10px] text-primary font-bold tracking-[0.2em] uppercase mb-1">{product.category}</p>
+                      <h3 className="text-lg font-bold text-white line-clamp-1 group-hover:text-primary transition-colors italic">
                         {product.name}
                       </h3>
                     </div>
 
-                    <div className="flex items-center gap-4 text-sm">
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                        <span className="font-medium">{product.rating}</span>
-                      </div>
-                      <div className="text-muted-foreground">
-                        Đã bán {product.sold}
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      {product.discount > 0 ? (
-                        <div className="flex items-baseline gap-2">
-                          <span className={`text-2xl font-bold bg-gradient-to-r ${brandGradient} bg-clip-text text-transparent`}>
-                            {(product.price * (1 - product.discount / 100)).toLocaleString()}đ
-                          </span>
-                          <span className="text-sm text-muted-foreground line-through">
+                    <div className="flex items-center justify-between mt-auto">
+                      <div className="flex flex-col">
+                        {product.discount > 0 && (
+                          <span className="text-xs text-zinc-500 line-through">
                             {product.price.toLocaleString()}đ
                           </span>
-                        </div>
-                      ) : (
-                        <span className={`text-2xl font-bold bg-gradient-to-r ${brandGradient} bg-clip-text text-transparent`}>
-                          {product.price.toLocaleString()}đ
+                        )}
+                        <span className="text-xl font-black text-white tracking-tighter">
+                          {(product.price * (1 - product.discount/100)).toLocaleString()}đ
                         </span>
-                      )}
+                      </div>
+                      
+                      <Button 
+                        size="icon" 
+                        className={`rounded-2xl w-12 h-12 bg-zinc-800 border border-white/10 hover:bg-primary group/btn`}
+                      >
+                        <ShoppingBag className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
+                      </Button>
                     </div>
 
-                    <Button
-                      className={`w-full gap-2 ${product.inStock ? `bg-gradient-to-r ${brandGradient} hover:opacity-90` : ''}`}
-                      onClick={() => handleAddToCart(product)}
-                      disabled={!product.inStock}
-                    >
-                      <ShoppingCart className="w-4 h-4" />
-                      {product.inStock ? "Thêm vào giỏ" : "Hết hàng"}
-                    </Button>
+                    {/* Stats mini */}
+                    <div className="flex items-center gap-4 mt-4 pt-4 border-t border-white/5 text-[10px] font-bold text-zinc-500">
+                      <span className="flex items-center gap-1">
+                        <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" /> {product.rating}
+                      </span>
+                      <span>ĐÃ BÁN {product.sold}</span>
+                    </div>
                   </CardContent>
                 </Card>
               </motion.div>
             ))}
-          </div>
+          </AnimatePresence>
+        </div>
 
-          {/* Empty State */}
-          {filteredProducts.length === 0 && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="text-center py-20"
-            >
-              <Card className="max-w-md mx-auto border-border/50 bg-gradient-to-br from-card/90 to-card/50 backdrop-blur-sm">
-                <CardContent className="p-12">
-                  <Package className="w-20 h-20 mx-auto mb-4 text-muted-foreground opacity-50" />
-                  <h3 className="text-xl font-semibold mb-2">Không tìm thấy sản phẩm</h3>
-                  <p className="text-muted-foreground mb-6">Thử chọn danh mục khác hoặc điều chỉnh bộ lọc</p>
-                  <Button onClick={() => setSelectedCategory("all")}>
-                    Xem tất cả sản phẩm
-                  </Button>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </motion.div>
+        {/* Empty State */}
+        {products.length === 0 && (
+          <div className="py-40 text-center">
+            <div className="inline-flex p-10 rounded-[3rem] bg-zinc-900/50 border border-white/5 mb-6">
+              <ShoppingBag className="w-20 h-20 text-zinc-700" />
+            </div>
+            <h3 className="text-2xl font-bold text-white mb-2">Chưa có sản phẩm nào</h3>
+            <p className="text-zinc-500 max-w-xs mx-auto">Thương hiệu hiện chưa đăng tải sản phẩm trong danh mục này.</p>
+          </div>
+        )}
       </main>
     </div>
   );
